@@ -33,6 +33,9 @@ npm run test:e2e       # pruebas de navegador (rutas, header, menú móvil, coti
 Las pruebas usan el Google Chrome instalado en el equipo. Con Edge: `PW_CHANNEL=msedge npm run test:e2e`
 (en PowerShell: `$env:PW_CHANNEL='msedge'; npm run test:e2e`). Levantan su propio servidor en el puerto 5199.
 
+Para probar el sitio publicado en lugar del local: `BASE_URL=https://interfaz-redes.vercel.app npm run test:e2e`
+(en PowerShell: `$env:BASE_URL='https://interfaz-redes.vercel.app'; npm run test:e2e`).
+
 ## Dónde modificar
 
 | Qué | Dónde |
@@ -75,6 +78,8 @@ tools/renders/      escenas 3D que generaron las imágenes de referencia (no for
 ```
 
 ## Despliegue en Vercel
+
+Dirección publicada: **https://interfaz-redes.vercel.app**
 
 El sitio se publica en el proyecto de Vercel **`interfaz-redes`** (independiente del proyecto `interfaz-monterrey`,
 que publica interfaz.com.mx). El proyecto está conectado al repositorio de GitHub con **Root Directory**
