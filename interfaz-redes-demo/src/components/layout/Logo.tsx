@@ -28,8 +28,9 @@ export function LogoLockup() {
   return (
     <span className="flex items-center gap-3.5">
       <Logo />
-      <span aria-hidden className="hidden h-9 w-px bg-line md:block" />
-      <span aria-hidden className="hidden flex-col leading-[1.15] md:flex">
+      {/* Entre 1024 y 1279 px el menú completo ocupa ese espacio; ahí basta el emblema. */}
+      <span aria-hidden className="hidden h-9 w-px bg-line min-[340px]:block lg:hidden xl:block" />
+      <span aria-hidden className="hidden flex-col leading-[1.15] min-[340px]:flex lg:hidden xl:flex">
         <span className="font-display text-[1.02rem] font-semibold tracking-[-0.01em] text-ink">Interfaz Redes</span>
         <span className="text-[0.82rem] text-muted">y Telecomunicaciones</span>
       </span>

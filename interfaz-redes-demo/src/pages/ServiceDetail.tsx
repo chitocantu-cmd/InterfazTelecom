@@ -17,18 +17,19 @@ export default function ServiceDetail() {
   useSeo(s ? `${s.name} en Monterrey` : 'Soluciones', s ? `${s.short} ${s.intro.split('. ')[0]}.` : '')
   if (!s) return <Navigate to="/soluciones" replace />
   const cat = categoryById(s.category)
+  const sameName = cat.name === s.name
   const steps = s.process ?? PROCESS.slice(0, 4).map((p) => ({ title: p.title, text: p.short }))
   const brands = s.category === 'seguridad' ? BRANDS_SECURITY : ['infraestructura', 'fibra', 'conectividad'].includes(s.category) ? BRANDS_NETWORK : null
 
   return (
     <>
       {/* encabezado: texto sobre blanco + imagen a sangre */}
-      <section className="relative flex flex-col overflow-hidden bg-white lg:block">
+      <section className="relative mx-auto flex max-w-frame flex-col overflow-hidden bg-white lg:block">
         <div className="relative order-2 aspect-[4/3] w-full sm:aspect-[16/9] lg:absolute lg:inset-y-0 lg:right-0 lg:aspect-auto lg:w-[48%]">
           {s.img ? (
             <>
               <img src={IMG[s.img].src} alt={IMG[s.img].alt} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: IMG[s.img].pos }} />
-              <p className="absolute bottom-4 right-5 text-[0.72rem] text-white/70">Imagen de referencia</p>
+              {IMG[s.img].ref && <p className="img-caption">Imagen de referencia</p>}
             </>
           ) : (
             <div className="absolute inset-0"><Media plate={s.plate} ratio="h-full w-full" /></div>
@@ -36,10 +37,11 @@ export default function ServiceDetail() {
         </div>
         <div className="container relative order-1">
           <div className="flex flex-col pb-14 pt-10 lg:min-h-[620px] lg:w-[46%] lg:pb-20">
-            <Breadcrumbs items={[{ to: '/soluciones', label: 'Soluciones' }, { to: `/soluciones?s=${cat.id}`, label: cat.name }, { label: s.name }]} />
+            {/* Si el servicio se llama igual que su categoría (Fibra óptica), no se repite el nombre. */}
+            <Breadcrumbs items={[{ to: '/soluciones', label: 'Soluciones' }, ...(sameName ? [] : [{ to: `/soluciones?s=${cat.id}`, label: cat.name }]), { label: s.name }]} />
             <div className="mt-14 lg:my-auto lg:pt-10">
-              <p className="text-small font-medium text-corp">{cat.name}</p>
-              <h1 className="mt-3 text-h1">{s.name}</h1>
+              {!sameName && <p className="mb-3 text-small font-medium text-corp">{cat.name}</p>}
+              <h1 className="text-h1">{s.name}</h1>
               <p className="mt-6 max-w-measure text-lead text-body">{s.intro}</p>
               <div className="mt-9 flex flex-wrap gap-3">
                 <Button onClick={() => scrollToId('cotizar')}>Cotizar este servicio</Button>

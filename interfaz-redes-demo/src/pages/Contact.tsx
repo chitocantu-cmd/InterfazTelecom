@@ -22,10 +22,13 @@ export default function Contact() {
   const site = SECTOR_TO_SITE[params.get('sector') ?? '']
 
   const rows = [
-    { icon: MessageCircle, k: 'WhatsApp / teléfono', v: <CopyValue dark value={COMPANY.whatsappDisplay} label="WhatsApp" />, link: { href: waLink('Hola, quiero cotizar un proyecto con Interfaz Redes.'), label: 'Abrir WhatsApp' } },
-    { icon: Mail, k: 'Correo', v: <CopyValue dark value={COMPANY.email} label="correo" /> },
-    { icon: MapPin, k: 'Oficina', v: COMPANY.address, link: { href: 'https://www.google.com/maps/search/?api=1&query=Av.+8+Norte+1750+Col.+Industrial+Monterrey+N.L.', label: 'Ver en mapa' } },
-    { icon: Clock, k: 'Horario', v: COMPANY.hours },
+    {
+      icon: MessageCircle, k: 'WhatsApp / teléfono', v: <CopyValue dark value={COMPANY.whatsappDisplay} label="WhatsApp" />,
+      links: [{ href: waLink('Hola, quiero cotizar un proyecto con Interfaz Redes.'), label: 'Abrir WhatsApp' }, { href: `tel:${COMPANY.phoneIntl}`, label: 'Llamar' }],
+    },
+    { icon: Mail, k: 'Correo', v: <CopyValue dark value={COMPANY.email} label="correo" />, links: [{ href: `mailto:${COMPANY.email}`, label: 'Escribir correo' }] },
+    { icon: MapPin, k: 'Oficina', v: COMPANY.address, links: [{ href: 'https://www.google.com/maps/search/?api=1&query=Av.+8+Norte+1750+Col.+Industrial+Monterrey+N.L.', label: 'Ver en mapa' }] },
+    { icon: Clock, k: 'Horario', v: COMPANY.hours, links: [] },
   ]
 
   return (
@@ -52,13 +55,20 @@ export default function Contact() {
                 </div>
               </div>
               <ul className="divide-y divide-white/10 text-[0.94rem]">
-                {rows.map(({ icon: Icon, k, v, link }) => (
+                {rows.map(({ icon: Icon, k, v, links }) => (
                   <li key={k} className="flex gap-3 p-6">
                     <Icon aria-hidden className="mt-1 h-4 w-4 shrink-0 text-white/50" strokeWidth={1.75} />
                     <div className="min-w-0">
                       <p className="text-small text-white/55">{k}</p>
                       <p className="mt-1 break-words text-white/90">{v}</p>
-                      {link && <a href={link.href} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1 text-small font-medium text-white link-line">{link.label}</a>}
+                      {links.length > 0 && (
+                        <p className="mt-2 flex flex-wrap gap-x-5 gap-y-1">
+                          {links.map((l) => {
+                            const ext = l.href.startsWith('http')
+                            return <a key={l.label} href={l.href} target={ext ? '_blank' : undefined} rel={ext ? 'noopener noreferrer' : undefined} className="inline-flex items-center gap-1 text-small font-medium text-white link-line">{l.label}</a>
+                          })}
+                        </p>
+                      )}
                     </div>
                   </li>
                 ))}

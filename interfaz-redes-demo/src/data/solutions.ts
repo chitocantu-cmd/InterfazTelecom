@@ -107,7 +107,7 @@ export const SERVICES: Service[] = [
   {
     slug: 'cableado-estructurado',
     code: 'INF-01',
-    img: 'rack',
+    img: 'plafon',
     name: 'Cableado estructurado',
     category: 'infraestructura',
     short: 'Voz y datos Cat6 / Cat6A con certificación de cada punto.',
@@ -223,7 +223,7 @@ export const SERVICES: Service[] = [
   {
     slug: 'racks-y-site',
     code: 'INF-03',
-    img: 'aisleWide',
+    img: 'site',
     name: 'Racks y site de telecomunicaciones',
     category: 'infraestructura',
     short: 'Gabinetes, organización, etiquetado y administración del cuarto de telecom.',
@@ -449,6 +449,7 @@ export const SERVICES: Service[] = [
   {
     slug: 'certificacion-y-pruebas',
     code: 'ING-02',
+    img: 'patchPanel',
     name: 'Certificación de enlaces',
     category: 'fibra',
     short: 'Certificación de cada enlace y reporte entregable.',
@@ -468,7 +469,7 @@ export const SERVICES: Service[] = [
   {
     slug: 'mantenimiento-y-soporte',
     code: 'ING-03',
-    img: 'nave',
+    img: 'escalera',
     name: 'Mantenimiento y soporte',
     category: 'ingenieria',
     short: 'Preventivo y correctivo para mantener la red disponible.',

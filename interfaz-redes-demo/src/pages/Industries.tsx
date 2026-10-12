@@ -92,7 +92,7 @@ export default function Industries() {
                       )
                     })}
                   </ul>
-                  <div className="mt-8"><Button to={`/contacto?sector=${ind.id}`}>Cotizar para {ind.name.toLowerCase()}</Button></div>
+                  <div className="mt-8"><Button to={`/contacto?sector=${ind.id}`} className="!whitespace-normal text-center">Cotizar para {ind.name.toLowerCase()}</Button></div>
                 </div>
               </motion.div>
             </AnimatePresence>

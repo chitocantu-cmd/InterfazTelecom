@@ -8,8 +8,8 @@ export function Breadcrumbs({ items, dark }: { items: { to?: string; label: stri
     <nav aria-label="Ruta de navegación">
       <ol className={cn('flex flex-wrap items-center gap-2 text-label', dark ? 'text-white/60' : 'text-muted')}>
         <li><Link to="/" className={dark ? 'hover:text-white' : 'hover:text-ink'}>Inicio</Link></li>
-        {items.map((it) => (
-          <li key={it.label} className="flex items-center gap-2">
+        {items.map((it, i) => (
+          <li key={i} className="flex items-center gap-2">
             <span aria-hidden>/</span>
             {it.to ? <Link to={it.to} className={dark ? 'hover:text-white' : 'hover:text-ink'}>{it.label}</Link> : <span aria-current="page" className={dark ? 'text-white' : 'text-ink'}>{it.label}</span>}
           </li>
@@ -34,10 +34,10 @@ export function PageHero({ crumbs, title, lede, img, pos, children, aside }: {
     <section className="bg-white">
       <div className="container pb-14 pt-10 md:pb-16 md:pt-12">
         <Breadcrumbs items={crumbs} />
-        <div className="mt-12 grid gap-8 md:mt-16 lg:grid-cols-12 lg:items-end lg:gap-10">
+        <div className="mt-12 grid gap-8 md:mt-16 lg:grid-cols-12 lg:items-start lg:gap-10">
           <h1 className="text-h1 lg:col-span-7">{title}</h1>
           {(lede || aside) && (
-            <div className="lg:col-span-4 lg:col-start-9">
+            <div className="lg:col-span-4 lg:col-start-9 lg:pt-2">
               {lede && <p className="max-w-measure text-lead text-body">{lede}</p>}
               {aside}
             </div>
@@ -46,9 +46,9 @@ export function PageHero({ crumbs, title, lede, img, pos, children, aside }: {
         {children}
       </div>
       {img && (
-        <div className="relative h-[300px] overflow-hidden md:h-[440px] lg:h-[520px]">
+        <div className="relative mx-auto h-[300px] max-w-frame overflow-hidden md:h-[440px] lg:h-[520px]">
           <img src={IMG[img].src} alt={IMG[img].alt} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: pos ?? IMG[img].pos }} />
-          <p className="absolute bottom-4 right-5 text-[0.72rem] text-white/70">Imagen de referencia</p>
+          {IMG[img].ref && <p className="img-caption">Imagen de referencia</p>}
         </div>
       )}
     </section>

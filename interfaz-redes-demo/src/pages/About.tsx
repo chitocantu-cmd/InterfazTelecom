@@ -1,4 +1,4 @@
-import { FinalCTA, ProcessLine } from '../components/home/Sections'
+import { FieldGallery, FinalCTA, ProcessLine } from '../components/home/Sections'
 import { PageHero } from '../components/layout/PageHero'
 import { Media } from '../components/plates'
 import { BRANDS_NETWORK, BRANDS_SECURITY, COMPANY } from '../data/company'
@@ -19,8 +19,7 @@ export default function About() {
         crumbs={[{ label: 'Nosotros' }]}
         title="Ingeniería de redes y telecomunicaciones desde Monterrey"
         lede="Interfaz Redes y Telecomunicaciones desarrolla proyectos de redes, voz y datos, fibra óptica, enlaces y seguridad electrónica para empresas e industria."
-        img="nave"
-        pos="60% 50%"
+        img="oficina"
       />
 
       <section className="py-24 md:py-32">
@@ -39,9 +38,19 @@ export default function About() {
               ))}
             </dl>
           </div>
-          <div className="lg:col-span-5 lg:col-start-8"><Media img="rack" plate="rack" ratio="aspect-[4/5]" /></div>
+          <div className="lg:col-span-5 lg:col-start-8"><Media img="equipo" plate="rack" ratio="aspect-[4/5]" /></div>
         </div>
       </section>
+
+      <FieldGallery
+        lede="El mismo equipo que levanta, instala, ordena y documenta cada instalación."
+        items={[
+          { img: 'site', caption: 'Trabajo en cuarto de telecomunicaciones' },
+          { img: 'escalera', caption: 'Cableado en un área en operación' },
+          { img: 'rackOrden', caption: 'Peinado y orden de cableado' },
+          { img: 'plafon', caption: 'Tendido de cable por plafón' },
+        ]}
+      />
 
       <section className="bg-mist py-24 md:py-28">
         <div className="container grid gap-14 lg:grid-cols-12">
@@ -74,13 +83,8 @@ export default function About() {
         </div>
       </section>
 
+      {/* Información tomada de interfazredes.com y de la división Redes y TI en interfaz.com.mx. */}
       <ProcessLine />
-
-      <section className="border-t border-line py-12">
-        <div className="container">
-          <p className="max-w-prose text-small text-muted">Información tomada de interfazredes.com y de la división Redes y TI en interfaz.com.mx. Pendiente de revisión final por Interfaz antes de publicar.</p>
-        </div>
-      </section>
       <FinalCTA />
     </>
   )

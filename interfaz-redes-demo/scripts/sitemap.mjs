@@ -1,9 +1,10 @@
 // Genera public/sitemap.xml y public/robots.txt a partir de los datos del sitio.
-import { readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 
-const env = Object.fromEntries(
-  readFileSync('.env', 'utf8').split('\n').filter((l) => l.includes('=') && !l.startsWith('#')).map((l) => l.split('=').map((x) => x.trim())),
-)
+// En Vercel las variables pueden venir sólo del panel (process.env), sin archivo .env.
+const env = existsSync('.env')
+  ? Object.fromEntries(readFileSync('.env', 'utf8').split('\n').filter((l) => l.includes('=') && !l.startsWith('#')).map((l) => l.split('=').map((x) => x.trim())))
+  : {}
 const SITE = (process.env.VITE_SITE_URL || env.VITE_SITE_URL || 'https://interfazredes.com').replace(/\/$/, '')
 const slugs = (file) => [...readFileSync(file, 'utf8').matchAll(/slug: '([^']+)'/g)].map((m) => m[1])
 

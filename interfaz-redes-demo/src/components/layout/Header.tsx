@@ -27,6 +27,7 @@ export function Header() {
   const closeTimer = useRef<number>()
   const megaBtn = useRef<HTMLButtonElement>(null)
   const firstLink = useRef<HTMLAnchorElement>(null)
+  const hoverOpened = useRef(false) // el menú lo abrió el cursor y aún no hay clic
   const reduce = useReducedMotion()
 
   useEffect(() => {
@@ -35,7 +36,7 @@ export function Header() {
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
-  useEffect(() => { setMega(false); setMobile(false) }, [location.pathname, location.search])
+  useEffect(() => { setMega(false); setMobile(false); hoverOpened.current = false }, [location.pathname, location.search])
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
@@ -47,8 +48,13 @@ export function Header() {
   }, [mega])
   useEffect(() => { document.body.style.overflow = mobile ? 'hidden' : '' }, [mobile])
 
+  // Con mouse el menú abre al pasar el cursor, y el clic que suele seguir no debe cerrarlo.
+  // Con toque o teclado el clic abre y cierra (en pantallas táctiles no hay "pasar el cursor").
   const openMega = () => { window.clearTimeout(closeTimer.current); setMega(true) }
-  const closeSoon = () => { closeTimer.current = window.setTimeout(() => setMega(false), 160) }
+  const closeSoon = () => { closeTimer.current = window.setTimeout(() => { setMega(false); hoverOpened.current = false }, 160) }
+  const hoverIn = ({ pointerType }: { pointerType: string }) => { if (pointerType !== 'mouse') return; if (!mega) hoverOpened.current = true; openMega() }
+  const hoverOut = ({ pointerType }: { pointerType: string }) => { if (pointerType === 'mouse') closeSoon() }
+  const toggleMega = () => { if (hoverOpened.current) { hoverOpened.current = false; return } setMega((v) => !v) }
   const solActive = location.pathname.startsWith('/soluciones')
   const linkCls = (active: boolean) => cn('flex items-center gap-1 px-3 py-2 text-[0.97rem] transition-colors xl:px-4', active ? 'font-medium text-corp' : 'text-body hover:text-ink')
 
@@ -64,13 +70,13 @@ export function Header() {
           <ul className="flex items-center">
             {NAV.map((item) =>
               item.mega ? (
-                <li key={item.to} onMouseEnter={openMega} onMouseLeave={closeSoon}>
+                <li key={item.to} onPointerEnter={hoverIn} onPointerLeave={hoverOut}>
                   <button
                     ref={megaBtn}
                     type="button"
                     aria-expanded={mega}
                     aria-controls="mega-soluciones"
-                    onClick={() => setMega((v) => !v)}
+                    onClick={toggleMega}
                     onKeyDown={(e) => { if (e.key === 'ArrowDown') { e.preventDefault(); setMega(true); requestAnimationFrame(() => firstLink.current?.focus()) } }}
                     className={linkCls(solActive || mega)}
                   >
@@ -106,8 +112,8 @@ export function Header() {
         {mega && (
           <motion.div
             id="mega-soluciones"
-            onMouseEnter={openMega}
-            onMouseLeave={closeSoon}
+            onPointerEnter={hoverIn}
+            onPointerLeave={hoverOut}
             initial={reduce ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

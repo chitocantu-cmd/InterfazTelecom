@@ -8,6 +8,8 @@ export default defineConfig(({ mode }) => {
   const single = mode === 'preview'
   return {
     plugins: [react(), ...(single ? [viteSingleFile()] : [])],
+    // Sólo el sitio: tools/renders/ tiene su propio index.html (three.js) que no forma parte de la app.
+    optimizeDeps: { entries: ['index.html'] },
     build: single
       ? { outDir: 'dist-preview', target: 'es2020', cssCodeSplit: false, assetsInlineLimit: 100_000_000 }
       : { outDir: 'dist', target: 'es2020', assetsInlineLimit: 4096, sourcemap: false },

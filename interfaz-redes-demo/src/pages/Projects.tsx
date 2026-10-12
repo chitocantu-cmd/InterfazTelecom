@@ -30,7 +30,7 @@ export function Projects() {
         crumbs={[{ label: 'Proyectos' }]}
         title="Proyectos"
         lede="Tipos de intervención que ejecuta el equipo técnico: el problema, el alcance y las tecnologías de cada caso."
-        aside={<p className="mt-4 text-small text-muted">Casos demostrativos, pendientes de sustituir por proyectos autorizados por clientes.</p>}
+        aside={<p className="mt-4 text-small text-muted">Casos demostrativos: describen tipos de intervención, no proyectos de clientes específicos.</p>}
       />
       <section className="pb-28">
         <div className="container">
@@ -39,9 +39,9 @@ export function Projects() {
               <Chip active={cat === 'todas'} onClick={() => update('categoria', 'todas', 'todas')} controls="lista-proyectos">Todas</Chip>
               {PROJECT_CATEGORIES.map((c) => <Chip key={c} active={cat === c} onClick={() => update('categoria', c, 'todas')} controls="lista-proyectos">{c}</Chip>)}
             </div>
-            <div className="flex items-center gap-5">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
               <label htmlFor="f-sector" className="text-small text-muted">Sector</label>
-              <select id="f-sector" value={sector} onChange={(e) => update('sector', e.target.value, 'todos')} className="field !w-auto min-w-[12rem] !py-2.5">
+              <select id="f-sector" value={sector} onChange={(e) => update('sector', e.target.value, 'todos')} className="field !w-auto min-w-[10rem] sm:min-w-[12rem] !py-2.5">
                 <option value="todos">Todos</option>
                 {sectors.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
@@ -106,9 +106,9 @@ export function ProjectDetail() {
             <p className="max-w-measure text-lead text-body lg:col-span-4">{p.summary}</p>
           </div>
         </div>
-        <div className="relative h-[320px] overflow-hidden md:h-[480px] lg:h-[600px]">
+        <div className="relative mx-auto h-[320px] max-w-frame overflow-hidden md:h-[480px] lg:h-[600px]">
           {m ? <img src={m.src} alt={m.alt} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: m.pos }} /> : <Media plate={p.plate} ratio="h-full w-full" />}
-          {m && <p className="absolute bottom-4 right-5 text-[0.72rem] text-white/70">Imagen de referencia, no corresponde a este caso</p>}
+          {m?.ref && <p className="img-caption">Imagen de referencia, no corresponde a este caso</p>}
         </div>
       </section>
 

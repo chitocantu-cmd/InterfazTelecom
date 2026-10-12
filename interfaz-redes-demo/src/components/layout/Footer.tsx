@@ -6,11 +6,11 @@ import { CATEGORIES, servicesOf } from '../../data/solutions'
 import { copyText } from '../../lib/utils'
 import { Logo } from './Logo'
 
-export function CopyValue({ value, label, dark }: { value: string; label: string; dark?: boolean }) {
+export function CopyValue({ value, label, dark, href }: { value: string; label: string; dark?: boolean; href?: string }) {
   const [ok, setOk] = useState(false)
   return (
     <span className="inline-flex items-center gap-2">
-      <span className="select-all">{value}</span>
+      {href ? <a href={href} className={dark ? 'hover:text-white' : 'hover:text-corp'}>{value}</a> : <span className="select-all">{value}</span>}
       <button
         type="button"
         aria-label={`Copiar ${label}`}
@@ -29,19 +29,19 @@ export function Footer() {
     <footer className="border-t border-line bg-white">
       <div className="container pb-10 pt-16 md:pt-20">
         <div className="grid gap-12 lg:grid-cols-12">
-          <div className="lg:col-span-4">
+          <div className="lg:col-span-3">
             <Logo size="lg" />
             <p className="mt-4 font-display text-[1.05rem] font-semibold text-ink">Interfaz Redes y Telecomunicaciones</p>
             <p className="mt-2 max-w-sm text-small text-body">
               Ingeniería, instalación y mantenimiento de redes, telecomunicaciones y seguridad electrónica para empresas e industria.
             </p>
             <dl className="mt-8 space-y-4 text-small">
-              <div><dt className="text-muted">WhatsApp y teléfono</dt><dd className="mt-0.5 font-medium text-ink"><CopyValue value={COMPANY.whatsappDisplay} label="teléfono" /></dd></div>
-              <div><dt className="text-muted">Correo</dt><dd className="mt-0.5 break-all font-medium text-ink"><CopyValue value={COMPANY.email} label="correo" /></dd></div>
+              <div><dt className="text-muted">WhatsApp y teléfono</dt><dd className="mt-0.5 font-medium text-ink"><CopyValue value={COMPANY.whatsappDisplay} label="teléfono" href={`tel:${COMPANY.phoneIntl}`} /></dd></div>
+              <div><dt className="text-muted">Correo</dt><dd className="mt-0.5 break-all font-medium text-ink"><CopyValue value={COMPANY.email} label="correo" href={`mailto:${COMPANY.email}`} /></dd></div>
               <div><dt className="text-muted">Oficina</dt><dd className="mt-0.5 text-ink">{COMPANY.address}</dd><dd className="text-muted">{COMPANY.hours}</dd></div>
             </dl>
           </div>
-          <nav aria-label="Soluciones" className="grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-3 lg:col-span-8 lg:grid-cols-5">
+          <nav aria-label="Soluciones" className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 lg:col-span-9 lg:grid-cols-5">
             {CATEGORIES.map((cat) => (
               <div key={cat.id}>
                 <Link to={`/soluciones?s=${cat.id}`} className="font-display text-[0.98rem] font-semibold leading-snug text-ink hover:text-corp">{cat.name}</Link>
@@ -62,7 +62,7 @@ export function Footer() {
             <Link to="/aviso-de-privacidad" className="hover:text-ink">Aviso de privacidad</Link>
           </nav>
         </div>
-        <p className="mt-4 text-label text-faint">Demo de rediseño. Las imágenes son visualizaciones de referencia y los casos son demostrativos; no corresponden a proyectos realizados.</p>
+        <p className="mt-4 text-label text-muted">Las imágenes marcadas como referencia son visualizaciones y los casos de proyecto son demostrativos; no corresponden a proyectos realizados.</p>
       </div>
     </footer>
   )

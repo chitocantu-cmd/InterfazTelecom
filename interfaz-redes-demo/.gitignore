@@ -1,0 +1,11 @@
+node_modules
+dist
+dist-preview
+.vercel
+.env.local
+*.log
+.DS_Store
+tools/renders/node_modules
+tools/renders/out
+test-results
+playwright-report

@@ -112,7 +112,7 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
       <div className="flex border-b border-line" aria-label="Progreso de la solicitud">
         {STEPS.map((s, i) => (
           <div key={s} className={cn('relative flex-1 px-3 py-3.5 sm:px-5', i > 0 && 'border-l border-line')} aria-current={i === step ? 'step' : undefined}>
-            <span className={cn('font-mono text-[0.68rem] tracking-[0.1em]', i === step ? 'text-tech' : i < step ? 'text-ink' : 'text-slate-faint')}>
+            <span className={cn('font-mono text-[0.68rem] tracking-[0.1em]', i === step ? 'text-tech' : i < step ? 'text-ink' : 'text-slate-muted')}>
               {i < step ? <Check aria-hidden className="mb-0.5 inline h-3 w-3" /> : `0${i + 1}`}
             </span>
             <span className={cn('ml-2 hidden text-[0.86rem] sm:inline', i === step ? 'font-medium text-ink' : 'text-slate-muted')}>{s}</span>
@@ -218,7 +218,7 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
                         ))}
                       </ul>
                     )}
-                    <p className="mt-2 font-mono text-[0.72rem] leading-snug text-slate-muted">En este demo los archivos no se envían a ningún servidor. Se listan en la solicitud para adjuntarlos en WhatsApp o correo.</p>
+                    <p className="mt-2 font-mono text-[0.72rem] leading-snug text-slate-muted">Por ahora los archivos no se envían a ningún servidor: se listan en la solicitud para adjuntarlos en WhatsApp o correo.</p>
                   </div>
                 </div>
               </div>
@@ -298,7 +298,7 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
               <ArrowLeft aria-hidden className="h-4 w-4" /> Atrás
             </button>
           ) : (
-            <span className="font-mono text-[0.72rem] text-slate-faint">Paso 1 de 4</span>
+            <span className="font-mono text-[0.72rem] text-slate-muted">Paso 1 de 4</span>
           )}
           {step < 3 && (
             <button type="button" onClick={next} className="group inline-flex items-center gap-2.5 rounded-[2px] bg-corp px-6 py-3 text-[0.95rem] font-medium text-white transition-colors hover:bg-navy">

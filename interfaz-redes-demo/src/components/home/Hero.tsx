@@ -5,15 +5,15 @@ import { Button } from '../ui'
 
 export function Hero() {
   return (
-    <section aria-labelledby="hero-title" className="relative flex flex-col overflow-hidden bg-white lg:block">
+    <section aria-labelledby="hero-title" className="relative mx-auto flex max-w-frame flex-col overflow-hidden bg-white lg:block">
       {/* Imagen a sangre a la derecha en escritorio */}
-      <div className="relative order-2 aspect-[4/3] w-full sm:aspect-[16/9] lg:absolute lg:inset-y-0 lg:right-0 lg:aspect-auto lg:w-[52%]">
-        <img src={IMG.aisle.src} alt={IMG.aisle.alt} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: '66% 50%' }} fetchPriority="high" />
-        <p className="absolute bottom-4 right-5 text-[0.72rem] text-white/70">Imagen de referencia</p>
+      <div className="relative order-2 aspect-[4/3] w-full sm:aspect-[16/9] lg:absolute lg:inset-y-0 lg:right-0 lg:aspect-auto lg:w-1/2">
+        <img src={IMG.aisle.src} alt={IMG.aisle.alt} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: '66% 50%' }} {...{ fetchpriority: 'high' }} />
+        <p className="img-caption">Imagen de referencia</p>
       </div>
 
       <div className="container relative order-1">
-        <div className="flex flex-col py-12 sm:py-16 lg:min-h-[min(760px,calc(100svh-92px))] lg:w-[44%] lg:justify-center lg:py-24">
+        <div className="flex flex-col py-12 sm:py-16 lg:min-h-[min(760px,calc(100svh-92px))] lg:w-[46%] lg:justify-center lg:py-24">
           <h1 id="hero-title" className="text-display max-w-[11.5ch] !font-semibold">
             Conectamos la infraestructura que mueve tu empresa.
           </h1>

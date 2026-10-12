@@ -49,8 +49,8 @@ export function Explorer() {
                 return (
                   <li key={c.id} className="border-b border-line">
                     <button type="button" aria-expanded={on} onClick={() => setActive(c.id)} className="group w-full py-5 text-left">
-                      <span className={cn('block font-display text-[1.45rem] font-medium leading-tight tracking-[-0.015em] transition-colors', on ? 'text-ink' : 'text-faint group-hover:text-body')}>{c.name}</span>
-                      <span className={cn('mt-1 block text-small transition-colors', on ? 'text-body' : 'text-faint')}>{c.lede}</span>
+                      <span className={cn('block font-display text-[1.45rem] font-medium leading-tight tracking-[-0.015em] transition-colors', on ? 'text-ink' : 'text-muted group-hover:text-ink')}>{c.name}</span>
+                      <span className={cn('mt-1 block text-small transition-colors', on ? 'text-body' : 'text-muted')}>{c.lede}</span>
                     </button>
                     {on && <div className="pb-10 lg:hidden"><Panel cat={c} inline /></div>}
                   </li>

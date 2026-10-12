@@ -150,10 +150,10 @@ export function Topology() {
             {node.service && (
               <Link to={`/soluciones/${node.service}`} className="mt-auto pt-6 text-[0.9rem] font-medium text-tech link-underline">Ver servicio relacionado</Link>
             )}
-            <p className="mt-6 border-t border-line pt-4 font-mono text-[0.68rem] text-slate-faint">Diagrama de referencia. Cada red se diseña según el levantamiento.</p>
+            <p className="mt-6 border-t border-line pt-4 font-mono text-[0.68rem] text-slate-muted">Diagrama de referencia. Cada red se diseña según el levantamiento.</p>
           </aside>
         </div>
-        <p className="mt-3 font-mono text-[0.7rem] text-slate-faint lg:hidden">Deslice el diagrama horizontalmente para verlo completo.</p>
+        <p className="mt-3 font-mono text-[0.7rem] text-slate-muted lg:hidden">Deslice el diagrama horizontalmente para verlo completo.</p>
       </div>
     </section>
   )

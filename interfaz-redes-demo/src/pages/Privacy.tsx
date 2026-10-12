@@ -3,9 +3,10 @@ import { PageHero } from '../components/layout/PageHero'
 import { COMPANY } from '../data/company'
 import { useSeo } from '../lib/seo'
 
-// Plantilla de aviso de privacidad integral. Debe revisarla un asesor legal
-// y completarse con la razón social y el domicilio fiscal del responsable.
-const RAZON_SOCIAL = '[Razón social de Interfaz Redes y Telecomunicaciones]'
+// Aviso de privacidad integral. Conviene que lo revise un asesor legal.
+// Por ahora el responsable se identifica con el nombre comercial; al escribir la razón social
+// aquí, el texto pasa a decir "<razón social>, que opera comercialmente como Interfaz Redes…".
+const RAZON_SOCIAL = ''
 const ACTUALIZADO = 'Octubre de 2026'
 
 function Block({ title, children }: { title: string; children: ReactNode }) {
@@ -25,11 +26,11 @@ export default function Privacy() {
       <section className="pb-28">
         <div className="container grid gap-12 lg:grid-cols-12">
           <aside className="lg:col-span-3">
-            <p className="bg-mist p-5 text-small text-body">Documento base pendiente de revisión legal. Los datos entre corchetes deben completarse antes de publicar el sitio.</p>
+            <p className="bg-mist p-5 text-small text-body">Para ejercer sus derechos o resolver dudas sobre este aviso, escriba a <a href={`mailto:${COMPANY.email}`} className="break-all font-medium text-ink link-line">{COMPANY.email}</a>.</p>
           </aside>
           <div className="lg:col-span-8 lg:col-start-5">
             <Block title="Responsable">
-              <p>{RAZON_SOCIAL}, que opera comercialmente como {COMPANY.name}, con domicilio en {COMPANY.address}, es responsable del uso y protección de sus datos personales conforme a la legislación mexicana en materia de protección de datos personales en posesión de los particulares.</p>
+              <p>{RAZON_SOCIAL ? `${RAZON_SOCIAL}, que opera comercialmente como ${COMPANY.name}` : COMPANY.name}, con domicilio en {COMPANY.address}, es responsable del uso y protección de sus datos personales conforme a la legislación mexicana en materia de protección de datos personales en posesión de los particulares.</p>
             </Block>
             <Block title="Datos que recabamos">
               <p>A través del formulario de cotización y de los medios de contacto de este sitio podemos recabar: nombre, empresa, correo electrónico, número de teléfono o WhatsApp, ciudad o ubicación del proyecto, la descripción de su necesidad y los nombres de los archivos que decida compartir.</p>

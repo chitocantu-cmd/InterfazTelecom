@@ -4,7 +4,9 @@
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
-    container: { center: true, padding: { DEFAULT: '1.25rem', sm: '1.75rem', lg: '2.5rem', xl: '3.5rem' }, screens: { '2xl': '1400px' } },
+    // El margen lateral crece con la pantalla mediante --gutter (index.css). Tailwind ignora los
+    // márgenes por breakpoint cuando el contenedor sólo define `2xl`, por eso no se usa aquí.
+    container: { center: true, padding: 'var(--gutter)', screens: { '2xl': '1400px' } },
     extend: {
       colors: {
         navy: { DEFAULT: '#081D36', 900: '#061528', 800: '#0B2442' },
@@ -20,6 +22,7 @@ export default {
         ice: '#EAF1F7',
         // compatibilidad con componentes previos
         cold: '#F4F6F8',
+        paper: '#FFFFFF',
         slate: { DEFAULT: '#3A4656', muted: '#6A7685', faint: '#98A2AE' },
       },
       fontFamily: {
@@ -38,7 +41,8 @@ export default {
         small: ['0.9375rem', { lineHeight: '1.55' }],
         label: ['0.8125rem', { lineHeight: '1.4', letterSpacing: '0.01em' }],
       },
-      maxWidth: { prose: '62ch', measure: '38rem' },
+      // frame: ancho máximo de las imágenes a sangre; evita estirarlas (y pixelarlas) en pantallas muy anchas.
+      maxWidth: { prose: '62ch', measure: '38rem', frame: '1600px' },
     },
   },
   plugins: [],

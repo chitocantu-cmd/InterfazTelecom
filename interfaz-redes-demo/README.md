@@ -1,52 +1,108 @@
 # Interfaz Redes · Sitio web
 
 Sitio de **Interfaz Redes y Telecomunicaciones** (Monterrey, N.L.).
-React 18 + TypeScript + Vite + Tailwind CSS + Motion + React Router.
+React 18 + TypeScript + Vite + Tailwind CSS + Motion + React Router + Lucide.
 
-## Desarrollo
+## Iniciar el sitio
+
+Requiere Node 18 o superior. Desde la terminal de VS Code, dentro de esta carpeta:
 
 ```bash
-npm install
-npm run dev            # http://localhost:5173
-npm run build          # producción → dist/ (genera también sitemap.xml y robots.txt)
-npm run preview        # sirve dist/ localmente
-npm run build:preview  # un solo HTML autocontenido → dist-preview/ (para compartir el demo)
+npm install            # sólo la primera vez o al cambiar dependencias
+npm run dev            # servidor de desarrollo
 ```
 
-Requiere Node 18 o superior.
+Vite muestra la dirección en la terminal (normalmente `http://localhost:5173/`; si ese puerto está ocupado
+usa el siguiente libre, por ejemplo `5174`). Los cambios en el código se ven al guardar. `Ctrl + C` lo detiene.
 
-## Despliegue en Vercel
+## Versión de producción
 
-1. Sube el repositorio a GitHub.
-2. En Vercel: **Add New → Project → Import** el repositorio. Vercel detecta Vite y usa `vercel.json`
-   (`npm run build`, salida `dist/`). No hay que cambiar nada.
-3. **Settings → Environment Variables** (opcional):
-   - `VITE_SITE_URL` — dominio definitivo, por defecto `https://interfazredes.com`. Se usa en canonical, sitemap y Open Graph.
-   - `VITE_GA_ID` — ID de Google Analytics 4 (`G-XXXXXXX`). Si se deja vacío, no se carga ningún script de medición.
-4. **Settings → Domains**: agrega `interfazredes.com` y `www.interfazredes.com` y apunta el DNS como indique Vercel.
+```bash
+npm run build          # compila a dist/ (genera también sitemap.xml y robots.txt)
+npm run preview        # sirve dist/ localmente para revisarla
+npm run build:preview  # un solo HTML autocontenido → dist-preview/ (para compartir una vista previa)
+```
 
-`vercel.json` ya incluye:
-- Reescritura de todas las rutas a `index.html` (rutas limpias como `/soluciones/fibra-optica`).
-- Redirecciones 301 desde URLs del sitio anterior en WordPress (`/servicios/`, etc.).
-- Caché de un año para `/assets/*` y cabeceras básicas de seguridad.
+## Comprobaciones
+
+```bash
+npm run typecheck      # TypeScript
+npm run test:e2e       # pruebas de navegador (rutas, header, menú móvil, cotizador, filtros) en escritorio y móvil
+```
+
+Las pruebas usan el Google Chrome instalado en el equipo. Con Edge: `PW_CHANNEL=msedge npm run test:e2e`
+(en PowerShell: `$env:PW_CHANNEL='msedge'; npm run test:e2e`). Levantan su propio servidor en el puerto 5199.
+
+## Dónde modificar
+
+| Qué | Dónde |
+| --- | --- |
+| Teléfono, WhatsApp, correo, dirección, horario | `src/data/company.ts` |
+| Servicios (textos, especificaciones, preguntas frecuentes) | `src/data/solutions.ts` |
+| Opciones del cotizador | `QUOTE_TYPES` en `src/data/solutions.ts` |
+| Industrias, proyectos, necesidades y proceso | `src/data/content.ts` |
+| Fotografías | archivos en `src/assets/img/` y su registro en `src/data/media.ts` |
+| Galería "Nuestro equipo en campo" | `src/pages/Home.tsx` y `src/pages/About.tsx` |
+| Razón social del aviso de privacidad | constante `RAZON_SOCIAL` en `src/pages/Privacy.tsx` |
+| Logotipo | `src/assets/brand/` (ver `index.ts`) y `public/favicon.jpg` |
+| Colores y tipografía | `tailwind.config.js` y `src/index.css` |
+| Páginas | `src/pages/` · rutas en `src/App.tsx` |
+
+Para cambiar una fotografía: copie la imagen (de preferencia `.webp`, de 1600 a 2400 px de ancho; las imágenes a
+sangre se muestran hasta 1600 px y en pantallas de alta densidad conviene el doble) en `src/assets/img/`,
+impórtela en `src/data/media.ts` con su texto alternativo y úsela con su clave (`img: 'rack'`) en los datos.
+En `media.ts`, `ref: true` marca las visualizaciones 3D (muestran la leyenda "Imagen de referencia") y `ref: false`
+las fotografías reales del equipo (`src/assets/img/campo/`, tomadas de interfaz.com.mx).
+
+El cotizador no tiene servidor propio: arma la solicitud y la abre en WhatsApp o en el correo del usuario con el
+mensaje escrito. El envío se completa en esa aplicación.
 
 ## Estructura
 
 ```
 src/
   assets/brand/     logotipo oficial (transparente y placa azul)
-  assets/img/       imágenes de referencia (sustituir por fotografía real)
-  components/       layout (header, footer, encabezados), home, cotizador, láminas técnicas
+  assets/img/       visualizaciones 3D de referencia (sustituir por fotografía real)
+  assets/img/campo/ fotografías reales del equipo en campo
+  components/       layout (header, footer, encabezados), home, cotizador, láminas técnicas, ui
   data/             empresa, soluciones, industrias, proyectos, necesidades, proceso
   lib/              utilidades, SEO por página, analítica
   pages/            Inicio, Soluciones, Servicio, Industrias, Proyectos, Nosotros, Contacto, Aviso de privacidad
+e2e/                pruebas de navegador (Playwright)
 public/             favicon, og-image, sitemap.xml y robots.txt (generados en el build)
-scripts/            generador de sitemap y empaquetado del demo
-tools/renders/      escenas 3D que generaron las imágenes de referencia
+scripts/            generador de sitemap y empaquetado de la vista previa
+tools/renders/      escenas 3D que generaron las imágenes de referencia (no forman parte del sitio)
 ```
 
-El contenido editable vive en `src/data/`: servicios en `solutions.ts`, proyectos e industrias en `content.ts`,
-datos de contacto en `company.ts`.
+## Despliegue en Vercel
+
+El sitio se publica en el proyecto de Vercel **`interfaz-redes`** (independiente del proyecto `interfaz-monterrey`,
+que publica interfaz.com.mx). El proyecto está conectado al repositorio de GitHub con **Root Directory**
+`interfaz-redes-demo`, así que **cada `git push` a `main` publica una nueva versión** en producción; las otras
+ramas generan vistas previas.
+
+Para publicar cambios:
+
+```bash
+git add -A
+git commit -m "Describe el cambio"
+git push
+```
+
+Sin GitHub, también se puede publicar directamente desde la raíz del repositorio con `vercel deploy --prod`.
+
+Variables (**Settings → Environment Variables**, opcionales):
+- `VITE_SITE_URL` — dominio definitivo, por defecto `https://interfazredes.com`. Se usa en canonical, sitemap y Open Graph.
+- `VITE_GA_ID` — ID de Google Analytics 4 (`G-XXXXXXX`). Si se deja vacío, no se carga ningún script de medición.
+
+Dominio propio: **Settings → Domains**, agregar `interfazredes.com` y `www.interfazredes.com` y apuntar el DNS
+como indique Vercel. Mientras el sitio sólo viva en `*.vercel.app`, esas direcciones envían `X-Robots-Tag: noindex`
+para que Google no las indexe; con el dominio propio el sitio se indexa normalmente.
+
+`vercel.json` ya incluye:
+- Reescritura de todas las rutas a `index.html` (rutas limpias como `/soluciones/fibra-optica`).
+- Redirecciones 301 desde URLs del sitio anterior en WordPress (`/servicios/`, etc.).
+- Caché de un año para `/assets/*`, cabeceras básicas de seguridad y `noindex` en `*.vercel.app`.
 
 ## Medición (GA4)
 
@@ -57,11 +113,14 @@ Con `VITE_GA_ID` configurado se registran:
 
 Marca `generate_lead` como evento clave (conversión) en GA4.
 
-## Pendientes antes de lanzar
+## Pendientes
 
-- [ ] Sustituir imágenes de referencia por fotografía real de obra (`src/assets/img/` y `src/data/media.ts`).
+- [x] Fotografía real del equipo en campo (portada, Nosotros y servicios de cableado, racks, certificación y mantenimiento).
+- [ ] Fotografía real para fibra óptica, CCTV, control de acceso, WiFi e industrias (hoy son visualizaciones 3D).
 - [ ] Reemplazar los casos demostrativos por proyectos autorizados (`src/data/content.ts`).
 - [ ] Logotipo en mayor resolución (SVG o PNG ≥ 800 px) en `src/assets/brand/`.
 - [ ] Confirmar WhatsApp, años de experiencia, vigencia del REPSE y marcas.
-- [ ] Completar razón social en el aviso de privacidad (`src/pages/Privacy.tsx`) y revisarlo con asesor legal.
-- [ ] Quitar las leyendas "Imagen de referencia" y "Caso demostrativo" cuando el contenido sea real.
+- [ ] Escribir la razón social en `RAZON_SOCIAL` (`src/pages/Privacy.tsx`) y revisar el aviso con un asesor legal.
+- [ ] Conectar el dominio `interfazredes.com` en Vercel (requiere cambiar el DNS).
+- [x] React Router 7 y Vite 6. `npm audit` aún reporta avisos en herramientas de compilación de Tailwind 3
+      (no llegan al navegador); se resuelven al migrar a Tailwind 4.

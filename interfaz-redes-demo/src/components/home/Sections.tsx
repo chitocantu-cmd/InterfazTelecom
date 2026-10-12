@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { COMPANY } from '../../data/company'
 import { INDUSTRIES, NEEDS, PROCESS, PROJECTS, type Project } from '../../data/content'
-import { IMG } from '../../data/media'
+import { IMG, type ImgKey } from '../../data/media'
 import { serviceBySlug } from '../../data/solutions'
 import { cn, waLink } from '../../lib/utils'
 import { Media } from '../plates'
@@ -57,6 +57,29 @@ export function Intro() {
   )
 }
 
+/* ---------- Equipo en campo (fotografía real) ---------- */
+export function FieldGallery({ items, lede, className }: { items: { img: ImgKey; caption: string }[]; lede: string; className?: string }) {
+  return (
+    <section className={cn('pb-24 md:pb-32', className)} aria-labelledby="campo-title">
+      <div className="container">
+        <SectionHead id="campo-title" title="Nuestro equipo en campo" lede={lede} />
+        <ul className="mt-12 grid grid-cols-2 gap-x-4 gap-y-8 md:gap-x-6 lg:grid-cols-4">
+          {items.map(({ img, caption }, i) => (
+            <li key={img} className={cn(i % 2 === 1 && 'lg:mt-14')}>
+              <figure>
+                <div className="aspect-[3/4] overflow-hidden bg-mist">
+                  <img src={IMG[img].src} alt={IMG[img].alt} loading="lazy" decoding="async" className="h-full w-full object-cover" style={{ objectPosition: IMG[img].pos }} />
+                </div>
+                <figcaption className="mt-3 text-small text-body">{caption}</figcaption>
+              </figure>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )
+}
+
 /* ---------- Proyectos ---------- */
 export function ProjectMeta({ p, className }: { p: Project; className?: string }) {
   return <p className={cn('text-label text-muted', className)}>{p.sector} · {p.category} · Caso demostrativo</p>
@@ -70,7 +93,7 @@ export function FeaturedProjects() {
         <SectionHead
           id="proyectos-title"
           title="Tipos de proyecto que ejecutamos"
-          lede="Casos demostrativos con el alcance técnico de cada intervención. Se sustituyen por proyectos autorizados por clientes antes de publicar."
+          lede="Casos demostrativos con el alcance técnico de cada tipo de intervención; no corresponden a proyectos de clientes específicos."
         />
         <Reveal className="mt-14">
           <Link to={`/proyectos/${a.slug}`} className="group grid gap-8 lg:grid-cols-12 lg:items-end lg:gap-12">
@@ -228,7 +251,7 @@ export function ProcessLine({ tone = 'mist' }: { tone?: 'mist' | 'white' }) {
 export function FinalCTA() {
   return (
     <section className="relative bg-white" aria-labelledby="cta-title">
-      <div className="relative h-[420px] overflow-hidden md:h-[560px]">
+      <div className="relative mx-auto h-[420px] max-w-frame overflow-hidden md:h-[560px]">
         <img src={IMG.aisleWide.src} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: '50% 42%' }} />
       </div>
       <div className="container relative -mt-40 pb-24 md:-mt-48 md:pb-32">
