@@ -74,7 +74,7 @@ src/
 e2e/                pruebas de navegador (Playwright)
 public/             favicon, og-image, sitemap.xml y robots.txt (generados en el build)
 scripts/            generador de sitemap y empaquetado de la vista previa
-tools/renders/      escenas 3D que generaron las imágenes de referencia (no forman parte del sitio)
+tools/renders/      escenas 3D de la primera versión de las imágenes de referencia (no forman parte del sitio)
 ```
 
 ## Despliegue en Vercel

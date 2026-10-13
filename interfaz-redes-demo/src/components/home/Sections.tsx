@@ -203,7 +203,7 @@ export function IndustriesIndex() {
     <section className="py-24 md:py-32" aria-labelledby="industrias-title">
       <div className="container grid gap-14 lg:grid-cols-12">
         <div className="hidden lg:col-span-5 lg:block">
-          <div className="sticky top-28">
+          <div className="sticky top-36">
             <Media img={ind.img} plate={ind.plate} ratio="aspect-[4/5] max-h-[620px] w-full" />
           </div>
         </div>

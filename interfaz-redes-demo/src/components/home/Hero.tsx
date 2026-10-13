@@ -13,7 +13,7 @@ export function Hero() {
       </div>
 
       <div className="container relative order-1">
-        <div className="flex flex-col py-12 sm:py-16 lg:min-h-[min(760px,calc(100svh-92px))] lg:w-[46%] lg:justify-center lg:py-24">
+        <div className="flex flex-col py-12 sm:py-16 lg:min-h-[min(760px,calc(100svh-124px))] lg:w-[46%] lg:justify-center lg:py-24">
           <h1 id="hero-title" className="text-display max-w-[11.5ch] !font-semibold">
             Conectamos la infraestructura que mueve tu empresa.
           </h1>

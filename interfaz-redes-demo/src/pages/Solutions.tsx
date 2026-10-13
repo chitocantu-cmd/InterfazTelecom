@@ -32,7 +32,7 @@ export default function Solutions() {
         <section key={cat.id} id={cat.id} className={cn('scroll-mt-24 py-24 md:py-28', i % 2 === 1 && 'bg-mist')} aria-labelledby={`h-${cat.id}`}>
           <div className="container grid gap-12 lg:grid-cols-12 lg:gap-16">
             <div className={cn('lg:col-span-5', i % 2 === 1 && 'lg:order-2 lg:col-start-8')}>
-              <div className="lg:sticky lg:top-28">
+              <div className="lg:sticky lg:top-36">
                 <h2 id={`h-${cat.id}`} className="text-h2">{cat.name}</h2>
                 <p className="mt-5 max-w-measure text-body">{cat.technical}</p>
                 <Media img={cat.img} plate={cat.plate} className="mt-10" ratio="aspect-[4/3]" />

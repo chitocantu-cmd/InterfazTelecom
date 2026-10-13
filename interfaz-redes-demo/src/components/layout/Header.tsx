@@ -63,7 +63,7 @@ export function Header() {
       className={cn('sticky z-50 bg-white transition-shadow duration-300', scrolled || mega ? 'shadow-[0_1px_0_#E1E6EB]' : '')}
       style={{ top: 'env(safe-area-inset-top, 0px)' }}
     >
-      <div className="container flex h-[92px] items-center justify-between gap-6">
+      <div className="container flex h-[106px] items-center justify-between gap-6 md:h-[124px]">
         <Link to="/" aria-label="Interfaz Redes y Telecomunicaciones, ir al inicio" className="shrink-0"><LogoLockup /></Link>
 
         <nav aria-label="Principal" className="hidden lg:block">
@@ -164,7 +164,7 @@ function MobileNav({ onClose, reduce }: { onClose: () => void; reduce: boolean }
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.18 }}
-      className="absolute inset-x-0 top-full z-40 h-[calc(100dvh-92px)] overflow-y-auto border-t border-line bg-white lg:hidden"
+      className="absolute inset-x-0 top-full z-40 h-[calc(100dvh-106px)] overflow-y-auto border-t border-line bg-white md:h-[calc(100dvh-124px)] lg:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       <nav aria-label="Menú móvil" className="container flex min-h-full flex-col pb-6 pt-2">

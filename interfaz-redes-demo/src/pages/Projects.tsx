@@ -127,7 +127,7 @@ export function ProjectDetail() {
             </div>
           </div>
           <aside className="lg:col-span-4 lg:col-start-9">
-            <div className="lg:sticky lg:top-28">
+            <div className="lg:sticky lg:top-36">
               <dl className="border-t border-ink/80 text-small">
                 {[['Sector', p.sector], ['Categoría', p.category], ['Estado', 'Caso demostrativo']].map(([k, v]) => (
                   <div key={k} className="flex justify-between gap-4 border-b border-line py-3.5"><dt className="text-muted">{k}</dt><dd className="text-right font-medium text-ink">{v}</dd></div>
