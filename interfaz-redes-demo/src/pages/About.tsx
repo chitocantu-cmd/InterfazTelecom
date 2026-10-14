@@ -3,6 +3,7 @@ import { PageHero } from '../components/layout/PageHero'
 import { Media } from '../components/plates'
 import { BRANDS_NETWORK, BRANDS_SECURITY, COMPANY } from '../data/company'
 import { useSeo } from '../lib/seo'
+import { SEO } from '../data/seo'
 
 const PRINCIPLES = [
   ['Ingeniería antes que equipo', 'Una inversión en tecnología basada en buena ingeniería y proyección no se convierte en gasto. Por eso el diseño va antes de la cotización.'],
@@ -12,7 +13,7 @@ const PRINCIPLES = [
 ]
 
 export default function About() {
-  useSeo('Nosotros', 'Interfaz Redes y Telecomunicaciones: más de 15 años desarrollando proyectos de redes, fibra óptica y seguridad electrónica desde Monterrey. Registro REPSE.')
+  useSeo(SEO.about)
   return (
     <>
       <PageHero

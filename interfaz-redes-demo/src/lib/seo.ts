@@ -1,8 +1,8 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
+import { fullTitle, type Seo } from '../data/seo'
 
 export const SITE_URL = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, '') || 'https://interfazredes.com'
-const BRAND = 'Interfaz Redes'
 
 function setMeta(selector: string, attr: 'name' | 'property', key: string, content: string) {
   let el = document.head.querySelector<HTMLMetaElement>(selector)
@@ -14,11 +14,11 @@ function setMeta(selector: string, attr: 'name' | 'property', key: string, conte
   el.setAttribute('content', content)
 }
 
-/** Título, descripción, canonical y Open Graph por página. */
-export function useSeo(title: string, description: string) {
+/** Título, descripción, canonical y Open Graph por página (textos en src/data/seo.ts). */
+export function useSeo({ title, description }: Seo) {
   const { pathname } = useLocation()
   useEffect(() => {
-    const full = title.includes(BRAND) ? title : `${title} · ${BRAND}`
+    const full = fullTitle(title)
     document.title = full
     setMeta('meta[name="description"]', 'name', 'description', description)
     setMeta('meta[property="og:title"]', 'property', 'og:title', full)

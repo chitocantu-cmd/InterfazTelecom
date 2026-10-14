@@ -1,8 +1,10 @@
 import { BrowserRouter, HashRouter, Route, Routes } from 'react-router-dom'
 import { Footer } from './components/layout/Footer'
 import { Header } from './components/layout/Header'
+import { WhatsAppButton } from './components/layout/WhatsAppButton'
 import { Button } from './components/ui'
 import { useContactClicks, usePageViews } from './lib/analytics'
+import { SEO } from './data/seo'
 import { useSeo } from './lib/seo'
 import { useScrollToTop } from './lib/utils'
 import { lazy, Suspense } from 'react'
@@ -19,7 +21,7 @@ const Privacy = lazy(() => import('./pages/Privacy'))
 const Solutions = lazy(() => import('./pages/Solutions'))
 
 function NotFound() {
-  useSeo('Página no encontrada', 'La página que busca no existe. Revise el índice de soluciones de Interfaz Redes.')
+  useSeo(SEO.notFound)
   return (
     <section className="container py-32">
       <p className="text-small font-medium text-corp">Error 404</p>
@@ -39,7 +41,8 @@ function Shell() {
       <a href="#contenido" onClick={(e) => { e.preventDefault(); document.getElementById('contenido')?.focus() }} className="sr-only z-[60] bg-ink px-4 py-2 text-white focus:not-sr-only focus:fixed focus:left-4 focus:top-4">Saltar al contenido</a>
       <Header />
       <main id="contenido" tabIndex={-1} className="outline-none">
-        <Suspense fallback={<div className="min-h-[70vh]" aria-busy="true" />}>
+        {/* Ocupa al menos la pantalla mientras carga la página, para que el footer no brinque al llegar el contenido. */}
+        <Suspense fallback={<div className="min-h-[100svh]" aria-busy="true" />}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/soluciones" element={<Solutions />} />
@@ -55,6 +58,7 @@ function Shell() {
         </Suspense>
       </main>
       <Footer />
+      <WhatsAppButton />
     </>
   )
 }

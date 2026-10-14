@@ -104,10 +104,20 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
     .filter((l) => l !== null)
     .join('\n')
 
+  // Mientras el cotizador está en pantalla se oculta el botón flotante de WhatsApp (WhatsAppButton).
+  const root = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const el = root.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const io = new IntersectionObserver(([e]) => document.documentElement.toggleAttribute('data-cotizador', e.isIntersecting))
+    io.observe(el)
+    return () => { io.disconnect(); document.documentElement.removeAttribute('data-cotizador') }
+  }, [])
+
   const subject = `Solicitud de cotización · ${typeLabels[0] ?? 'Proyecto'} · ${d.company.trim() || 'Empresa'}`
 
   return (
-    <div className="border border-line bg-paper shadow-[0_1px_0_rgba(18,21,24,0.04)]">
+    <div ref={root} className="border border-line bg-paper shadow-[0_1px_0_rgba(18,21,24,0.04)]">
       {/* progreso */}
       <div className="flex border-b border-line" aria-label="Progreso de la solicitud">
         {STEPS.map((s, i) => (

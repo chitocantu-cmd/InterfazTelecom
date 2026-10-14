@@ -32,6 +32,8 @@ export function LogoLockup() {
       <span aria-hidden className="hidden h-9 w-px bg-line min-[360px]:block lg:hidden xl:block" />
       <span aria-hidden className="hidden flex-col leading-[1.15] min-[360px]:flex lg:hidden xl:flex">
         <span className="font-display text-[1.02rem] font-semibold tracking-[-0.01em] text-ink">Interfaz Redes</span>
+        {/* El espacio no se ve (flex), pero hace que el texto se lea "Interfaz Redes y Telecomunicaciones". */}
+        {' '}
         <span className="text-[0.82rem] text-muted">y Telecomunicaciones</span>
       </span>
     </span>

@@ -9,11 +9,12 @@ import { INDUSTRIES } from '../data/content'
 import { serviceBySlug } from '../data/solutions'
 import { cn } from '../lib/utils'
 import { useSeo } from '../lib/seo'
+import { SEO } from '../data/seo'
 
 const MATRIX = ['cableado-estructurado', 'fibra-optica', 'switching-routing', 'wifi-empresarial', 'racks-y-site', 'cctv-videovigilancia', 'control-de-acceso']
 
 export default function Industries() {
-  useSeo('Soluciones por industria', 'Redes, fibra óptica, CCTV y control de acceso para industria, corporativos, centros de distribución, instituciones educativas y comercio.')
+  useSeo(SEO.industries)
   const [params, setParams] = useSearchParams()
   const initial = INDUSTRIES.find((i) => i.id === params.get('sector'))?.id ?? INDUSTRIES[0].id
   const [active, setActive] = useState(initial)

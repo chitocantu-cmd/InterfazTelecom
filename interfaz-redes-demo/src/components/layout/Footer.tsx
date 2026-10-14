@@ -27,7 +27,7 @@ export function CopyValue({ value, label, dark, href }: { value: string; label: 
 export function Footer() {
   return (
     <footer className="border-t border-line bg-white">
-      <div className="container pb-10 pt-16 md:pt-20">
+      <div className="container pb-24 pt-16 md:pt-20">
         <div className="grid gap-12 lg:grid-cols-12">
           <div className="lg:col-span-3">
             <Logo size="lg" />

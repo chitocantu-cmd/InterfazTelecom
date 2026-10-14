@@ -15,7 +15,7 @@ export default {
         lumen: '#26A5DC',
         ink: '#0E1C2D',
         body: '#3A4656',
-        muted: '#6A7685',
+        muted: '#616D7C',  // 4.5:1 o más sobre blanco y mist
         faint: '#98A2AE',
         line: '#E1E6EB',
         mist: '#F4F6F8',
@@ -23,7 +23,7 @@ export default {
         // compatibilidad con componentes previos
         cold: '#F4F6F8',
         paper: '#FFFFFF',
-        slate: { DEFAULT: '#3A4656', muted: '#6A7685', faint: '#98A2AE' },
+        slate: { DEFAULT: '#3A4656', muted: '#616D7C', faint: '#98A2AE' },
       },
       fontFamily: {
         display: ['Archivo', 'Helvetica Neue', 'Arial', 'sans-serif'],

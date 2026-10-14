@@ -17,8 +17,9 @@ export function Plate({ kind }: { kind: PlateKind }) {
   }
 }
 
-/** Espacio de imagen. Usa la visualización si existe; si no, la lámina técnica. */
-export function Media({ img, plate, className, ratio = 'aspect-[16/10]', zoom = false, pos, caption }: {
+/** Espacio de imagen. Usa la visualización si existe; si no, la lámina técnica.
+ *  Se carga al acercarse a la pantalla salvo `eager`; `sizes` es el ancho que ocupa (para elegir del srcset). */
+export function Media({ img, plate, className, ratio = 'aspect-[16/10]', zoom = false, eager = false, sizes = '(min-width: 1024px) 50vw, 100vw', pos, caption }: {
   img?: ImgKey
   plate: PlateKind
   className?: string
@@ -26,6 +27,7 @@ export function Media({ img, plate, className, ratio = 'aspect-[16/10]', zoom = 
   tag?: boolean
   zoom?: boolean
   eager?: boolean
+  sizes?: string
   pos?: string
   caption?: string
 }) {
@@ -33,7 +35,7 @@ export function Media({ img, plate, className, ratio = 'aspect-[16/10]', zoom = 
   return (
     <figure className={cn('relative overflow-hidden bg-mist', ratio, className)}>
       {m ? (
-        <img src={m.src} alt={m.alt} decoding="async" className={cn('absolute inset-0 h-full w-full object-cover', zoom && 'img-zoom')} style={{ objectPosition: pos ?? m.pos }} />
+        <img src={m.src} srcSet={m.srcSet} sizes={sizes} alt={m.alt} loading={eager ? undefined : 'lazy'} decoding="async" className={cn('absolute inset-0 h-full w-full object-cover', zoom && 'img-zoom')} style={{ objectPosition: pos ?? m.pos }} />
       ) : (
         <div className="absolute inset-0 bg-[#F1F5F8]"><Plate kind={plate} /></div>
       )}

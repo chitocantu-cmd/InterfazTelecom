@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { PageHero } from '../components/layout/PageHero'
 import { COMPANY } from '../data/company'
 import { useSeo } from '../lib/seo'
+import { SEO } from '../data/seo'
 
 // Aviso de privacidad integral. Conviene que lo revise un asesor legal.
 // Por ahora el responsable se identifica con el nombre comercial; al escribir la razón social
@@ -19,7 +20,7 @@ function Block({ title, children }: { title: string; children: ReactNode }) {
 }
 
 export default function Privacy() {
-  useSeo('Aviso de privacidad', 'Aviso de privacidad de Interfaz Redes y Telecomunicaciones: datos que recabamos, finalidades y cómo ejercer sus derechos ARCO.')
+  useSeo(SEO.privacy)
   return (
     <>
       <PageHero crumbs={[{ label: 'Aviso de privacidad' }]} title="Aviso de privacidad" lede={`Última actualización: ${ACTUALIZADO}.`} />

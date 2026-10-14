@@ -68,7 +68,7 @@ export function FieldGallery({ items, lede, className }: { items: { img: ImgKey;
             <li key={img} className={cn(i % 2 === 1 && 'lg:mt-14')}>
               <figure>
                 <div className="aspect-[3/4] overflow-hidden bg-mist">
-                  <img src={IMG[img].src} alt={IMG[img].alt} loading="lazy" decoding="async" className="h-full w-full object-cover" style={{ objectPosition: IMG[img].pos }} />
+                  <img src={IMG[img].src} srcSet={IMG[img].srcSet} sizes="(min-width: 1024px) 25vw, 50vw" alt={IMG[img].alt} loading="lazy" decoding="async" className="h-full w-full object-cover" style={{ objectPosition: IMG[img].pos }} />
                 </div>
                 <figcaption className="mt-3 text-small text-body">{caption}</figcaption>
               </figure>
@@ -97,7 +97,7 @@ export function FeaturedProjects() {
         />
         <Reveal className="mt-14">
           <Link to={`/proyectos/${a.slug}`} className="group grid gap-8 lg:grid-cols-12 lg:items-end lg:gap-12">
-            <div className="overflow-hidden lg:col-span-8"><Media img={a.img} plate={a.plate} ratio="aspect-[16/10]" zoom pos="74% 50%" /></div>
+            <div className="overflow-hidden lg:col-span-8"><Media img={a.img} plate={a.plate} ratio="aspect-[16/10]" zoom pos="74% 50%" sizes="(min-width: 1024px) 66vw, 100vw" /></div>
             <div className="lg:col-span-4 lg:pb-2">
               <ProjectMeta p={a} />
               <h3 className="mt-3 text-h2 transition-colors group-hover:text-corp">{a.title}</h3>
@@ -110,7 +110,7 @@ export function FeaturedProjects() {
           {[b, c].map((p, i) => (
             <Reveal key={p.slug} delay={i * 0.06} className={i === 1 ? 'md:mt-24' : ''}>
               <Link to={`/proyectos/${p.slug}`} className="group block">
-                <div className="overflow-hidden"><Media img={p.img} plate={p.plate} ratio="aspect-[4/3]" zoom /></div>
+                <div className="overflow-hidden"><Media img={p.img} plate={p.plate} ratio="aspect-[4/3]" zoom sizes="(min-width: 768px) 50vw, 100vw" /></div>
                 <ProjectMeta p={p} className="mt-6" />
                 <h3 className="mt-2 text-h3 transition-colors group-hover:text-corp">{p.title}</h3>
                 <p className="mt-2 max-w-measure text-small text-body">{p.summary}</p>
@@ -173,7 +173,7 @@ export function NeedsExplorer() {
                       </span>
                       <span>
                         <span className={cn('block font-display text-[1.2rem] font-medium leading-snug transition-colors', on ? 'text-white' : 'text-white/60 group-hover:text-white/85')}>{n.label}</span>
-                        <span className={cn('mt-0.5 block text-small', on ? 'text-white/70' : 'text-white/40')}>{n.context}</span>
+                        <span className={cn('mt-0.5 block text-small', on ? 'text-white/70' : 'text-white/55')}>{n.context}</span>
                       </span>
                     </label>
                     {on && <div className="pb-6 lg:hidden"><Result inline /></div>}
@@ -204,7 +204,7 @@ export function IndustriesIndex() {
       <div className="container grid gap-14 lg:grid-cols-12">
         <div className="hidden lg:col-span-5 lg:block">
           <div className="sticky top-36">
-            <Media img={ind.img} plate={ind.plate} ratio="aspect-[4/5] max-h-[620px] w-full" />
+            <Media img={ind.img} plate={ind.plate} ratio="aspect-[4/5] max-h-[620px] w-full" sizes="40vw" />
           </div>
         </div>
         <div className="lg:col-span-6 lg:col-start-7">
@@ -252,7 +252,7 @@ export function FinalCTA() {
   return (
     <section className="relative bg-white" aria-labelledby="cta-title">
       <div className="relative mx-auto h-[420px] max-w-frame overflow-hidden md:h-[560px]">
-        <img src={IMG.aisleWide.src} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: '50% 42%' }} />
+        <img src={IMG.aisleWide.src} srcSet={IMG.aisleWide.srcSet} sizes="(min-width: 1600px) 1600px, 100vw" alt="" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: '50% 42%' }} />
       </div>
       <div className="container relative -mt-40 pb-24 md:-mt-48 md:pb-32">
         <div className="max-w-3xl bg-white px-0 pt-10 md:px-14 md:pt-14">

@@ -10,11 +10,12 @@ import { IMG } from '../data/media'
 import { categoryById, serviceBySlug } from '../data/solutions'
 import { cn, scrollToId, waLink } from '../lib/utils'
 import { useSeo } from '../lib/seo'
+import { serviceSeo, SEO } from '../data/seo'
 
 export default function ServiceDetail() {
   const { slug } = useParams()
   const s = serviceBySlug(slug)
-  useSeo(s ? `${s.name} en Monterrey` : 'Soluciones', s ? `${s.short} ${s.intro.split('. ')[0]}.` : '')
+  useSeo(s ? serviceSeo(s) : SEO.solutions)
   if (!s) return <Navigate to="/soluciones" replace />
   const cat = categoryById(s.category)
   const sameName = cat.name === s.name
@@ -28,7 +29,7 @@ export default function ServiceDetail() {
         <div className="relative order-2 aspect-[4/3] w-full sm:aspect-[16/9] lg:absolute lg:inset-y-0 lg:right-0 lg:aspect-auto lg:w-[48%]">
           {s.img ? (
             <>
-              <img src={IMG[s.img].src} alt={IMG[s.img].alt} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: IMG[s.img].pos }} />
+              <img src={IMG[s.img].src} srcSet={IMG[s.img].srcSet} sizes="(min-width: 1024px) 48vw, 100vw" alt={IMG[s.img].alt} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: IMG[s.img].pos }} />
               {IMG[s.img].ref && <p className="img-caption">Imagen de referencia</p>}
             </>
           ) : (
@@ -179,7 +180,7 @@ export default function ServiceDetail() {
               return (
                 <li key={r}>
                   <Link to={`/soluciones/${r}`} className="group block">
-                    <div className="overflow-hidden"><Media img={rs.img} plate={rs.plate} ratio="aspect-[3/2]" zoom /></div>
+                    <div className="overflow-hidden"><Media img={rs.img} plate={rs.plate} ratio="aspect-[3/2]" zoom sizes="(min-width: 768px) 33vw, 100vw" /></div>
                     <span className="mt-5 block font-display text-[1.2rem] font-medium text-ink transition-colors group-hover:text-corp">{rs.name}</span>
                     <span className="mt-1 block text-small text-body">{rs.short}</span>
                   </Link>

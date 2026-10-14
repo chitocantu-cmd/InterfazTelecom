@@ -7,11 +7,12 @@ import { Reveal } from '../components/ui'
 import { CATEGORIES, SERVICES, servicesOf } from '../data/solutions'
 import { cn } from '../lib/utils'
 import { useSeo } from '../lib/seo'
+import { SEO } from '../data/seo'
 
 const QUOTE_FOR: Record<string, string> = { infraestructura: 'cableado', fibra: 'fibra', seguridad: 'cctv', conectividad: 'infra', ingenieria: 'otro' }
 
 export default function Solutions() {
-  useSeo('Soluciones de infraestructura tecnológica', 'Cableado estructurado, fibra óptica, seguridad electrónica, conectividad empresarial e ingeniería y mantenimiento para empresas e industria en Monterrey.')
+  useSeo(SEO.solutions)
   return (
     <>
       <PageHero

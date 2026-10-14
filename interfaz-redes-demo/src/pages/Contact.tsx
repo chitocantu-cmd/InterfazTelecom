@@ -9,11 +9,12 @@ import { NEEDS } from '../data/content'
 import { QUOTE_TYPES, serviceBySlug, type QuoteType } from '../data/solutions'
 import { waLink } from '../lib/utils'
 import { useSeo } from '../lib/seo'
+import { SEO } from '../data/seo'
 
 const SECTOR_TO_SITE: Record<string, string> = { industria: SITES[0], corporativos: SITES[1], cedis: SITES[2], educacion: SITES[3], comercio: SITES[4] }
 
 export default function Contact() {
-  useSeo('Cotizar proyecto', 'Solicite una cotización de cableado estructurado, fibra óptica, CCTV, control de acceso o infraestructura TI. Respuesta por WhatsApp o correo.')
+  useSeo(SEO.contact)
   const [params] = useSearchParams()
   const tipoParam = params.get('tipo')
   const tipo = QUOTE_TYPES.some((q) => q.id === tipoParam) ? (tipoParam as QuoteType) : undefined

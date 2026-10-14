@@ -9,9 +9,10 @@ import { IMG } from '../data/media'
 import { serviceBySlug } from '../data/solutions'
 import { cn, waLink } from '../lib/utils'
 import { useSeo } from '../lib/seo'
+import { projectSeo, SEO } from '../data/seo'
 
 export function Projects() {
-  useSeo('Proyectos', 'Tipos de proyecto de infraestructura que ejecuta Interfaz Redes: redes industriales, fibra óptica, CCTV, racks y sites, y redes corporativas.')
+  useSeo(SEO.projects)
   const [params, setParams] = useSearchParams()
   const cat = params.get('categoria') ?? 'todas'
   const sector = params.get('sector') ?? 'todos'
@@ -61,7 +62,7 @@ export function Projects() {
                   <Reveal as="li" key={p.slug}>
                     <Link to={`/proyectos/${p.slug}`} className="group grid gap-8 lg:grid-cols-12 lg:items-center lg:gap-14">
                       <div className={cn('overflow-hidden lg:col-span-7', i % 2 === 1 && 'lg:order-2 lg:col-start-6')}>
-                        <Media img={p.img} plate={p.plate} ratio="aspect-[3/2]" zoom />
+                        <Media img={p.img} plate={p.plate} ratio="aspect-[3/2]" zoom sizes="(min-width: 1024px) 58vw, 100vw" />
                       </div>
                       <div className={cn('lg:col-span-4', i % 2 === 1 ? 'lg:order-1' : 'lg:col-start-9')}>
                         <ProjectMeta p={p} />
@@ -86,7 +87,7 @@ export function Projects() {
 export function ProjectDetail() {
   const { slug } = useParams()
   const p = projectBySlug(slug)
-  useSeo(p ? p.title : 'Proyectos', p ? p.summary : '')
+  useSeo(p ? projectSeo(p) : SEO.projects)
   if (!p) return <Navigate to="/proyectos" replace />
   const i = PROJECTS.findIndex((x) => x.slug === p.slug)
   const prev = PROJECTS[(i - 1 + PROJECTS.length) % PROJECTS.length]
@@ -107,7 +108,7 @@ export function ProjectDetail() {
           </div>
         </div>
         <div className="relative mx-auto h-[320px] max-w-frame overflow-hidden md:h-[480px] lg:h-[600px]">
-          {m ? <img src={m.src} alt={m.alt} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: m.pos }} /> : <Media plate={p.plate} ratio="h-full w-full" />}
+          {m ? <img src={m.src} srcSet={m.srcSet} sizes="(min-width: 1600px) 1600px, 100vw" alt={m.alt} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: m.pos }} /> : <Media plate={p.plate} ratio="h-full w-full" />}
           {m?.ref && <p className="img-caption">Imagen de referencia, no corresponde a este caso</p>}
         </div>
       </section>
@@ -152,7 +153,7 @@ export function ProjectDetail() {
         <div className="container grid gap-10 py-16 md:grid-cols-2">
           {[{ q: prev, dir: 'Caso anterior' }, { q: next, dir: 'Caso siguiente' }].map(({ q, dir }) => (
             <Link key={dir} to={`/proyectos/${q.slug}`} className={cn('group flex items-center gap-6', dir === 'Caso siguiente' && 'md:flex-row-reverse md:text-right')}>
-              <div className="w-36 shrink-0 overflow-hidden"><Media img={q.img} plate={q.plate} ratio="aspect-[4/3]" zoom /></div>
+              <div className="w-36 shrink-0 overflow-hidden"><Media img={q.img} plate={q.plate} ratio="aspect-[4/3]" zoom sizes="144px" /></div>
               <span><span className="block text-small text-muted">{dir}</span><span className="mt-1 block font-display text-h4 font-medium text-ink transition-colors group-hover:text-corp">{q.title}</span></span>
             </Link>
           ))}

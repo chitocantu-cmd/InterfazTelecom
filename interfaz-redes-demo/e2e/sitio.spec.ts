@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { PROJECTS } from '../src/data/content'
 import { SERVICES } from '../src/data/solutions'
+import { fullTitle, SEO_ROUTES } from '../src/data/seo'
 
 const PAGES = ['/', '/soluciones', '/industrias', '/proyectos', '/nosotros', '/contacto', '/aviso-de-privacidad']
 const ROUTES = [...PAGES, ...SERVICES.map((s) => `/soluciones/${s.slug}`), ...PROJECTS.map((p) => `/proyectos/${p.slug}`)]
@@ -281,5 +282,36 @@ test.describe('pestañas y filtros', () => {
     await page.goto('/')
     await page.getByText('Conectar edificios o naves').click()
     await expect(page.getByRole('link', { name: 'Cotizar con esta necesidad' })).toHaveAttribute('href', '/contacto?tipo=fibra&necesidad=edificios')
+  })
+})
+
+test.describe('WhatsApp flotante', () => {
+  test('aparece en las páginas y se oculta junto al cotizador', async ({ page }) => {
+    await page.goto('/')
+    const wa = page.getByRole('link', { name: 'Hablar por WhatsApp con un especialista' })
+    await expect(wa).toBeVisible()
+    await expect(wa).toHaveAttribute('href', /^https:\/\/wa\.me\/528134021700\?text=/)
+    await page.goto('/soluciones/fibra-optica')
+    await expect(wa).toBeVisible()
+    await page.locator('[aria-label="Progreso de la solicitud"]').scrollIntoViewIfNeeded()
+    await expect(wa).toHaveCSS('opacity', '0')
+    await page.goto('/contacto')
+    await expect(wa).toHaveCount(0)
+  })
+})
+
+// El HTML de cada ruta lo escribe scripts/prerender.mjs en el build; en el servidor de desarrollo no existe.
+test.describe('HTML de cada página (sitio publicado)', () => {
+  test.skip(!process.env.BASE_URL, 'sólo contra el build publicado (BASE_URL)')
+  test('título, descripción e imagen para compartir sin JavaScript', async ({ request }) => {
+    for (const [path, { title, description }] of SEO_ROUTES) {
+      const html = await (await request.get(path)).text()
+      const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+      expect(html, path).toContain(`<title>${esc(fullTitle(title))}</title>`)
+      expect(html, path).toContain(`<meta name="description" content="${esc(description)}"`)
+      const og = html.match(/<meta property="og:image" content="([^"]+)"/)?.[1]
+      expect(og, `${path} og:image`).toMatch(/^https:\/\//)
+      if (path === '/') expect((await request.get(og!)).status(), 'og:image responde').toBe(200)
+    }
   })
 })

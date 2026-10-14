@@ -18,7 +18,7 @@ usa el siguiente libre, por ejemplo `5174`). Los cambios en el código se ven al
 ## Versión de producción
 
 ```bash
-npm run build          # compila a dist/ (genera también sitemap.xml y robots.txt)
+npm run build          # compila a dist/ (genera también sitemap.xml, robots.txt y un HTML por página)
 npm run preview        # sirve dist/ localmente para revisarla
 npm run build:preview  # un solo HTML autocontenido → dist-preview/ (para compartir una vista previa)
 ```
@@ -48,12 +48,15 @@ Para probar el sitio publicado en lugar del local: `BASE_URL=https://interfaz-re
 | Galería "Nuestro equipo en campo" | `src/pages/Home.tsx` y `src/pages/About.tsx` |
 | Razón social del aviso de privacidad | constante `RAZON_SOCIAL` en `src/pages/Privacy.tsx` |
 | Logotipo | `src/assets/brand/` (ver `index.ts`) y `public/favicon.jpg` |
+| Título y descripción de cada página (Google y vista previa al compartir) | `src/data/seo.ts` |
 | Colores y tipografía | `tailwind.config.js` y `src/index.css` |
 | Páginas | `src/pages/` · rutas en `src/App.tsx` |
 
 Para cambiar una fotografía: copie la imagen (de preferencia `.webp`, de 1600 a 2400 px de ancho; las imágenes a
 sangre se muestran hasta 1600 px y en pantallas de alta densidad conviene el doble) en `src/assets/img/`,
-impórtela en `src/data/media.ts` con su texto alternativo y úsela con su clave (`img: 'rack'`) en los datos.
+regístrela en `src/data/media.ts` con `pic('<nombre>', <ancho en px>)` y su texto alternativo, y úsela con su
+clave (`img: 'rack'`) en los datos. Después corra `python tools/variantes.py` (requiere Pillow): genera las versiones
+de 640 y 1024 px que los celulares y las tarjetas descargan en lugar del original.
 En `media.ts`, `ref: true` marca las visualizaciones 3D (muestran la leyenda "Imagen de referencia") y `ref: false`
 las fotografías reales del equipo (`src/assets/img/campo/`, tomadas de interfaz.com.mx).
 
@@ -73,8 +76,9 @@ src/
   pages/            Inicio, Soluciones, Servicio, Industrias, Proyectos, Nosotros, Contacto, Aviso de privacidad
 e2e/                pruebas de navegador (Playwright)
 public/             favicon, og-image, sitemap.xml y robots.txt (generados en el build)
-scripts/            generador de sitemap y empaquetado de la vista previa
+scripts/            sitemap, HTML por página (prerender) y empaquetado de la vista previa
 tools/renders/      escenas 3D de la primera versión de las imágenes de referencia (no forman parte del sitio)
+tools/variantes.py  genera las versiones de 640 y 1024 px de las imágenes
 ```
 
 ## Despliegue en Vercel
@@ -97,7 +101,9 @@ git push
 Sin GitHub, también se puede publicar directamente desde la raíz del repositorio con `vercel deploy --prod`.
 
 Variables (**Settings → Environment Variables**, opcionales):
-- `VITE_SITE_URL` — dominio definitivo, por defecto `https://interfazredes.com`. Se usa en canonical, sitemap y Open Graph.
+- `VITE_SITE_URL` — URL pública para canonical, sitemap y Open Graph (imagen de la vista previa al compartir el enlace).
+  Si no se define, en Vercel se usa el dominio de producción del proyecto: `interfaz-redes.vercel.app` mientras no
+  haya dominio propio y el dominio propio en cuanto se conecte. Fuera de Vercel, el valor de `.env`.
 - `VITE_GA_ID` — ID de Google Analytics 4 (`G-XXXXXXX`). Si se deja vacío, no se carga ningún script de medición.
 
 Dominio propio: **Settings → Domains**, agregar `interfazredes.com` y `www.interfazredes.com` y apuntar el DNS
@@ -105,7 +111,9 @@ como indique Vercel. Mientras el sitio sólo viva en `*.vercel.app`, esas direcc
 para que Google no las indexe; con el dominio propio el sitio se indexa normalmente.
 
 `vercel.json` ya incluye:
-- Reescritura de todas las rutas a `index.html` (rutas limpias como `/soluciones/fibra-optica`).
+- Reescritura de todas las rutas a `index.html` (rutas limpias como `/soluciones/fibra-optica`). Las rutas
+  públicas tienen además su propio HTML (`scripts/prerender.mjs`) con su título y descripción, para que WhatsApp,
+  Facebook y Google los lean sin ejecutar JavaScript; Vercel lo sirve antes de la reescritura.
 - Redirecciones 301 desde URLs del sitio anterior en WordPress (`/servicios/`, etc.).
 - Caché de un año para `/assets/*`, cabeceras básicas de seguridad y `noindex` en `*.vercel.app`.
 
