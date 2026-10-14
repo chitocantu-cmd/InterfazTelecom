@@ -106,9 +106,10 @@ Variables (**Settings → Environment Variables**, opcionales):
 - `VITE_GA_ID` — ID de Google Analytics 4 (`G-XXXXXXX`). Si se deja vacío, no se carga ningún script de medición.
 
 Dominios (**Settings → Domains**): `interfaztelecom.com.mx` es el principal; `www.interfaztelecom.com.mx`,
-`interfaztelecom.mx` y `www.interfaztelecom.mx` redirigen a él (308). DNS en el registrador: registros A de `@` a
-`216.198.79.1` y `64.29.17.1`, y CNAME de `www` a `ba60c8479b63797c.vercel-dns-017.com`. Las direcciones
-`*.vercel.app` envían `X-Robots-Tag: noindex` para que Google sólo indexe el dominio propio.
+`interfaztelecom.mx` y `www.interfaztelecom.mx` redirigen a él (308). Los dos dominios están registrados en Akky
+y usan los servidores de nombres de Vercel (`ns1.vercel-dns.com`, `ns2.vercel-dns.com`), así que sus registros DNS
+(incluidos los de correo, si se contrata) se administran en Vercel → Domains. Las direcciones `*.vercel.app` envían
+`X-Robots-Tag: noindex` y `interfaz-redes.vercel.app` redirige al dominio propio.
 
 `vercel.json` ya incluye:
 - Reescritura de todas las rutas a `index.html` (rutas limpias como `/soluciones/fibra-optica`). Las rutas
@@ -134,6 +135,6 @@ Marca `generate_lead` como evento clave (conversión) en GA4.
 - [ ] Logotipo en mayor resolución (SVG o PNG ≥ 800 px) en `src/assets/brand/`.
 - [ ] Confirmar WhatsApp, años de experiencia, vigencia del REPSE y marcas.
 - [ ] Escribir la razón social en `RAZON_SOCIAL` (`src/pages/Privacy.tsx`) y revisar el aviso con un asesor legal.
-- [ ] Terminar de conectar `interfaztelecom.com.mx` y `interfaztelecom.mx` (registros DNS en el registrador).
+- [x] Dominio propio `interfaztelecom.com.mx` (y `interfaztelecom.mx`) conectado, con HTTPS.
 - [x] React Router 7 y Vite 6. `npm audit` aún reporta avisos en herramientas de compilación de Tailwind 3
       (no llegan al navegador); se resuelven al migrar a Tailwind 4.
