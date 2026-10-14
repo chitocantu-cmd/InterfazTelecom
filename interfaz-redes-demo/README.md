@@ -33,8 +33,8 @@ npm run test:e2e       # pruebas de navegador (rutas, header, menú móvil, coti
 Las pruebas usan el Google Chrome instalado en el equipo. Con Edge: `PW_CHANNEL=msedge npm run test:e2e`
 (en PowerShell: `$env:PW_CHANNEL='msedge'; npm run test:e2e`). Levantan su propio servidor en el puerto 5199.
 
-Para probar el sitio publicado en lugar del local: `BASE_URL=https://interfaz-redes.vercel.app npm run test:e2e`
-(en PowerShell: `$env:BASE_URL='https://interfaz-redes.vercel.app'; npm run test:e2e`).
+Para probar el sitio publicado en lugar del local: `BASE_URL=https://interfaztelecom.com.mx npm run test:e2e`
+(en PowerShell: `$env:BASE_URL='https://interfaztelecom.com.mx'; npm run test:e2e`).
 
 ## Dónde modificar
 
@@ -83,7 +83,7 @@ tools/variantes.py  genera las versiones de 640 y 1024 px de las imágenes
 
 ## Despliegue en Vercel
 
-Dirección publicada: **https://interfaz-redes.vercel.app**
+Dirección publicada: **https://interfaztelecom.com.mx** (`interfaztelecom.mx`, las versiones con `www` y `interfaz-redes.vercel.app` redirigen ahí)
 
 El sitio se publica en el proyecto de Vercel **`interfaz-redes`** (independiente del proyecto `interfaz-monterrey`,
 que publica interfaz.com.mx). El proyecto está conectado al repositorio de GitHub con **Root Directory**
@@ -102,13 +102,13 @@ Sin GitHub, también se puede publicar directamente desde la raíz del repositor
 
 Variables (**Settings → Environment Variables**, opcionales):
 - `VITE_SITE_URL` — URL pública para canonical, sitemap y Open Graph (imagen de la vista previa al compartir el enlace).
-  Si no se define, en Vercel se usa el dominio de producción del proyecto: `interfaz-redes.vercel.app` mientras no
-  haya dominio propio y el dominio propio en cuanto se conecte. Fuera de Vercel, el valor de `.env`.
+  Por defecto la de `.env` (`https://interfaztelecom.com.mx`).
 - `VITE_GA_ID` — ID de Google Analytics 4 (`G-XXXXXXX`). Si se deja vacío, no se carga ningún script de medición.
 
-Dominio propio: **Settings → Domains**, agregar `interfazredes.com` y `www.interfazredes.com` y apuntar el DNS
-como indique Vercel. Mientras el sitio sólo viva en `*.vercel.app`, esas direcciones envían `X-Robots-Tag: noindex`
-para que Google no las indexe; con el dominio propio el sitio se indexa normalmente.
+Dominios (**Settings → Domains**): `interfaztelecom.com.mx` es el principal; `www.interfaztelecom.com.mx`,
+`interfaztelecom.mx` y `www.interfaztelecom.mx` redirigen a él (308). DNS en el registrador: registros A de `@` a
+`216.198.79.1` y `64.29.17.1`, y CNAME de `www` a `ba60c8479b63797c.vercel-dns-017.com`. Las direcciones
+`*.vercel.app` envían `X-Robots-Tag: noindex` para que Google sólo indexe el dominio propio.
 
 `vercel.json` ya incluye:
 - Reescritura de todas las rutas a `index.html` (rutas limpias como `/soluciones/fibra-optica`). Las rutas
@@ -134,6 +134,6 @@ Marca `generate_lead` como evento clave (conversión) en GA4.
 - [ ] Logotipo en mayor resolución (SVG o PNG ≥ 800 px) en `src/assets/brand/`.
 - [ ] Confirmar WhatsApp, años de experiencia, vigencia del REPSE y marcas.
 - [ ] Escribir la razón social en `RAZON_SOCIAL` (`src/pages/Privacy.tsx`) y revisar el aviso con un asesor legal.
-- [ ] Conectar el dominio `interfazredes.com` en Vercel (requiere cambiar el DNS).
+- [ ] Terminar de conectar `interfaztelecom.com.mx` y `interfaztelecom.mx` (registros DNS en el registrador).
 - [x] React Router 7 y Vite 6. `npm audit` aún reporta avisos en herramientas de compilación de Tailwind 3
       (no llegan al navegador); se resuelven al migrar a Tailwind 4.

@@ -5,9 +5,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 const env = existsSync('.env')
   ? Object.fromEntries(readFileSync('.env', 'utf8').split('\n').filter((l) => l.includes('=') && !l.startsWith('#')).map((l) => l.split('=').map((x) => x.trim())))
   : {}
-// Mismo criterio que vite.config.ts: en Vercel, el dominio de producción del proyecto.
-const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL && `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-const SITE = (process.env.VITE_SITE_URL || vercel || env.VITE_SITE_URL || 'https://interfazredes.com').replace(/\/$/, '')
+const SITE = (process.env.VITE_SITE_URL || env.VITE_SITE_URL || 'https://interfaztelecom.com.mx').replace(/\/$/, '')
 const slugs = (file) => [...readFileSync(file, 'utf8').matchAll(/slug: '([^']+)'/g)].map((m) => m[1])
 
 const pages = [

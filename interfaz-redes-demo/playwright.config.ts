@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test'
 
 // Pruebas de navegador del sitio. Usa el Google Chrome instalado en el equipo
 // (PW_CHANNEL=msedge para Microsoft Edge), así no hace falta descargar navegadores.
-// BASE_URL=https://interfaz-redes.vercel.app prueba el sitio publicado en lugar del local.
+// BASE_URL=https://interfaztelecom.com.mx prueba el sitio publicado en lugar del local.
 const PORT = 5199
 const channel = process.env.PW_CHANNEL ?? 'chrome'
 const external = process.env.BASE_URL

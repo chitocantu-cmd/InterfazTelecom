@@ -9,7 +9,7 @@ export const COMPANY = {
   phones: ['(81) 3402 1700', '(81) 1133 9500'],
   email: 'ventas@interfaz.com.mx',
   emailProjects: 'proyectos@interfazredes.com',
-  site: 'https://interfazredes.com/',
+  site: 'https://interfaztelecom.com.mx/',
   address: 'Av. 8 Norte #1750, Col. Industrial, Monterrey, N.L.',
   hours: 'Lunes a viernes, 8:00 a 18:00 h',
   years: '+15',
