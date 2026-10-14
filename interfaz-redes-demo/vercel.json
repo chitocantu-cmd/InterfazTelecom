@@ -4,6 +4,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "cleanUrls": true,
+  "functions": { "api/cotizacion.ts": { "maxDuration": 60 } },
   "trailingSlash": false,
   "redirects": [
     { "source": "/servicios", "destination": "/soluciones", "permanent": true },
@@ -15,7 +16,7 @@
     { "source": "/:path*", "has": [{ "type": "host", "value": "interfaz-redes.vercel.app" }], "destination": "https://interfaztelecom.com.mx/:path*", "permanent": true }
   ],
   "rewrites": [
-    { "source": "/((?!assets/|favicon\\.jpg|og-image\\.jpg|robots\\.txt|sitemap\\.xml).*)", "destination": "/" }
+    { "source": "/((?!assets/|api/|email/|favicon\\.jpg|og-image\\.jpg|robots\\.txt|sitemap\\.xml).*)", "destination": "/" }
   ],
   "headers": [
     {

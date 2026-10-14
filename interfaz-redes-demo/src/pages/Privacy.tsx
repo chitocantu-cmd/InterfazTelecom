@@ -34,7 +34,7 @@ export default function Privacy() {
               <p>{RAZON_SOCIAL ? `${RAZON_SOCIAL}, que opera comercialmente como ${COMPANY.name}` : COMPANY.name}, con domicilio en {COMPANY.address}, es responsable del uso y protección de sus datos personales conforme a la legislación mexicana en materia de protección de datos personales en posesión de los particulares.</p>
             </Block>
             <Block title="Datos que recabamos">
-              <p>A través del formulario de cotización y de los medios de contacto de este sitio podemos recabar: nombre, empresa, correo electrónico, número de teléfono o WhatsApp, ciudad o ubicación del proyecto, la descripción de su necesidad y los nombres de los archivos que decida compartir.</p>
+              <p>A través del formulario de cotización y de los medios de contacto de este sitio podemos recabar: nombre, empresa, correo electrónico, número de teléfono o WhatsApp, ciudad o ubicación del proyecto, la descripción de su necesidad y los archivos que decida adjuntar (planos, fotografías o documentos).</p>
               <p>No solicitamos datos personales sensibles ni datos financieros a través de este sitio.</p>
             </Block>
             <Block title="Finalidades">
@@ -43,7 +43,8 @@ export default function Privacy() {
             </Block>
             <Block title="Transferencias">
               <p>Sus datos no se venden ni se transfieren a terceros, salvo cuando sea necesario para cumplir obligaciones legales o requerimientos de autoridad competente.</p>
-              <p>Al elegir enviar su solicitud por WhatsApp o por correo, el mensaje se transmite mediante esos servicios, sujetos a sus propias políticas de privacidad.</p>
+              <p>Cuando envía el formulario de cotización, sus datos y archivos viajan cifrados y se entregan al correo de nuestro equipo comercial mediante un proveedor de envío de correo electrónico; también podemos recibir un aviso interno por WhatsApp Business (Meta) con los datos de la solicitud. Estos proveedores procesan la información sólo para entregarla. El sitio no conserva copia de los archivos adjuntos. Si indica un correo, le enviamos un acuse de recibo con su folio.</p>
+              <p>Si elige enviar su solicitud usted mismo por WhatsApp o por correo, el mensaje se transmite mediante esos servicios, sujetos a sus propias políticas de privacidad.</p>
             </Block>
             <Block title="Derechos ARCO">
               <p>Usted puede acceder, rectificar o cancelar sus datos personales, u oponerse a su uso (derechos ARCO), así como revocar su consentimiento, enviando una solicitud a <span className="select-all font-medium text-ink">{COMPANY.email}</span> que incluya su nombre, un medio para responderle, la descripción del derecho que desea ejercer y una identificación.</p>

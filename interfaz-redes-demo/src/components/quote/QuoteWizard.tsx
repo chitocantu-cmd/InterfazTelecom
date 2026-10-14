@@ -1,28 +1,41 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { ArrowLeft, Cable, Cctv, Check, Copy, DoorClosed, FileText, Mail, MessageCircle, Paperclip, Pencil, Plus, Server, Spline, X } from 'lucide-react'
+import { ArrowLeft, Cable, Cctv, Check, Copy, DoorClosed, FileText, Mail, MessageCircle, Paperclip, Pencil, Plus, Send, Server, Spline, X } from 'lucide-react'
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { COMPANY } from '../../data/company'
 import { QUOTE_TYPES, type QuoteType } from '../../data/solutions'
 import { Link } from 'react-router-dom'
 import { track } from '../../lib/analytics'
+import { FILE_ACCEPT, FILES, MAX_LENGTH, SITES, fileExtension, quoteNotice, validateQuote, type QuoteRequest } from '../../lib/cotizacion'
 import { cn, copyText, mailLink, waLink } from '../../lib/utils'
 
 const ICONS: Record<QuoteType, typeof Cable> = { cableado: Cable, fibra: Spline, cctv: Cctv, acceso: DoorClosed, infra: Server, otro: Plus }
-export const SITES = ['Planta industrial', 'Oficinas / corporativo', 'CEDIS / almacén', 'Institución educativa', 'Comercio / edificio', 'Otro']
+export { SITES }
 const FREE_MAIL = /@(gmail|hotmail|outlook|live|yahoo|icloud|prodigy)\./i
 
-interface Data {
-  types: QuoteType[]
-  site: string
-  location: string
-  description: string
-  name: string
-  company: string
-  email: string
-  phone: string
-}
+type Data = Omit<QuoteRequest, 'context'>
 
-interface FileItem { name: string; size: number }
+/**
+ * ¿Está activa la recepción automática (/api/cotizacion)? Se pregunta una vez por visita. Si no lo está
+ * (sin credenciales, o en la vista previa de un solo archivo), el cotizador abre WhatsApp o el correo.
+ */
+let reception: Promise<boolean> | undefined
+const receptionActive = () =>
+  (reception ??=
+    import.meta.env.VITE_ROUTER === 'hash'
+      ? Promise.resolve(false)
+      : fetch('/api/cotizacion', { headers: { Accept: 'application/json' } })
+          .then((r) => (r.ok ? r.json() : null))
+          .then((j: { recepcion?: boolean } | null) => j?.recepcion === true)
+          .catch(() => false))
+
+/** Clave de cada envío: un reintento sin cambios conserva el folio y no duplica avisos. */
+const newKey = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`)
+
+type Status = 'enviado' | 'parcial' | 'error' | 'no_configurado' | 'omitido' | 'prueba'
+type Sending =
+  | { state: 'idle' | 'sending' }
+  | { state: 'error'; message: string }
+  | { state: 'done'; folio: string; fecha: string; estados: { correo: Status; whatsapp: Status; acuse: Status } }
 
 const STEPS = ['Necesidad', 'Proyecto', 'Contacto', 'Revisión']
 
@@ -33,8 +46,14 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
   const reduce = useReducedMotion()
   const [step, setStep] = useState(0)
   const [tried, setTried] = useState<Record<number, boolean>>({})
-  const [files, setFiles] = useState<FileItem[]>([])
+  const [files, setFiles] = useState<File[]>([])
+  const [fileError, setFileError] = useState<string>()
   const [copied, setCopied] = useState(false)
+  const [api, setApi] = useState(false)
+  const [send, setSend] = useState<Sending>({ state: 'idle' })
+  const [trap, setTrap] = useState('')
+  const startedAt = useRef(Date.now())
+  const keyRef = useRef(newKey())
   const fileRef = useRef<HTMLInputElement>(null)
   const topRef = useRef<HTMLDivElement>(null)
   const [d, setD] = useState<Data>({
@@ -52,19 +71,18 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
     setD((v) => ({ ...v, types: initialType ? [initialType] : v.types, description: initialDescription ?? v.description, site: initialSite ?? v.site }))
   }, [initialType, initialDescription, initialSite])
 
+  useEffect(() => {
+    let live = true
+    receptionActive().then((on) => live && setApi(on))
+    return () => { live = false }
+  }, [])
+  // Cualquier cambio después de un intento fallido es un envío nuevo (otra clave, otro folio).
+  useEffect(() => { keyRef.current = newKey() }, [d, files])
+
   const set = <K extends keyof Data>(k: K, v: Data[K]) => setD((s) => ({ ...s, [k]: v }))
 
-  const errors = useMemo(() => {
-    const e: Record<string, string> = {}
-    if (!d.types.length) e.types = 'Seleccione al menos una opción.'
-    if (d.location.trim().length < 3) e.location = 'Indique la ciudad o zona del proyecto.'
-    if (d.description.trim().length < 15) e.description = 'Describa la necesidad en al menos una frase (15 caracteres).'
-    if (d.name.trim().length < 3) e.name = 'Escriba su nombre.'
-    if (d.company.trim().length < 2) e.company = 'Escriba el nombre de la empresa.'
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email.trim())) e.email = 'Revise el formato del correo, por ejemplo nombre@empresa.com.'
-    if (d.phone.replace(/\D/g, '').length < 10) e.phone = 'Escriba un número de 10 dígitos.'
-    return e
-  }, [d])
+  const request: QuoteRequest = useMemo(() => ({ ...d, context }), [d, context])
+  const errors = useMemo(() => validateQuote(request) as Record<string, string>, [request])
 
   const stepFields: string[][] = [['types'], ['location', 'description'], ['name', 'company', 'email', 'phone'], []]
   const stepValid = (i: number) => stepFields[i].every((f) => !errors[f])
@@ -86,23 +104,52 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
   }
 
   const typeLabels = d.types.map((t) => QUOTE_TYPES.find((q) => q.id === t)!.label)
-  const message = [
-    'Hola, solicito una cotización a Interfaz Redes y Telecomunicaciones.',
-    '',
-    `• Necesidad: ${typeLabels.join(', ') || '—'}`,
-    context ? `• Referencia: ${context}` : null,
-    d.site ? `• Tipo de inmueble: ${d.site}` : null,
-    `• Ubicación: ${d.location.trim() || '—'}`,
-    `• Descripción: ${d.description.trim() || '—'}`,
-    files.length ? `• Archivos para compartir: ${files.map((f) => f.name).join(', ')}` : null,
-    '',
-    `Nombre: ${d.name.trim()}`,
-    `Empresa: ${d.company.trim()}`,
-    `Correo: ${d.email.trim()}`,
-    `WhatsApp: ${d.phone.trim()}`,
-  ]
-    .filter((l) => l !== null)
-    .join('\n')
+  const fileNames = files.map((f) => f.name)
+  // Mismo formato que el aviso que recibe ventas por WhatsApp (src/lib/cotizacion.ts).
+  const message = quoteNotice(request, { files: fileNames })
+
+  /** Agrega archivos. Con envío automático se revisan tipo, cantidad y tamaño, porque viajan con la solicitud. */
+  const addFiles = (picked: File[]) => {
+    const fresh = picked.filter((n) => !files.some((c) => c.name === n.name))
+    if (api) {
+      const bad = fresh.find((f) => !FILES.extensions.includes(fileExtension(f.name)))
+      const all = [...files, ...fresh]
+      const total = all.reduce((sum, f) => sum + f.size, 0)
+      if (bad) return setFileError(`«${bad.name}» no es de un tipo permitido (PDF, DWG, DXF, imágenes, Word o Excel).`)
+      if (all.length > FILES.max) return setFileError(`Puede adjuntar hasta ${FILES.max} archivos.`)
+      if (total > FILES.totalBytes) return setFileError('Los archivos suman más de 4 MB. Envíe los más grandes por WhatsApp o correo después de recibir su folio.')
+    }
+    setFileError(undefined)
+    setFiles([...files, ...fresh])
+  }
+
+  const submit = async () => {
+    if (send.state === 'sending') return
+    setSend({ state: 'sending' })
+    const body = new FormData()
+    d.types.forEach((t) => body.append('types', t))
+    for (const k of ['site', 'location', 'description', 'name', 'company', 'email', 'phone'] as const) body.append(k, d[k].trim())
+    if (context) body.append('context', context)
+    body.append('key', keyRef.current)
+    body.append('elapsed', String(Date.now() - startedAt.current))
+    body.append('website', trap)
+    files.forEach((f) => body.append('files', f, f.name))
+    try {
+      const res = await fetch('/api/cotizacion', { method: 'POST', body, signal: AbortSignal.timeout(60000) })
+      const json = await res.json().catch(() => null)
+      if (res.ok && json?.ok) {
+        setSend({ state: 'done', folio: json.folio, fecha: json.fecha, estados: json.estados })
+        track('generate_lead', { method: 'formulario', need: d.types.join(',') })
+      } else {
+        setSend({ state: 'error', message: json?.mensaje ?? 'El servidor no pudo recibir la solicitud.' })
+      }
+    } catch {
+      setSend({ state: 'error', message: 'No hubo conexión con el servidor.' })
+    }
+    requestAnimationFrame(() => topRef.current?.focus())
+  }
+  const sending = send.state === 'sending'
+  const sent = (s: Status) => s === 'enviado' || s === 'prueba'
 
   // Mientras el cotizador está en pantalla se oculta el botón flotante de WhatsApp (WhatsAppButton).
   const root = useRef<HTMLDivElement>(null)
@@ -134,7 +181,7 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
       <div ref={topRef} tabIndex={-1} className="outline-none p-5 sm:p-8">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
-            key={step}
+            key={send.state === 'done' ? 'recibida' : step}
             initial={reduce ? false : { opacity: 0, x: 14 }}
             animate={{ opacity: 1, x: 0 }}
             exit={reduce ? { opacity: 0 } : { opacity: 0, x: -10 }}
@@ -191,10 +238,10 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
                     </div>
                   </fieldset>
                   <Field id={`${uid}-loc`} label="Ciudad o ubicación general" error={err('location', 1)}>
-                    <input id={`${uid}-loc`} className="field" value={d.location} onChange={(e) => set('location', e.target.value)} placeholder="Ej. Apodaca, N.L. · Parque industrial" aria-invalid={!!err('location', 1)} aria-describedby={err('location', 1) ? `${uid}-loc-e` : undefined} autoComplete="address-level2" />
+                    <input id={`${uid}-loc`} className="field" maxLength={MAX_LENGTH.location} value={d.location} onChange={(e) => set('location', e.target.value)} placeholder="Ej. Apodaca, N.L. · Parque industrial" aria-invalid={!!err('location', 1)} aria-describedby={err('location', 1) ? `${uid}-loc-e` : undefined} autoComplete="address-level2" />
                   </Field>
                   <Field id={`${uid}-desc`} label="Describa la necesidad" error={err('description', 1)} hint="Áreas, cantidades aproximadas, plazos o equipo existente.">
-                    <textarea id={`${uid}-desc`} rows={4} className="field resize-y" value={d.description} onChange={(e) => set('description', e.target.value)} placeholder="Ej. Necesitamos conectar una nave nueva a 180 m del site principal, con WiFi para escáneres y 8 cámaras en andenes." aria-invalid={!!err('description', 1)} aria-describedby={`${uid}-desc-h${err('description', 1) ? ` ${uid}-desc-e` : ''}`} />
+                    <textarea id={`${uid}-desc`} rows={4} className="field resize-y" maxLength={MAX_LENGTH.description} value={d.description} onChange={(e) => set('description', e.target.value)} placeholder="Ej. Necesitamos conectar una nave nueva a 180 m del site principal, con WiFi para escáneres y 8 cámaras en andenes." aria-invalid={!!err('description', 1)} aria-describedby={`${uid}-desc-h${err('description', 1) ? ` ${uid}-desc-e` : ''}`} />
                   </Field>
                   <div>
                     <p className="text-[0.88rem] font-medium text-ink">Planos, fotografías o documentos <span className="font-normal text-slate-muted">(opcional)</span></p>
@@ -203,11 +250,10 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
                       id={`${uid}-files`}
                       type="file"
                       multiple
-                      accept=".pdf,.dwg,.dxf,.jpg,.jpeg,.png,.heic,.xlsx,.docx"
+                      accept={FILE_ACCEPT}
                       className="sr-only"
                       onChange={(e) => {
-                        const list = Array.from(e.target.files ?? []).map((f) => ({ name: f.name, size: f.size }))
-                        setFiles((cur) => [...cur, ...list.filter((n) => !cur.some((c) => c.name === n.name))])
+                        addFiles(Array.from(e.target.files ?? []))
                         e.target.value = ''
                       }}
                     />
@@ -222,13 +268,18 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
                             <span className="flex min-w-0 items-center gap-2"><FileText aria-hidden className="h-4 w-4 shrink-0 text-slate-faint" /><span className="truncate">{f.name}</span></span>
                             <span className="flex shrink-0 items-center gap-3 font-mono text-[0.75rem] text-slate-muted">
                               {fmtSize(f.size)}
-                              <button type="button" aria-label={`Quitar ${f.name}`} onClick={() => setFiles(files.filter((x) => x.name !== f.name))} className="text-slate-faint hover:text-tech"><X className="h-4 w-4" /></button>
+                              <button type="button" aria-label={`Quitar ${f.name}`} onClick={() => { setFiles(files.filter((x) => x.name !== f.name)); setFileError(undefined) }} className="text-slate-faint hover:text-tech"><X className="h-4 w-4" /></button>
                             </span>
                           </li>
                         ))}
                       </ul>
                     )}
-                    <p className="mt-2 font-mono text-[0.72rem] leading-snug text-slate-muted">Por ahora los archivos no se envían a ningún servidor: se listan en la solicitud para adjuntarlos en WhatsApp o correo.</p>
+                    {fileError && <p role="alert" className="mt-2 text-[0.82rem] text-[#B42318]">{fileError}</p>}
+                    <p className="mt-2 font-mono text-[0.72rem] leading-snug text-slate-muted">
+                      {api
+                        ? 'Se envían con su solicitud y llegan adjuntos al correo del equipo comercial. Hasta 5 archivos y 4 MB en total.'
+                        : 'Por ahora los archivos no se envían a ningún servidor: se listan en la solicitud para adjuntarlos en WhatsApp o correo.'}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -240,38 +291,88 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
                 <p className="mt-1.5 text-[0.9rem] text-slate-muted">Sólo para dar seguimiento a esta solicitud.</p>
                 <div className="mt-6 grid gap-5 sm:grid-cols-2">
                   <Field id={`${uid}-name`} label="Nombre" error={err('name', 2)}>
-                    <input id={`${uid}-name`} className="field" value={d.name} onChange={(e) => set('name', e.target.value)} autoComplete="name" aria-invalid={!!err('name', 2)} aria-describedby={err('name', 2) ? `${uid}-name-e` : undefined} />
+                    <input id={`${uid}-name`} className="field" maxLength={MAX_LENGTH.name} value={d.name} onChange={(e) => set('name', e.target.value)} autoComplete="name" aria-invalid={!!err('name', 2)} aria-describedby={err('name', 2) ? `${uid}-name-e` : undefined} />
                   </Field>
                   <Field id={`${uid}-co`} label="Empresa" error={err('company', 2)}>
-                    <input id={`${uid}-co`} className="field" value={d.company} onChange={(e) => set('company', e.target.value)} autoComplete="organization" aria-invalid={!!err('company', 2)} aria-describedby={err('company', 2) ? `${uid}-co-e` : undefined} />
+                    <input id={`${uid}-co`} className="field" maxLength={MAX_LENGTH.company} value={d.company} onChange={(e) => set('company', e.target.value)} autoComplete="organization" aria-invalid={!!err('company', 2)} aria-describedby={err('company', 2) ? `${uid}-co-e` : undefined} />
                   </Field>
                   <Field id={`${uid}-mail`} label="Correo corporativo" error={err('email', 2)} hint={!err('email', 2) && FREE_MAIL.test(d.email) ? 'Si tiene correo de la empresa, nos ayuda a identificar el proyecto.' : undefined}>
-                    <input id={`${uid}-mail`} type="email" inputMode="email" className="field" value={d.email} onChange={(e) => set('email', e.target.value)} autoComplete="email" placeholder="nombre@empresa.com" aria-invalid={!!err('email', 2)} aria-describedby={err('email', 2) ? `${uid}-mail-e` : `${uid}-mail-h`} />
+                    <input id={`${uid}-mail`} type="email" inputMode="email" className="field" maxLength={MAX_LENGTH.email} value={d.email} onChange={(e) => set('email', e.target.value)} autoComplete="email" placeholder="nombre@empresa.com" aria-invalid={!!err('email', 2)} aria-describedby={err('email', 2) ? `${uid}-mail-e` : `${uid}-mail-h`} />
                   </Field>
                   <Field id={`${uid}-tel`} label="WhatsApp" error={err('phone', 2)}>
-                    <input id={`${uid}-tel`} type="tel" inputMode="tel" className="field" value={d.phone} onChange={(e) => set('phone', e.target.value)} autoComplete="tel" placeholder="81 0000 0000" aria-invalid={!!err('phone', 2)} aria-describedby={err('phone', 2) ? `${uid}-tel-e` : undefined} />
+                    <input id={`${uid}-tel`} type="tel" inputMode="tel" className="field" maxLength={MAX_LENGTH.phone} value={d.phone} onChange={(e) => set('phone', e.target.value)} autoComplete="tel" placeholder="81 0000 0000" aria-invalid={!!err('phone', 2)} aria-describedby={err('phone', 2) ? `${uid}-tel-e` : undefined} />
                   </Field>
+                </div>
+                {/* Campo trampa contra bots: invisible y fuera del orden de tabulación. */}
+                <div aria-hidden="true" className="sr-only">
+                  <label htmlFor={`${uid}-web`}>Sitio web</label>
+                  <input id={`${uid}-web`} name="website" tabIndex={-1} autoComplete="off" value={trap} onChange={(e) => setTrap(e.target.value)} />
                 </div>
               </div>
             )}
 
-            {step === 3 && (
+            {step === 3 && send.state === 'done' && (
+              <div>
+                <div role="status">
+                  <p className="inline-flex items-center gap-2 bg-[#E7F6EF] px-2.5 py-1 font-mono text-[0.72rem] uppercase tracking-[0.08em] text-[#1D7A53]"><Check aria-hidden className="h-3.5 w-3.5" />Folio {send.folio}</p>
+                  <h3 className="mt-3 font-display text-[1.6rem] font-semibold text-ink">Solicitud recibida</h3>
+                  <p className="mt-1.5 max-w-measure text-[0.95rem] text-body">Gracias por contactar a Interfaz Redes y Telecomunicaciones. Nuestro equipo comercial revisará la información de su proyecto para dar seguimiento a su solicitud.</p>
+                </div>
+                <dl className="mt-6 divide-y divide-line border-y border-line text-[0.92rem]">
+                  <Info label="Folio"><span className="font-mono">{send.folio}</span></Info>
+                  <Info label="Fecha">{send.fecha}</Info>
+                  <Info label="Servicio">{typeLabels.join(', ')}</Info>
+                </dl>
+                {sent(send.estados.acuse) && <p className="mt-4 text-[0.88rem] text-slate-muted">Enviamos un acuse de recibo a <span className="text-ink">{d.email.trim()}</span>.</p>}
+                {!sent(send.estados.whatsapp) && (
+                  <div className="mt-6 bg-cold px-4 py-4 text-[0.88rem] text-slate-muted">
+                    <p>Si lo desea, avísenos también por WhatsApp. Se abre WhatsApp con su folio y la solicitud escrita; usted confirma el envío.</p>
+                    <a href={waLink(quoteNotice(request, { files: fileNames, folio: send.folio, date: send.fecha }))} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-2 font-medium text-ink hover:text-tech">
+                      <MessageCircle aria-hidden className="h-4 w-4" /> Enviar aviso por WhatsApp
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {step === 3 && send.state !== 'done' && (
               <div>
                 <p className="inline-flex items-center gap-2 bg-[#E7F6EF] px-2.5 py-1 font-mono text-[0.72rem] uppercase tracking-[0.08em] text-[#1D7A53]"><Check aria-hidden className="h-3.5 w-3.5" />Solicitud lista para enviar</p>
                 <h3 className="mt-3 font-display text-[1.6rem] font-semibold text-ink">Revise su solicitud</h3>
-                <p className="mt-1.5 text-[0.9rem] text-slate-muted">Al elegir un canal se abre con el mensaje escrito. El envío se completa en esa aplicación.</p>
+                <p className="mt-1.5 text-[0.9rem] text-slate-muted">{api ? 'Revise los datos y envíe la solicitud. Al recibirla le mostraremos su folio.' : 'Al elegir un canal se abre con el mensaje escrito. El envío se completa en esa aplicación.'}</p>
                 <dl className="mt-6 divide-y divide-line border-y border-line text-[0.92rem]">
                   <Row label="Necesidad" onEdit={() => go(0)}>{typeLabels.join(', ')}{context && <span className="block text-[0.82rem] text-slate-muted">Referencia: {context}</span>}</Row>
                   <Row label="Proyecto" onEdit={() => go(1)}>
                     <span className="block">{[d.site, d.location].filter(Boolean).join(' · ')}</span>
                     <span className="mt-1 block whitespace-pre-line text-slate-muted">{d.description}</span>
-                    {files.length > 0 && <span className="mt-1 block font-mono text-[0.78rem] text-slate-muted">{files.length} archivo(s) por adjuntar: {files.map((f) => f.name).join(', ')}</span>}
+                    {files.length > 0 && <span className="mt-1 block font-mono text-[0.78rem] text-slate-muted">{files.length} archivo(s) {api ? 'adjunto(s)' : 'por adjuntar'}: {fileNames.join(', ')}</span>}
                   </Row>
                   <Row label="Contacto" onEdit={() => go(2)}>
                     <span className="block">{d.name} · {d.company}</span>
                     <span className="block text-slate-muted">{d.email} · {d.phone}</span>
                   </Row>
                 </dl>
+                {api ? (
+                  <>
+                    {send.state === 'error' && (
+                      <div role="alert" className="mt-6 border-l-2 border-[#B42318] bg-cold px-4 py-3 text-[0.88rem]">
+                        <p className="font-medium text-[#B42318]">No se pudo enviar la solicitud.</p>
+                        <p className="mt-1 text-slate-muted">{send.message}{/WhatsApp/.test(send.message) ? '' : ' También puede enviarla usted mismo por WhatsApp o correo.'}</p>
+                      </div>
+                    )}
+                    <button type="button" onClick={submit} disabled={sending} aria-busy={sending} className="mt-6 inline-flex w-full items-center justify-center gap-2.5 rounded-[2px] bg-corp px-5 py-3.5 font-medium text-white transition-colors hover:bg-navy disabled:cursor-wait disabled:opacity-70">
+                      <Send aria-hidden className="h-4 w-4" /> {sending ? 'Enviando solicitud…' : send.state === 'error' ? 'Intentar de nuevo' : 'Enviar solicitud'}
+                    </button>
+                    <p className="mt-3 text-[0.82rem] text-slate-muted">Al enviar su solicitud acepta el <Link to="/aviso-de-privacidad" className="text-ink link-line">aviso de privacidad</Link>.</p>
+                    <p className="mt-4 text-[0.85rem] text-slate-muted">
+                      ¿Prefiere enviarla usted mismo?{' '}
+                      <a href={waLink(message)} onClick={() => track('generate_lead', { method: 'whatsapp', need: d.types.join(',') })} target="_blank" rel="noopener noreferrer" className="font-medium text-ink link-line">Enviar por WhatsApp</a>
+                      {' · '}
+                      <a href={mailLink(subject, message)} onClick={() => track('generate_lead', { method: 'email', need: d.types.join(',') })} className="font-medium text-ink link-line">Enviar por correo</a>
+                    </p>
+                  </>
+                ) : (
+                <>
                 <div className="mt-6 grid gap-2.5 sm:grid-cols-2">
                   <a href={waLink(message)} onClick={() => track('generate_lead', { method: 'whatsapp', need: d.types.join(',') })} target="_blank" rel="noopener noreferrer" className="group inline-flex items-center justify-center gap-2.5 rounded-[2px] bg-corp px-5 py-3.5 font-medium text-white transition-colors hover:bg-navy">
                     <MessageCircle aria-hidden className="h-4 w-4" /> Enviar por WhatsApp
@@ -296,15 +397,18 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
                   <summary className="cursor-pointer text-slate-muted hover:text-ink">Ver el mensaje que se enviará</summary>
                   <textarea id={`${uid}-msg`} readOnly rows={10} value={message} className="field mt-2 font-mono text-[0.78rem]" onFocus={(e) => e.currentTarget.select()} aria-label="Mensaje de la solicitud" />
                 </details>
+                </>
+                )}
               </div>
             )}
           </motion.div>
         </AnimatePresence>
 
         {/* navegación */}
+        {send.state !== 'done' && (
         <div className="mt-8 flex items-center justify-between gap-4 border-t border-line pt-5">
           {step > 0 ? (
-            <button type="button" onClick={() => go(step - 1)} className="inline-flex items-center gap-2 text-[0.92rem] text-slate-muted hover:text-ink">
+            <button type="button" onClick={() => go(step - 1)} disabled={sending} className="inline-flex items-center gap-2 text-[0.92rem] text-slate-muted hover:text-ink">
               <ArrowLeft aria-hidden className="h-4 w-4" /> Atrás
             </button>
           ) : (
@@ -316,6 +420,7 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
             </button>
           )}
         </div>
+        )}
         <p className="sr-only" aria-live="polite">Paso {step + 1} de 4: {STEPS[step]}</p>
       </div>
     </div>
@@ -329,6 +434,15 @@ function Field({ id, label, error, hint, children }: { id: string; label: string
       {children}
       {hint && !error && <p id={`${id}-h`} className="mt-1.5 text-[0.8rem] text-slate-muted">{hint}</p>}
       {error && <p id={`${id}-e`} role="alert" className="mt-1.5 text-[0.82rem] text-[#B42318]">{error}</p>}
+    </div>
+  )
+}
+
+function Info({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-3 py-3.5 sm:grid-cols-[8rem_minmax(0,1fr)]">
+      <dt className="pt-0.5 text-small text-muted">{label}</dt>
+      <dd className="min-w-0 break-words text-ink">{children}</dd>
     </div>
   )
 }

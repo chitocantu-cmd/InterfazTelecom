@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { expect, test, type Page } from '@playwright/test'
 import { PROJECTS } from '../src/data/content'
 import { SERVICES } from '../src/data/solutions'
@@ -313,5 +314,89 @@ test.describe('HTML de cada página (sitio publicado)', () => {
       expect(og, `${path} og:image`).toMatch(/^https:\/\//)
       if (path === '/') expect((await request.get(og!)).status(), 'og:image responde').toBe(200)
     }
+  })
+})
+
+// Recepción automática de cotizaciones. Los envíos sólo se prueban en local (modo de prueba): contra el
+// sitio publicado llegarían de verdad al equipo de ventas.
+test.describe('recepción de cotizaciones', () => {
+  async function fillQuote(page: Page) {
+    await page.goto('/contacto')
+    const form = page.locator('main')
+    await form.getByText('Fibra óptica', { exact: true }).click()
+    await form.getByRole('button', { name: 'Continuar' }).click()
+    await form.getByRole('button', { name: 'Planta industrial' }).click()
+    await form.getByRole('textbox', { name: 'Ciudad o ubicación general' }).fill('Apodaca, N.L.')
+    await form.getByRole('textbox', { name: 'Describa la necesidad' }).fill('Enlace de fibra entre dos naves a 180 m.\nIncluye 8 cámaras en andenes.')
+    await form.locator('input[type=file]').setInputFiles({ name: 'plano nave.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n%prueba\n') })
+    await expect(form.getByText('plano nave.pdf')).toBeVisible()
+    await form.getByRole('button', { name: 'Continuar' }).click()
+    await form.getByRole('textbox', { name: 'Nombre' }).fill('Ana López Muñoz')
+    await form.getByRole('textbox', { name: 'Empresa' }).fill('Empresa de Prueba')
+    await form.getByRole('textbox', { name: 'Correo corporativo' }).fill('ana@empresa.mx')
+    await form.getByRole('textbox', { name: 'WhatsApp' }).fill('81 1234 5678')
+    await form.getByRole('button', { name: 'Revisar solicitud' }).click()
+    return form
+  }
+
+  test('envía la solicitud, muestra el folio y no duplica', async ({ page }) => {
+    test.skip(!!process.env.BASE_URL, 'sólo en local: en el sitio publicado se enviaría a ventas')
+    const form = await fillQuote(page)
+    await page.waitForTimeout(3000) // el servidor descarta como bot lo que se captura en menos de 3 s
+    await form.getByRole('button', { name: 'Enviar solicitud' }).click()
+    await expect(form.getByRole('heading', { name: 'Solicitud recibida' })).toBeVisible()
+    const folio = (await form.getByText(/^Folio COT-/).textContent())!.replace('Folio ', '').trim()
+    expect(folio).toMatch(/^COT-\d{6}-[2-9A-Z]{6}$/)
+    await expect(form.getByText('Enviamos un acuse de recibo a ana@empresa.mx.')).toBeVisible()
+
+    const ventas = readFileSync(`.cotizaciones-prueba/${folio}-ventas.txt`, 'utf8')
+    for (const part of ['Para: ventas@interfaz.com.mx', 'Responder a: ana@empresa.mx', 'Asunto: Nueva solicitud de cotización | Interfaz Redes | Fibra óptica', 'Adjuntos: plano nave.pdf', 'Nombre: Ana López Muñoz', 'Ubicación: Planta industrial · Apodaca, N.L.', 'Incluye 8 cámaras en andenes.']) {
+      expect(ventas).toContain(part)
+    }
+    expect(readFileSync(`.cotizaciones-prueba/${folio}-ventas.html`, 'utf8')).toContain('NUEVA SOLICITUD DE COTIZACIÓN')
+    expect(readFileSync(`.cotizaciones-prueba/${folio}-acuse.txt`, 'utf8')).toContain(`Folio: ${folio}`)
+    const aviso = readFileSync(`.cotizaciones-prueba/${folio}-whatsapp.txt`, 'utf8')
+    expect(aviso).toContain('*NUEVA COTIZACIÓN — INTERFAZ REDES*')
+    expect(aviso).toContain(`Folio: ${folio}`)
+    expect(aviso).toContain('{{9}} Enlace de fibra entre dos naves a 180 m. · Incluye 8 cámaras en andenes.')
+  })
+
+  test('el servidor valida y rechaza envíos no permitidos', async ({ request, baseURL }) => {
+    test.skip(!!process.env.BASE_URL, 'sólo en local')
+    const ok = { types: 'fibra', location: 'Apodaca', description: 'Enlace de fibra entre dos naves.', name: 'Ana López', company: 'Empresa', email: 'ana@empresa.mx', phone: '8112345678', elapsed: '9000' }
+    const post = (multipart: Record<string, string | { name: string; mimeType: string; buffer: Buffer }>, origin: string | null = baseURL!) =>
+      request.post('/api/cotizacion', { multipart, headers: origin ? { Origin: origin } : {} })
+
+    expect((await post(ok, null)).status(), 'sin origen').toBe(403)
+    expect((await post(ok, 'https://otro-sitio.com')).status(), 'otro origen').toBe(403)
+    const invalid = await post({ ...ok, email: 'ana@', phone: '81' })
+    expect(invalid.status()).toBe(400)
+    expect(Object.keys((await invalid.json()).errores)).toEqual(['email', 'phone'])
+    expect((await (await post({ ...ok, website: 'https://spam.example' })).json()).codigo, 'campo trampa').toBe('rechazada')
+    expect((await (await post({ ...ok, elapsed: '500' })).json()).codigo, 'demasiado rápido').toBe('rechazada')
+    const fake = await post({ ...ok, files: { name: 'plano.pdf', mimeType: 'application/pdf', buffer: Buffer.from('no es un pdf') } })
+    expect((await fake.json()).codigo, 'archivo falso').toBe('archivos')
+  })
+
+  test('sin recepción automática el cotizador sigue con WhatsApp y correo', async ({ page }) => {
+    await page.route('**/api/cotizacion', (r) => r.fulfill({ json: { recepcion: false } }))
+    const form = await fillQuote(page)
+    await expect(form.getByRole('button', { name: 'Enviar solicitud' })).toHaveCount(0)
+    await expect(form.getByRole('link', { name: 'Enviar por WhatsApp' })).toBeVisible()
+    await expect(form.getByRole('button', { name: 'Copiar solicitud' })).toBeVisible()
+  })
+
+  test('si el servidor falla no muestra éxito', async ({ page }) => {
+    await page.route('**/api/cotizacion', (r) =>
+      r.request().method() === 'GET'
+        ? r.fulfill({ json: { recepcion: true, whatsapp: false } })
+        : r.fulfill({ status: 502, json: { ok: false, codigo: 'entrega', mensaje: 'No pudimos entregar su solicitud al equipo comercial.' } }),
+    )
+    const form = await fillQuote(page)
+    await form.getByRole('button', { name: 'Enviar solicitud' }).click()
+    await expect(form.getByRole('alert')).toContainText('No se pudo enviar la solicitud.')
+    await expect(form.getByRole('heading', { name: 'Solicitud recibida' })).toHaveCount(0)
+    await expect(form.getByRole('button', { name: 'Intentar de nuevo' })).toBeVisible()
+    await expect(form.getByRole('link', { name: 'Enviar por WhatsApp' })).toBeVisible()
   })
 })

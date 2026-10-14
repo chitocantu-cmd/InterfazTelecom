@@ -43,6 +43,9 @@ Para probar el sitio publicado en lugar del local: `BASE_URL=https://interfaztel
 | Teléfono, WhatsApp, correo, dirección, horario | `src/data/company.ts` |
 | Servicios (textos, especificaciones, preguntas frecuentes) | `src/data/solutions.ts` |
 | Opciones del cotizador | `QUOTE_TYPES` en `src/data/solutions.ts` |
+| Quién recibe las cotizaciones (correos y números de WhatsApp) | variables de entorno en Vercel (ver "Recepción de cotizaciones") |
+| Campos, límites y textos de la solicitud | `src/lib/cotizacion.ts` (los comparten el cotizador y el servidor) |
+| Correos de la cotización (aviso a ventas y acuse al cliente) | `server/cotizacion/correo.ts` |
 | Industrias, proyectos, necesidades y proceso | `src/data/content.ts` |
 | Fotografías | archivos en `src/assets/img/` y su registro en `src/data/media.ts` |
 | Galería "Nuestro equipo en campo" | `src/pages/Home.tsx` y `src/pages/About.tsx` |
@@ -60,8 +63,8 @@ de 640 y 1024 px que los celulares y las tarjetas descargan en lugar del origina
 En `media.ts`, `ref: true` marca las visualizaciones 3D (muestran la leyenda "Imagen de referencia") y `ref: false`
 las fotografías reales del equipo (`src/assets/img/campo/`, tomadas de interfaz.com.mx).
 
-El cotizador no tiene servidor propio: arma la solicitud y la abre en WhatsApp o en el correo del usuario con el
-mensaje escrito. El envío se completa en esa aplicación.
+El cotizador envía la solicitud a `/api/cotizacion` cuando la recepción automática está configurada (ver
+"Recepción de cotizaciones"); si no, la abre en WhatsApp o en el correo del usuario con el mensaje escrito.
 
 ## Estructura
 
@@ -74,8 +77,10 @@ src/
   data/             empresa, soluciones, industrias, proyectos, necesidades, proceso
   lib/              utilidades, SEO por página, analítica
   pages/            Inicio, Soluciones, Servicio, Industrias, Proyectos, Nosotros, Contacto, Aviso de privacidad
+api/                funciones de Vercel (api/cotizacion.ts)
+server/cotizacion/  recepción de cotizaciones: validación, folio, correo (Resend) y WhatsApp (Cloud API)
 e2e/                pruebas de navegador (Playwright)
-public/             favicon, og-image, sitemap.xml y robots.txt (generados en el build)
+public/             favicon, og-image, logotipo para correos (email/), sitemap.xml y robots.txt
 scripts/            sitemap, HTML por página (prerender) y empaquetado de la vista previa
 tools/renders/      escenas 3D de la primera versión de las imágenes de referencia (no forman parte del sitio)
 tools/variantes.py  genera las versiones de 640 y 1024 px de las imágenes
@@ -118,11 +123,108 @@ y usan los servidores de nombres de Vercel (`ns1.vercel-dns.com`, `ns2.vercel-dn
 - Redirecciones 301 desde URLs del sitio anterior en WordPress (`/servicios/`, etc.).
 - Caché de un año para `/assets/*`, cabeceras básicas de seguridad y `noindex` en `*.vercel.app`.
 
+## Recepción de cotizaciones
+
+Flujo: el cliente llena el cotizador → `POST /api/cotizacion` valida los datos (los mismos criterios que el
+navegador, en `src/lib/cotizacion.ts`), asigna un folio (`COT-AAMMDD-XXXXXX`) y avisa a ventas por **correo**
+(con los archivos adjuntos y Reply-To al cliente) y por **WhatsApp** (si está configurado). Si llegó a ventas por
+al menos un canal, manda un **acuse de recibo** al cliente y le muestra el folio; si no llegó por ningún canal,
+el cotizador lo dice y ofrece enviarla por WhatsApp o correo. Nunca muestra "Solicitud recibida" sin que el
+servidor la haya entregado.
+
+Mientras no haya ningún canal configurado, `GET /api/cotizacion` responde `recepcion: false` y el cotizador funciona
+como antes: abre WhatsApp o el correo con la solicitud escrita.
+
+### Variables (Vercel → Settings → Environment Variables, entorno Production)
+
+Lista completa con explicación en `.env.example`. Son del servidor: nunca llevan prefijo `VITE_` ni van en `.env`.
+Después de cambiarlas hay que volver a publicar (Deployments → Redeploy) para que se apliquen.
+
+| Variable | Para qué |
+| --- | --- |
+| `RESEND_API_KEY` | Clave de Resend. Con ella se activa el envío por correo. |
+| `COTIZACION_DESTINATARIOS` | Correos que reciben cada solicitud, separados por coma. Por omisión `ventas@interfaz.com.mx`. |
+| `COTIZACION_REMITENTE` | Remitente; su dominio debe estar verificado en Resend. Por omisión `Interfaz Redes <cotizaciones@interfaztelecom.com.mx>`. |
+| `COTIZACION_RESPONDER_A` | A dónde llega la respuesta del cliente al acuse. Por omisión `ventas@interfaz.com.mx`. |
+| `COTIZACION_ACUSE` | `0` para no mandar acuse al cliente. |
+| `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` | Credenciales de WhatsApp Business Platform (Cloud API). |
+| `WHATSAPP_DESTINATARIOS` | Números que reciben el aviso, con lada y sin "+", separados por coma (ej. `5218112345678`). |
+| `WHATSAPP_PLANTILLA`, `WHATSAPP_PLANTILLA_IDIOMA` | Nombre e idioma de la plantilla aprobada (por omisión `nueva_cotizacion`, `es_MX`). |
+
+**Cambiar destinatarios:** edite `COTIZACION_DESTINATARIOS` o `WHATSAPP_DESTINATARIOS` en Vercel y vuelva a
+publicar. No hay correos ni teléfonos de destino escritos en el código, salvo el valor por omisión de ventas
+(`COMPANY.email` en `src/data/company.ts`).
+
+### Correo con Resend
+
+1. Cree una cuenta en https://resend.com y agregue el dominio `interfaztelecom.com.mx` (Domains → Add Domain).
+2. Agregue en Vercel (Domains → interfaztelecom.com.mx → DNS Records) los registros que muestra Resend
+   (MX y TXT de `send`, y TXT `resend._domainkey`) y espere a que Resend lo marque como verificado.
+3. Cree una API key con permiso de envío y guárdela como `RESEND_API_KEY` en Vercel.
+
+Cada correo lleva una clave de idempotencia (`<folio>-ventas`, `<folio>-acuse`): si un envío se reintenta, Resend
+no lo duplica. Los archivos (hasta 5, 4 MB en total; PDF, DWG, DXF, JPG, PNG, HEIC, DOCX, XLSX) llegan adjuntos
+al correo de ventas y no se guardan en el sitio; el límite viene de Vercel (4.5 MB por solicitud).
+
+### WhatsApp (WhatsApp Business Platform · Cloud API de Meta)
+
+Es la integración oficial; no se usa WhatsApp Web ni sesiones personales. Requiere una cuenta de Meta Business,
+una app con el producto WhatsApp, un número dado de alta en la plataforma (no puede estar en uso en la app normal
+de WhatsApp), un token permanente de usuario del sistema y una plantilla aprobada. Como los destinatarios no le
+escriben antes al número de la empresa, Meta sólo permite avisarles con una **plantilla aprobada**.
+
+Plantilla `nueva_cotizacion` (categoría *Utilidad*, idioma *Spanish (MEX)*), cuerpo:
+
+```
+*NUEVA COTIZACIÓN — INTERFAZ REDES*
+
+Folio: {{1}}
+Fecha: {{2}}
+
+*Cliente:* {{3}}
+*Empresa:* {{4}}
+*Servicio:* {{5}}
+*Ubicación:* {{6}}
+*WhatsApp:* {{7}}
+*Correo:* {{8}}
+
+*Descripción del proyecto:*
+{{9}}
+
+*Archivos:*
+{{10}}
+
+Los datos completos y los archivos llegan al correo de ventas.
+```
+
+Mientras no esté configurada, después de enviar la solicitud el cliente ve un botón opcional "Enviar aviso por
+WhatsApp" que abre WhatsApp con su folio y la solicitud escrita; el envío lo confirma él (no es automático).
+Al configurar las variables de WhatsApp, el aviso pasa a ser automático y ese botón deja de mostrarse.
+
+### Seguridad y registro
+
+- Validación en el navegador y otra vez en el servidor; longitudes máximas por campo.
+- Sólo acepta envíos desde el propio sitio (cabecera `Origin`), con campo trampa contra bots, tiempo mínimo de
+  captura y límite de solicitudes por IP (`COTIZACION_LIMITE_POR_IP`, por omisión 5 cada 10 minutos).
+- Archivos: tipo, cantidad y tamaño revisados, y el contenido debe corresponder a la extensión.
+- Un doble clic o un reintento con la misma clave conserva el folio y no duplica avisos.
+- Credenciales sólo en variables de entorno del servidor; los errores al cliente no exponen detalles internos.
+- Cada solicitud deja en los logs de Vercel (Project → Logs) una línea `{"evento":"cotizacion", ...}` con el
+  folio y el estado de cada canal (`enviado`, `parcial`, `error`, `no_configurado`, `omitido`), sin datos
+  personales; los fallos se registran como `cotizacion_error` con el detalle del proveedor.
+
+### Probar en local
+
+`.env.local` con `COTIZACION_PRUEBA=1` y `npm run dev`: el cotizador envía a la función local, que escribe el
+correo a ventas, el acuse y el aviso de WhatsApp en `.cotizaciones-prueba/` en lugar de enviarlos (las pruebas
+automáticas usan este modo). Con `RESEND_API_KEY` en `.env.local` y sin `COTIZACION_PRUEBA`, envía de verdad.
+
 ## Medición (GA4)
 
 Con `VITE_GA_ID` configurado se registran:
 - `page_view` en cada cambio de página.
-- `generate_lead` al enviar una cotización por WhatsApp o correo (incluye el tipo de necesidad).
+- `generate_lead` al enviar una cotización: `method` es `formulario` (recibida por el servidor), `whatsapp` o
+  `email` (envío manual), e incluye el tipo de necesidad.
 - `contact_whatsapp`, `contact_email` y `contact_phone` en cualquier enlace de contacto del sitio.
 
 Marca `generate_lead` como evento clave (conversión) en GA4.
@@ -136,5 +238,6 @@ Marca `generate_lead` como evento clave (conversión) en GA4.
 - [ ] Confirmar WhatsApp, años de experiencia, vigencia del REPSE y marcas.
 - [ ] Escribir la razón social en `RAZON_SOCIAL` (`src/pages/Privacy.tsx`) y revisar el aviso con un asesor legal.
 - [x] Dominio propio `interfaztelecom.com.mx` (y `interfaztelecom.mx`) conectado, con HTTPS.
+- [ ] Activar la recepción automática: `RESEND_API_KEY` y dominio verificado en Resend; WhatsApp Cloud API y plantilla.
 - [x] React Router 7 y Vite 6. `npm audit` aún reporta avisos en herramientas de compilación de Tailwind 3
       (no llegan al navegador); se resuelven al migrar a Tailwind 4.

@@ -20,6 +20,8 @@ export default defineConfig({
     ? undefined
     : {
         command: `npx vite --port ${PORT} --strictPort`,
+        // Recepción de cotizaciones en modo de prueba: escribe en .cotizaciones-prueba/ sin enviar nada.
+        env: { COTIZACION_PRUEBA: '1', COTIZACION_LIMITE_POR_IP: '1000' },
         url: `http://localhost:${PORT}`,
         reuseExistingServer: true,
         timeout: 60_000,
