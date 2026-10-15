@@ -1,1 +1,3 @@
 .vercel
+# Reportes de auditoría (contienen hallazgos de seguridad; el repositorio es público)
+.claude/audits/
