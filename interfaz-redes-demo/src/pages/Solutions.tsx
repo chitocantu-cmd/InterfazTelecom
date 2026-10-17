@@ -30,7 +30,7 @@ export default function Solutions() {
       </PageHero>
 
       {CATEGORIES.map((cat, i) => (
-        <section key={cat.id} id={cat.id} className={cn('scroll-mt-24 py-24 md:py-28', i % 2 === 1 && 'bg-mist')} aria-labelledby={`h-${cat.id}`}>
+        <section key={cat.id} id={cat.id} className={cn('py-24 md:py-28', i % 2 === 1 && 'bg-mist')} aria-labelledby={`h-${cat.id}`}>
           <div className="container grid gap-12 lg:grid-cols-12 lg:gap-16">
             <div className={cn('lg:col-span-5', i % 2 === 1 && 'lg:order-2 lg:col-start-8')}>
               <div className="lg:sticky lg:top-36">

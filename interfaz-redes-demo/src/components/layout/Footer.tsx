@@ -62,7 +62,7 @@ export function Footer() {
             <Link to="/aviso-de-privacidad" className="hover:text-ink">Aviso de privacidad</Link>
           </nav>
         </div>
-        <p className="mt-4 text-label text-muted">Las imágenes marcadas como referencia son visualizaciones y los casos de proyecto son demostrativos; no corresponden a proyectos realizados.</p>
+        <p className="mt-4 text-label text-muted">Las visualizaciones 3D del sitio son imágenes de referencia y los casos de proyecto son demostrativos; no corresponden a proyectos realizados.</p>
       </div>
     </footer>
   )

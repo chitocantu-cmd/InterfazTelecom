@@ -88,7 +88,7 @@ export function ProjectDetail() {
   const { slug } = useParams()
   const p = projectBySlug(slug)
   useSeo(p ? projectSeo(p) : SEO.projects)
-  if (!p) return <Navigate to="/proyectos" replace />
+  if (!p) return <><Navigate to="/proyectos" replace /><div className="min-h-[100svh]" /></>
   const i = PROJECTS.findIndex((x) => x.slug === p.slug)
   const prev = PROJECTS[(i - 1 + PROJECTS.length) % PROJECTS.length]
   const next = PROJECTS[(i + 1) % PROJECTS.length]

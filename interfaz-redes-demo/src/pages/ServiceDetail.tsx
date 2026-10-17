@@ -8,7 +8,7 @@ import { BRANDS_NETWORK, BRANDS_SECURITY } from '../data/company'
 import { PROCESS } from '../data/content'
 import { IMG } from '../data/media'
 import { categoryById, serviceBySlug } from '../data/solutions'
-import { cn, scrollToId, waLink } from '../lib/utils'
+import { cn, lowerFirst, scrollToId, waLink } from '../lib/utils'
 import { useSeo } from '../lib/seo'
 import { serviceSeo, SEO } from '../data/seo'
 
@@ -16,7 +16,7 @@ export default function ServiceDetail() {
   const { slug } = useParams()
   const s = serviceBySlug(slug)
   useSeo(s ? serviceSeo(s) : SEO.solutions)
-  if (!s) return <Navigate to="/soluciones" replace />
+  if (!s) return <><Navigate to="/soluciones" replace /><div className="min-h-[100svh]" /></>
   const cat = categoryById(s.category)
   const sameName = cat.name === s.name
   const steps = s.process ?? PROCESS.slice(0, 4).map((p) => ({ title: p.title, text: p.short }))
@@ -88,7 +88,7 @@ export default function ServiceDetail() {
               <h2 className="text-h2">{s.specTable.title}</h2>
               {s.specTable.note && <p className="mt-5 text-small text-body">{s.specTable.note}</p>}
             </div>
-            <div className="overflow-x-auto lg:col-span-7 lg:col-start-6">
+            <div tabIndex={0} role="region" aria-label={s.specTable.title} className="overflow-x-auto lg:col-span-7 lg:col-start-6">
               <table className="w-full min-w-[560px] border-collapse text-left">
                 <thead>
                   <tr className="border-b border-ink/80">
@@ -159,13 +159,13 @@ export default function ServiceDetail() {
       )}
 
       {/* cotización contextual */}
-      <section id="cotizar" className="scroll-mt-24 bg-mist py-24 md:py-28">
+      <section id="cotizar" className="bg-mist py-24 md:py-28">
         <div className="container grid gap-12 lg:grid-cols-12">
           <div className="lg:col-span-4">
             <h2 className="text-h2">Solicite una propuesta</h2>
-            <p className="mt-5 text-body">La solicitud ya incluye {s.name.toLowerCase()}. Agregue la ubicación, el alcance aproximado y sus datos de contacto.</p>
+            <p className="mt-5 text-body">La solicitud ya incluye {lowerFirst(s.name)}. Agregue la ubicación, el alcance aproximado y sus datos de contacto.</p>
           </div>
-          <div className="lg:col-span-8"><QuoteWizard initialType={s.quoteType} context={s.name} /></div>
+          <div className="lg:col-span-8"><QuoteWizard key={s.slug} initialType={s.quoteType} context={s.name} /></div>
         </div>
       </section>
 

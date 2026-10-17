@@ -1,6 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { ChevronDown, Menu, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type FocusEvent, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { COMPANY } from '../../data/company'
 import { CATEGORIES, servicesOf } from '../../data/solutions'
@@ -25,8 +25,12 @@ export function Header() {
   const [mobile, setMobile] = useState(false)
   const location = useLocation()
   const closeTimer = useRef<number>()
+  const headerRef = useRef<HTMLElement>(null)
+  const megaItem = useRef<HTMLLIElement>(null)
   const megaBtn = useRef<HTMLButtonElement>(null)
+  const megaPanel = useRef<HTMLDivElement>(null)
   const firstLink = useRef<HTMLAnchorElement>(null)
+  const mobileBtn = useRef<HTMLButtonElement>(null)
   const hoverOpened = useRef(false) // el menú lo abrió el cursor y aún no hay clic
   const reduce = useReducedMotion()
 
@@ -40,13 +44,31 @@ export function Header() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
+      // El foco vuelve al botón que abrió el menú (si no, cae al inicio de la página).
       if (mega) megaBtn.current?.focus()
+      if (mobile) mobileBtn.current?.focus()
       setMega(false); setMobile(false)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [mega])
-  useEffect(() => { document.body.style.overflow = mobile ? 'hidden' : '' }, [mobile])
+  }, [mega, mobile])
+  useEffect(() => {
+    if (!mobile) return
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    // Mientras el menú móvil cubre la página, el teclado no recorre lo que queda detrás.
+    const behind = Array.from(headerRef.current?.parentElement?.children ?? []).filter((el) => el !== headerRef.current)
+    behind.forEach((el) => el.setAttribute('inert', ''))
+    // Si la pantalla se ensancha (tableta girada), el menú móvil desaparece: se cierra para liberar el scroll.
+    const wide = window.matchMedia('(min-width: 1024px)')
+    const closeIfWide = () => { if (wide.matches) setMobile(false) }
+    wide.addEventListener('change', closeIfWide)
+    return () => {
+      document.body.style.overflow = prevOverflow
+      behind.forEach((el) => el.removeAttribute('inert'))
+      wide.removeEventListener('change', closeIfWide)
+    }
+  }, [mobile])
 
   // Con mouse el menú abre al pasar el cursor, y el clic que suele seguir no debe cerrarlo.
   // Con toque o teclado el clic abre y cierra (en pantallas táctiles no hay "pasar el cursor").
@@ -54,12 +76,38 @@ export function Header() {
   const closeSoon = () => { closeTimer.current = window.setTimeout(() => { setMega(false); hoverOpened.current = false }, 160) }
   const hoverIn = ({ pointerType }: { pointerType: string }) => { if (pointerType !== 'mouse') return; if (!mega) hoverOpened.current = true; openMega() }
   const hoverOut = ({ pointerType }: { pointerType: string }) => { if (pointerType === 'mouse') closeSoon() }
-  const toggleMega = () => { if (hoverOpened.current) { hoverOpened.current = false; return } setMega((v) => !v) }
+  const closeMega = () => { setMega(false); hoverOpened.current = false }
+  const toggleMega = (e: MouseEvent) => {
+    if (hoverOpened.current) { hoverOpened.current = false; return }
+    // Abierto con Enter o Espacio (detail 0): el foco entra al panel, como con la flecha abajo.
+    if (!mega && e.detail === 0) requestAnimationFrame(() => firstLink.current?.focus())
+    setMega((v) => !v)
+  }
+  // Al salir con el teclado del botón o del panel hacia otro elemento, el panel se cierra (no tapa el foco).
+  const leaveMega = (e: FocusEvent) => {
+    const next = e.relatedTarget as Node | null
+    if (next && !megaItem.current?.contains(next) && !megaPanel.current?.contains(next)) closeMega()
+  }
+  // Tab desde el botón entra al panel; desde el último enlace sigue con «Industrias»; Mayús+Tab desde el primero vuelve al botón.
+  const megaTab = (e: ReactKeyboardEvent) => {
+    if (e.key !== 'Tab' || !mega) return
+    const links = megaPanel.current?.querySelectorAll<HTMLElement>('a[href]')
+    if (!links?.length) return
+    const active = document.activeElement
+    if (active === megaBtn.current && !e.shiftKey) { e.preventDefault(); links[0].focus() }
+    else if (active === links[0] && e.shiftKey) { e.preventDefault(); megaBtn.current?.focus() }
+    else if (active === links[links.length - 1] && !e.shiftKey) {
+      e.preventDefault()
+      closeMega()
+      megaItem.current?.nextElementSibling?.querySelector<HTMLElement>('a')?.focus()
+    }
+  }
   const solActive = location.pathname.startsWith('/soluciones')
   const linkCls = (active: boolean) => cn('flex items-center gap-1 px-3 py-2 text-[0.97rem] transition-colors xl:px-4', active ? 'font-medium text-corp' : 'text-body hover:text-ink')
 
   return (
     <header
+      ref={headerRef}
       className={cn('sticky z-50 bg-white transition-shadow duration-300', scrolled || mega ? 'shadow-[0_1px_0_#E1E6EB]' : '')}
       style={{ top: 'env(safe-area-inset-top, 0px)' }}
     >
@@ -70,14 +118,14 @@ export function Header() {
           <ul className="flex items-center">
             {NAV.map((item) =>
               item.mega ? (
-                <li key={item.to} onPointerEnter={hoverIn} onPointerLeave={hoverOut}>
+                <li key={item.to} ref={megaItem} onPointerEnter={hoverIn} onPointerLeave={hoverOut} onBlur={leaveMega}>
                   <button
                     ref={megaBtn}
                     type="button"
                     aria-expanded={mega}
                     aria-controls="mega-soluciones"
                     onClick={toggleMega}
-                    onKeyDown={(e) => { if (e.key === 'ArrowDown') { e.preventDefault(); setMega(true); requestAnimationFrame(() => firstLink.current?.focus()) } }}
+                    onKeyDown={(e) => { if (e.key === 'ArrowDown') { e.preventDefault(); setMega(true); requestAnimationFrame(() => firstLink.current?.focus()) } else megaTab(e) }}
                     className={linkCls(solActive || mega)}
                   >
                     Soluciones
@@ -96,6 +144,7 @@ export function Header() {
         <div className="flex items-center gap-3">
           <Button to="/contacto" className="hidden !px-5 !py-[0.7rem] sm:inline-flex">Cotizar proyecto</Button>
           <button
+            ref={mobileBtn}
             type="button"
             className="-mr-2 grid h-11 w-11 place-items-center text-ink lg:hidden"
             aria-label={mobile ? 'Cerrar menú' : 'Abrir menú'}
@@ -111,9 +160,13 @@ export function Header() {
       <AnimatePresence>
         {mega && (
           <motion.div
+            ref={megaPanel}
             id="mega-soluciones"
             onPointerEnter={hoverIn}
             onPointerLeave={hoverOut}
+            onBlur={leaveMega}
+            onKeyDown={megaTab}
+            onClick={(e) => { if ((e.target as HTMLElement).closest('a')) closeMega() }}
             initial={reduce ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -123,12 +176,12 @@ export function Header() {
             <div className="container grid grid-cols-5 gap-10 pb-10 pt-9">
               {CATEGORIES.map((cat, ci) => (
                 <div key={cat.id}>
-                  <Link to={`/soluciones?s=${cat.id}`} className="block font-display text-[1.05rem] font-semibold leading-snug text-ink hover:text-corp">{cat.name}</Link>
+                  <Link ref={ci === 0 ? firstLink : undefined} to={`/soluciones?s=${cat.id}`} className="block font-display text-[1.05rem] font-semibold leading-snug text-ink hover:text-corp">{cat.name}</Link>
                   <p className="mt-1.5 text-small text-muted">{cat.lede}</p>
                   <ul className="mt-5 space-y-1">
-                    {servicesOf(cat.id).map((s, si) => (
+                    {servicesOf(cat.id).map((s) => (
                       <li key={s.slug}>
-                        <Link ref={ci === 0 && si === 0 ? firstLink : undefined} to={`/soluciones/${s.slug}`} className="block py-1.5 text-[0.97rem] text-body transition-colors hover:text-corp focus-visible:text-corp">
+                        <Link to={`/soluciones/${s.slug}`} className="block py-1.5 text-[0.97rem] text-body transition-colors hover:text-corp focus-visible:text-corp">
                           {s.name}
                         </Link>
                       </li>

@@ -39,6 +39,9 @@ type Sending =
 
 const STEPS = ['Necesidad', 'Proyecto', 'Contacto', 'Revisión']
 
+/** Identidad de un archivo: dos «plano.pdf» de carpetas distintas son archivos distintos. */
+const fileId = (f: File) => `${f.name}:${f.size}:${f.lastModified}`
+
 const fmtSize = (b: number) => (b > 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`)
 
 export function QuoteWizard({ initialType, context, initialDescription, initialSite }: { initialType?: QuoteType; context?: string; initialDescription?: string; initialSite?: string }) {
@@ -49,6 +52,8 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
   const [files, setFiles] = useState<File[]>([])
   const [fileError, setFileError] = useState<string>()
   const [copied, setCopied] = useState(false)
+  const [copyFailed, setCopyFailed] = useState(false)
+  const msgDetails = useRef<HTMLDetailsElement>(null)
   const [api, setApi] = useState(false)
   const [send, setSend] = useState<Sending>({ state: 'idle' })
   const [trap, setTrap] = useState('')
@@ -68,10 +73,6 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
   })
 
   useEffect(() => {
-    setD((v) => ({ ...v, types: initialType ? [initialType] : v.types, description: initialDescription ?? v.description, site: initialSite ?? v.site }))
-  }, [initialType, initialDescription, initialSite])
-
-  useEffect(() => {
     let live = true
     receptionActive().then((on) => live && setApi(on))
     return () => { live = false }
@@ -82,7 +83,13 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
   const set = <K extends keyof Data>(k: K, v: Data[K]) => setD((s) => ({ ...s, [k]: v }))
 
   const request: QuoteRequest = useMemo(() => ({ ...d, context }), [d, context])
-  const errors = useMemo(() => validateQuote(request) as Record<string, string>, [request])
+  const errors = useMemo(() => {
+    const e = validateQuote(request) as Record<string, string>
+    // Con descripción precargada (?necesidad=), el cliente debe agregar la suya.
+    const own = initialDescription ? request.description.replace(initialDescription.trim(), '').trim() : null
+    if (own !== null && !e.description && own.length < 15) e.description = 'Agregue los detalles de su proyecto (al menos 15 caracteres).'
+    return e
+  }, [request, initialDescription])
 
   const stepFields: string[][] = [['types'], ['location', 'description'], ['name', 'company', 'email', 'phone'], []]
   const stepValid = (i: number) => stepFields[i].every((f) => !errors[f])
@@ -110,7 +117,7 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
 
   /** Agrega archivos. Con envío automático se revisan tipo, cantidad y tamaño, porque viajan con la solicitud. */
   const addFiles = (picked: File[]) => {
-    const fresh = picked.filter((n) => !files.some((c) => c.name === n.name))
+    const fresh = picked.filter((n) => !files.some((c) => fileId(c) === fileId(n)))
     if (api) {
       const bad = fresh.find((f) => !FILES.extensions.includes(fileExtension(f.name)))
       const all = [...files, ...fresh]
@@ -251,24 +258,24 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
                       type="file"
                       multiple
                       accept={FILE_ACCEPT}
-                      className="sr-only"
+                      className="peer sr-only"
                       onChange={(e) => {
                         addFiles(Array.from(e.target.files ?? []))
                         e.target.value = ''
                       }}
                     />
-                    <label htmlFor={`${uid}-files`} className="mt-2 flex cursor-pointer items-center gap-3 border border-dashed border-line bg-cold px-4 py-4 text-[0.9rem] text-ink transition-colors hover:border-tech">
+                    <label htmlFor={`${uid}-files`} className="mt-2 flex cursor-pointer items-center gap-3 border border-dashed border-line bg-cold px-4 py-4 text-[0.9rem] text-ink transition-colors hover:border-tech peer-focus-visible:ring-2 peer-focus-visible:ring-lumen peer-focus-visible:ring-offset-2">
                       <Paperclip aria-hidden className="h-4 w-4" />
-                      <span>Seleccionar archivos <span className="text-slate-muted">· PDF, DWG, imágenes</span></span>
+                      <span>Seleccionar archivos <span className="text-slate-muted">· PDF, DWG/DXF, imágenes, Word o Excel</span></span>
                     </label>
                     {files.length > 0 && (
                       <ul className="mt-2 divide-y divide-line border border-line">
                         {files.map((f) => (
-                          <li key={f.name} className="flex items-center justify-between gap-3 px-3 py-2 text-[0.85rem]">
+                          <li key={fileId(f)} className="flex items-center justify-between gap-3 px-3 py-2 text-[0.85rem]">
                             <span className="flex min-w-0 items-center gap-2"><FileText aria-hidden className="h-4 w-4 shrink-0 text-slate-faint" /><span className="truncate">{f.name}</span></span>
                             <span className="flex shrink-0 items-center gap-3 font-mono text-[0.75rem] text-slate-muted">
                               {fmtSize(f.size)}
-                              <button type="button" aria-label={`Quitar ${f.name}`} onClick={() => { setFiles(files.filter((x) => x.name !== f.name)); setFileError(undefined) }} className="text-slate-faint hover:text-tech"><X className="h-4 w-4" /></button>
+                              <button type="button" aria-label={`Quitar ${f.name}`} onClick={() => { setFiles(files.filter((x) => fileId(x) !== fileId(f))); setFileError(undefined) }} className="text-slate-faint hover:text-tech"><X className="h-4 w-4" /></button>
                             </span>
                           </li>
                         ))}
@@ -386,14 +393,22 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
                   <span>¿No se abrió la aplicación? Copie la solicitud y envíela a <span className="select-all text-ink">{COMPANY.whatsappDisplay}</span> o <span className="select-all text-ink">{COMPANY.email}</span>.</span>
                   <button
                     type="button"
-                    onClick={async () => { if (await copyText(message)) { setCopied(true); window.setTimeout(() => setCopied(false), 2000) } else { setCopied(false); document.getElementById(`${uid}-msg`)?.focus() } }}
+                    onClick={async () => {
+                      if (await copyText(message)) { setCopyFailed(false); setCopied(true); window.setTimeout(() => setCopied(false), 2000); return }
+                      setCopied(false)
+                      setCopyFailed(true)
+                      if (msgDetails.current) msgDetails.current.open = true
+                      requestAnimationFrame(() => document.getElementById(`${uid}-msg`)?.focus())
+                    }}
                     className="inline-flex items-center gap-2 font-medium text-ink hover:text-tech"
                   >
                     {copied ? <Check aria-hidden className="h-4 w-4" /> : <Copy aria-hidden className="h-4 w-4" />}
                     {copied ? 'Copiado' : 'Copiar solicitud'}
                   </button>
+                  <span className="sr-only" aria-live="polite">{copied ? 'Solicitud copiada' : ''}</span>
+                  {copyFailed && <span role="alert" className="w-full text-[#B42318]">No se pudo copiar automáticamente; seleccione el texto del mensaje de abajo.</span>}
                 </div>
-                <details className="mt-4 text-[0.85rem]">
+                <details ref={msgDetails} className="mt-4 text-[0.85rem]">
                   <summary className="cursor-pointer text-slate-muted hover:text-ink">Ver el mensaje que se enviará</summary>
                   <textarea id={`${uid}-msg`} readOnly rows={10} value={message} className="field mt-2 font-mono text-[0.78rem]" onFocus={(e) => e.currentTarget.select()} aria-label="Mensaje de la solicitud" />
                 </details>

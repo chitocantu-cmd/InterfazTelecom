@@ -117,9 +117,10 @@ y usan los servidores de nombres de Vercel (`ns1.vercel-dns.com`, `ns2.vercel-dn
 `X-Robots-Tag: noindex` y `interfaz-redes.vercel.app` redirige al dominio propio.
 
 `vercel.json` ya incluye:
-- Reescritura de todas las rutas a `index.html` (rutas limpias como `/soluciones/fibra-optica`). Las rutas
-  públicas tienen además su propio HTML (`scripts/prerender.mjs`) con su título y descripción, para que WhatsApp,
-  Facebook y Google los lean sin ejecutar JavaScript; Vercel lo sirve antes de la reescritura.
+- Sin reescrituras: cada ruta pública tiene su propio HTML (`scripts/prerender.mjs`, servido con `cleanUrls` como
+  `/soluciones/fibra-optica`) con su título y descripción, para que WhatsApp, Facebook y Google los lean sin
+  JavaScript. Cualquier otra dirección recibe `404.html` con estado 404 y `noindex`, y la app muestra «Esta página
+  no existe». **Una página nueva debe agregarse a `src/data/seo.ts`** (si no, su dirección directa daría 404).
 - Redirecciones 301 desde URLs del sitio anterior en WordPress (`/servicios/`, etc.).
 - Caché de un año para `/assets/*`, cabeceras básicas de seguridad y `noindex` en `*.vercel.app`.
 

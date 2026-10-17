@@ -400,3 +400,71 @@ test.describe('recepción de cotizaciones', () => {
     await expect(form.getByRole('link', { name: 'Enviar por WhatsApp' })).toBeVisible()
   })
 })
+
+// Correcciones P1 de la auditoría (.claude/audits/FIXES.md).
+test.describe('correcciones P1', () => {
+  test('una sección que no carga muestra un aviso en lugar de la pantalla en blanco', async ({ page }) => {
+    // En desarrollo la página es /src/pages/Contact.tsx; publicada, /assets/Contact-<hash>.js.
+    await page.route(/\/(src\/pages\/Contact\.tsx|assets\/Contact-[^/]+\.js)/, (r) => r.abort())
+    await page.goto('/contacto')
+    await expect(page.getByRole('heading', { name: 'No se pudo cargar esta sección.' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Recargar' })).toBeVisible()
+  })
+
+  test('una ruta inexistente responde 404 y no se indexa', async ({ page }) => {
+    const res = await page.goto('/no-existe-p1')
+    if (process.env.BASE_URL) expect(res!.status()).toBe(404)
+    await expect(page.getByRole('heading', { name: 'Esta página no existe.' })).toBeVisible()
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex')
+    await expect(page.locator('link[rel="canonical"]')).toHaveCount(0)
+    await page.getByRole('main').getByRole('link', { name: 'Ir al inicio' }).click()
+    await expect(page.locator('meta[name="robots"]')).toHaveCount(0)
+    await expect(page.locator('link[rel="canonical"]')).toHaveCount(1)
+  })
+
+  test('las siglas se conservan a mitad de frase', async ({ page }) => {
+    await page.goto('/soluciones/cctv-videovigilancia')
+    await expect(page.getByText('La solicitud ya incluye CCTV y videovigilancia.')).toBeVisible()
+    await page.goto('/soluciones/telefonia-ip')
+    await expect(page.getByText('La solicitud ya incluye voz y telefonía IP.')).toBeVisible()
+  })
+
+  test('mega menú: el teclado entra al panel y sale en orden', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'sólo escritorio')
+    await page.goto('/')
+    const btn = page.getByRole('button', { name: 'Soluciones', exact: true })
+    const panel = page.locator('#mega-soluciones')
+    await btn.focus()
+    await page.keyboard.press('Enter')
+    await expect(panel).toBeVisible()
+    await expect(panel.getByRole('link').first()).toBeFocused()
+    await page.keyboard.press('Shift+Tab')
+    await expect(btn).toBeFocused()
+    await page.keyboard.press('Tab')
+    await expect(panel.getByRole('link').first()).toBeFocused()
+    await panel.getByRole('link').last().focus()
+    await page.keyboard.press('Tab')
+    await expect(panel).toBeHidden()
+    await expect(page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Industrias' })).toBeFocused()
+  })
+
+  test('menú móvil: Escape devuelve el foco y libera la página', async ({ page, isMobile }) => {
+    test.skip(!isMobile, 'sólo móvil')
+    await page.goto('/')
+    await page.getByRole('button', { name: 'Abrir menú' }).click()
+    expect(await page.locator('#contenido').evaluate((el) => el.hasAttribute('inert'))).toBe(true)
+    await page.keyboard.press('Escape')
+    await expect(page.locator('#menu-movil')).toBeHidden()
+    await expect(page.getByRole('button', { name: 'Abrir menú' })).toBeFocused()
+    expect(await page.locator('#contenido').evaluate((el) => el.hasAttribute('inert'))).toBe(false)
+    expect(await page.evaluate(() => document.body.style.overflow)).toBe('')
+  })
+
+  test('al navegar, el foco pasa al contenido de la página nueva', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'sólo escritorio')
+    await page.goto('/')
+    await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Nosotros' }).click()
+    await expect(page).toHaveURL('/nosotros')
+    await expect(page.locator('#contenido')).toBeFocused()
+  })
+})

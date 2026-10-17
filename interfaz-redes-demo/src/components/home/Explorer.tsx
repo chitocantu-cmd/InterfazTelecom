@@ -2,7 +2,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CATEGORIES, servicesOf, type Category } from '../../data/solutions'
-import { cn } from '../../lib/utils'
+import { cn, lowerFirst } from '../../lib/utils'
 import { Media } from '../plates'
 
 function Panel({ cat, inline }: { cat: Category; inline?: boolean }) {
@@ -13,7 +13,7 @@ function Panel({ cat, inline }: { cat: Category; inline?: boolean }) {
         <div className="md:col-span-5">
           {!inline && <h3 className="text-h3">{cat.name}</h3>}
           <p className={cn('text-small text-body', !inline && 'mt-3')}>{cat.technical}</p>
-          <Link to={`/soluciones?s=${cat.id}`} className="mt-5 inline-block text-small font-medium text-corp link-line">Ver {cat.name.toLowerCase()}</Link>
+          <Link to={`/soluciones?s=${cat.id}`} className="mt-5 inline-block text-small font-medium text-corp link-line">Ver {lowerFirst(cat.name)}</Link>
         </div>
         <ul className="border-t border-line md:col-span-7">
           {servicesOf(cat.id).map((s) => (
@@ -36,7 +36,7 @@ export function Explorer() {
   const cat = CATEGORIES.find((c) => c.id === active)!
 
   return (
-    <section id="soluciones" className="scroll-mt-20 bg-mist py-20 md:py-28" aria-labelledby="soluciones-title">
+    <section id="soluciones" className="bg-mist py-20 md:py-28" aria-labelledby="soluciones-title">
       <div className="container">
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
           <div className="lg:col-span-4">

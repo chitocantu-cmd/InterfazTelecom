@@ -13,7 +13,9 @@
   @media (min-width: 640px) { :root { --gutter: 1.75rem; } }
   @media (min-width: 1024px) { :root { --gutter: 2.5rem; } }
   @media (min-width: 1280px) { :root { --gutter: 3.5rem; } }
-  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: 7rem; }
+  /* Alto del header fijo (106 px; 124 px desde md): lo enfocado o el destino de un salto no queda debajo. */
+  @media (min-width: 768px) { html { scroll-padding-top: 8.25rem; } }
   body {
     background: #ffffff;
     color: #3a4656;

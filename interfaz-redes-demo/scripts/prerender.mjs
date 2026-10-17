@@ -41,4 +41,12 @@ for (const [path, { title, description }] of SEO_ROUTES) {
   mkdirSync(dirname(file), { recursive: true })
   writeFileSync(file, html)
 }
-console.log(`prerender: ${SEO_ROUTES.length} páginas → ${site}`)
+// 404.html: Vercel lo sirve con estado 404 en cualquier ruta que no exista. La app muestra «Esta página no existe».
+const notFound = base
+  .replace(/<title>.*?<\/title>/, `<title>${esc(fullTitle('Página no encontrada'))}</title>`)
+  .replace(/<link rel="canonical"[^>]*>\n?/, '<meta name="robots" content="noindex" />\n')
+  .replace(/<meta property="og:url"[^>]*>\n?/, '')
+if (!notFound.includes('noindex') || notFound.includes('rel="canonical"')) throw new Error('prerender: no se pudo preparar 404.html')
+writeFileSync('dist/404.html', notFound)
+
+console.log(`prerender: ${SEO_ROUTES.length} páginas + 404 → ${site}`)

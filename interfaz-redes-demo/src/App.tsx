@@ -1,4 +1,4 @@
-import { BrowserRouter, HashRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, HashRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { Footer } from './components/layout/Footer'
 import { Header } from './components/layout/Header'
 import { WhatsAppButton } from './components/layout/WhatsAppButton'
@@ -7,7 +7,7 @@ import { useContactClicks, usePageViews } from './lib/analytics'
 import { SEO } from './data/seo'
 import { useSeo } from './lib/seo'
 import { useScrollToTop } from './lib/utils'
-import { lazy, Suspense } from 'react'
+import { Component, lazy, Suspense, type ReactNode } from 'react'
 import Home from './pages/Home'
 
 // Las páginas interiores se cargan bajo demanda para que el inicio sea más ligero.
@@ -21,7 +21,7 @@ const Privacy = lazy(() => import('./pages/Privacy'))
 const Solutions = lazy(() => import('./pages/Solutions'))
 
 function NotFound() {
-  useSeo(SEO.notFound)
+  useSeo(SEO.notFound, { noindex: true })
   return (
     <section className="container py-32">
       <p className="text-small font-medium text-corp">Error 404</p>
@@ -32,7 +32,30 @@ function NotFound() {
   )
 }
 
+/**
+ * Si una sección no carga (archivo de una versión anterior del sitio o corte de red), muestra un aviso con
+ * botón para recargar en lugar de dejar la pantalla en blanco. Se reinicia al cambiar de página.
+ */
+class SectionBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false }
+  static getDerivedStateFromError() {
+    return { failed: true }
+  }
+  render() {
+    if (!this.state.failed) return this.props.children
+    return (
+      <section className="container py-32">
+        <p className="text-small font-medium text-corp">Error de carga</p>
+        <h1 className="mt-4 text-h1">No se pudo cargar esta sección.</h1>
+        <p className="mt-4 text-slate-muted">Puede deberse a una actualización reciente del sitio o a la conexión. Recargue la página para continuar.</p>
+        <div className="mt-8 flex gap-3"><Button onClick={() => window.location.reload()}>Recargar</Button><Button to="/" variant="secondary">Ir al inicio</Button></div>
+      </section>
+    )
+  }
+}
+
 function Shell() {
+  const { pathname } = useLocation()
   useScrollToTop()
   usePageViews()
   useContactClicks()
@@ -42,6 +65,7 @@ function Shell() {
       <Header />
       <main id="contenido" tabIndex={-1} className="outline-none">
         {/* Ocupa al menos la pantalla mientras carga la página, para que el footer no brinque al llegar el contenido. */}
+        <SectionBoundary key={pathname}>
         <Suspense fallback={<div className="min-h-[100svh]" aria-busy="true" />}>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -56,6 +80,7 @@ function Shell() {
           <Route path="*" element={<NotFound />} />
         </Routes>
         </Suspense>
+        </SectionBoundary>
       </main>
       <Footer />
       <WhatsAppButton />

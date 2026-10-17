@@ -15,9 +15,6 @@
     { "source": "/privacidad", "destination": "/aviso-de-privacidad", "permanent": true },
     { "source": "/:path*", "has": [{ "type": "host", "value": "interfaz-redes.vercel.app" }], "destination": "https://interfaztelecom.com.mx/:path*", "permanent": true }
   ],
-  "rewrites": [
-    { "source": "/((?!assets/|api/|email/|favicon\\.jpg|og-image\\.jpg|robots\\.txt|sitemap\\.xml).*)", "destination": "/" }
-  ],
   "headers": [
     {
       "source": "/assets/(.*)",
