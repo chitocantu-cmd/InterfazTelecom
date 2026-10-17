@@ -58,5 +58,8 @@ export function getConfig(): Config {
 
 export const emailReady = (c: Config) => Boolean(c.email.apiKey && c.email.to.length)
 export const whatsappReady = (c: Config) => Boolean(c.whatsapp.token && c.whatsapp.phoneNumberId && c.whatsapp.to.length)
-/** La recepción automática está activa si hay al menos un canal hacia ventas (o en modo de prueba). */
-export const receptionReady = (c: Config) => Boolean(c.testDir) || emailReady(c) || whatsappReady(c)
+/**
+ * La recepción automática se activa con el correo (o en modo de prueba). WhatsApp es un aviso complementario:
+ * los archivos y la descripción completa sólo viajan por correo, así que WhatsApp solo no basta.
+ */
+export const receptionReady = (c: Config) => Boolean(c.testDir) || emailReady(c)

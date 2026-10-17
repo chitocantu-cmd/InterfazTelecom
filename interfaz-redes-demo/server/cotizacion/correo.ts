@@ -46,9 +46,10 @@ const fileNames = (q: Quote) => q.files.map((f) => f.name)
 export function salesEmail(q: Quote, cfg: Config) {
   const r = q.request
   const wa = `https://wa.me/${waNumber(r.phone)}?text=${encodeURIComponent(`Hola ${r.name.trim()}, le escribimos de Interfaz Redes por su solicitud de cotización ${q.folio}.`)}`
-  const reply = `mailto:${r.email.trim()}?subject=${encodeURIComponent(`Re: Solicitud de cotización ${q.folio}`)}`
+  const reply = `mailto:${encodeURIComponent(r.email.trim())}?subject=${encodeURIComponent(`Re: Solicitud de cotización ${q.folio}`)}`
   const files = q.files.length
-    ? q.files.map((f) => `${esc(f.name)} <span style="color:${C.muted};">(${fmtSize(f.size)})</span>`).join('<br>') + `<br><span style="color:${C.muted};">Adjuntos a este correo.</span>`
+    ? q.files.map((f) => `${esc(f.name)} <span style="color:${C.muted};">(${fmtSize(f.size)})</span>`).join('<br>') +
+      `<br><span style="color:${C.muted};">Adjuntos a este correo. Los envió una persona externa: ábralos sólo si esperaba esta solicitud.</span>`
     : `<span style="color:${C.muted};">Sin archivos</span>`
 
   const content = `<tr><td style="padding:20px 28px 0;font-family:${FONT};font-size:14px;line-height:21px;color:${C.body};">
@@ -57,7 +58,7 @@ export function salesEmail(q: Quote, cfg: Config) {
 ${section('DATOS DEL CLIENTE', [
   row('Nombre', esc(r.name.trim())),
   row('Empresa', esc(r.company.trim())),
-  row('Correo', `<a href="mailto:${esc(r.email.trim())}" style="color:${C.corp};">${esc(r.email.trim())}</a>`),
+  row('Correo', `<a href="mailto:${esc(encodeURIComponent(r.email.trim()))}" style="color:${C.corp};">${esc(r.email.trim())}</a>`),
   row('WhatsApp', `<a href="${esc(wa)}" style="color:${C.corp};">${esc(r.phone.trim())}</a>`),
   row('Ubicación', esc(placeOf(r))),
 ].join(''))}
@@ -90,7 +91,7 @@ ${button(reply, 'Responder al cliente', C.corp)}${button(wa, 'Contactar por What
     `Servicio solicitado: ${service(q)}`,
     r.context ? `Referencia: ${r.context}` : null,
     `Descripción:\n${r.description.trim()}`,
-    `Archivos adjuntos: ${q.files.length ? fileNames(q).join(', ') : 'Sin archivos'}`,
+    `Archivos adjuntos: ${q.files.length ? `${fileNames(q).join(', ')} (los envió una persona externa: ábralos sólo si esperaba esta solicitud)` : 'Sin archivos'}`,
     '',
     'ACCIONES',
     `- Responder al correo del cliente: ${r.email.trim()}`,
@@ -105,19 +106,24 @@ ${button(reply, 'Responder al cliente', C.corp)}${button(wa, 'Contactar por What
   }
 }
 
-/** Acuse de recibo para el cliente. No promete tiempos de respuesta. */
+/**
+ * Acuse de recibo para el cliente. No promete tiempos de respuesta. Como cualquiera puede escribir el correo
+ * de otra persona en el formulario, el acuse no repite texto libre: el saludo usa el nombre sólo si son
+ * letras, y del lugar sólo muestra el tipo de inmueble (opciones fijas), no la ubicación escrita.
+ */
 export function ackEmail(q: Quote, cfg: Config) {
   const r = q.request
-  const first = r.name.trim().split(/\s+/)[0]
+  const name = r.name.trim().split(/\s+/)[0]
+  const greeting = /^[\p{L}'-]{2,30}$/u.test(name) ? `Hola, ${name}:` : 'Hola:'
   const content = `<tr><td style="padding:24px 28px 6px;font-family:${FONT};font-size:15px;line-height:23px;color:${C.body};">
-<p style="margin:0 0 14px;color:${C.ink};">Hola, ${esc(first)}:</p>
+<p style="margin:0 0 14px;color:${C.ink};">${esc(greeting)}</p>
 <p style="margin:0 0 14px;">Gracias por contactar a Interfaz Redes y Telecomunicaciones. Recibimos su solicitud de cotización; nuestro equipo comercial revisará la información de su proyecto para dar seguimiento a su solicitud.</p>
 <p style="margin:0;">Si necesita agregar información o archivos, responda a este correo indicando su folio.</p></td></tr>
 ${section('SU SOLICITUD', [
   row('Folio', `<span style="font-family:Consolas,Menlo,monospace;">${esc(q.folio)}</span>`),
   row('Fecha', `${esc(q.date)} (hora de Monterrey)`),
   row('Servicio solicitado', esc(service(q))),
-  row('Ubicación', esc(placeOf(r))),
+  r.site ? row('Tipo de inmueble', esc(r.site)) : '',
 ].join(''))}
 ${section('CONTACTO', [
   row('WhatsApp / teléfono', esc(COMPANY.whatsappDisplay)),
@@ -129,7 +135,7 @@ ${section('CONTACTO', [
 <tr><td style="padding:8px 0;"></td></tr>`
 
   const text = [
-    `Hola, ${first}:`,
+    greeting,
     '',
     'Gracias por contactar a Interfaz Redes y Telecomunicaciones. Recibimos su solicitud de cotización; nuestro equipo comercial revisará la información de su proyecto para dar seguimiento a su solicitud.',
     'Si necesita agregar información o archivos, responda a este correo indicando su folio.',
@@ -137,14 +143,14 @@ ${section('CONTACTO', [
     `Folio: ${q.folio}`,
     `Fecha: ${q.date} (hora de Monterrey)`,
     `Servicio solicitado: ${service(q)}`,
-    `Ubicación: ${placeOf(r)}`,
+    r.site ? `Tipo de inmueble: ${r.site}` : null,
     '',
     `WhatsApp / teléfono: ${COMPANY.whatsappDisplay}`,
     `Correo: ${COMPANY.email}`,
     `Oficina: ${COMPANY.address}`,
     `Horario: ${COMPANY.hours}`,
     `${cfg.site}/`,
-  ].join('\n')
+  ].filter((l) => l !== null).join('\n')
 
   return {
     subject: `Recibimos su solicitud de cotización | Folio ${q.folio} | Interfaz Redes`,
@@ -155,7 +161,8 @@ ${section('CONTACTO', [
 
 interface Outgoing {
   to: string[]
-  replyTo: string
+  /** Sin Reply-To si se omite. */
+  replyTo?: string
   subject: string
   html: string
   text: string
@@ -191,8 +198,18 @@ export async function sendEmail(cfg: Config, m: Outgoing): Promise<Delivery> {
         signal: AbortSignal.timeout(8000),
       })
       if (res.ok) return { status: 'enviado', id: ((await res.json().catch(() => ({}))) as { id?: string }).id }
-      // 409: la misma clave ya se usó, es decir, este correo ya salió en un intento anterior.
-      if (res.status === 409) return { status: 'enviado', detail: 'duplicado evitado' }
+      if (res.status === 409) {
+        const { name } = (await res.json().catch(() => ({}))) as { name?: string }
+        // Otro intento con la misma clave sigue en curso: se espera y se vuelve a preguntar con la misma clave.
+        if (name === 'concurrent_idempotent_requests') {
+          last = 'HTTP 409 concurrent_idempotent_requests'
+          if (attempt < attempts) await wait(attempt * 700)
+          continue
+        }
+        // La clave ya se usó: Resend aceptó este correo en un intento anterior. El contenido sólo difiere en la
+        // hora (la clave cambia si el cliente edita la solicitud), así que no se reenvía.
+        return { status: 'enviado', detail: `duplicado evitado (${name ?? '409'})` }
+      }
       last = `HTTP ${res.status} ${(await res.text().catch(() => '')).slice(0, 200)}`
       if (res.status !== 429 && res.status < 500) break
     } catch (e) {

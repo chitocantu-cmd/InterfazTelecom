@@ -34,10 +34,12 @@ export default function Contact() {
 
   return (
     <>
-      <PageHero crumbs={[{ label: 'Contacto' }]} title="Cotice su proyecto" lede="Cuatro pasos cortos. Al final revisa la solicitud y la envía por WhatsApp o correo con los datos ya escritos." />
+      <PageHero crumbs={[{ label: 'Contacto' }]} title="Cotice su proyecto" lede="Cuatro pasos cortos. Al final revisa la solicitud y la envía; también puede mandarla por WhatsApp o correo." />
       <section className="bg-mist py-16 md:py-24">
         <div className="container grid gap-10 lg:grid-cols-12">
           <div className="lg:col-span-8">
+            {/* Entre el título de la página y los pasos del cotizador (h3) no se salta un nivel. */}
+            <h2 className="sr-only">Solicitud de cotización</h2>
             <QuoteWizard
               key={`${tipo}-${service?.slug}-${need?.id}-${site}`}
               initialType={tipo ?? service?.quoteType ?? need?.quoteType}

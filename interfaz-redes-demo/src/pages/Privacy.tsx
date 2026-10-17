@@ -43,7 +43,7 @@ export default function Privacy() {
             </Block>
             <Block title="Transferencias">
               <p>Sus datos no se venden ni se transfieren a terceros, salvo cuando sea necesario para cumplir obligaciones legales o requerimientos de autoridad competente.</p>
-              <p>Cuando envía el formulario de cotización, sus datos y archivos viajan cifrados y se entregan al correo de nuestro equipo comercial mediante un proveedor de envío de correo electrónico; también podemos recibir un aviso interno por WhatsApp Business (Meta) con los datos de la solicitud. Estos proveedores procesan la información sólo para entregarla. El sitio no conserva copia de los archivos adjuntos. Si indica un correo, le enviamos un acuse de recibo con su folio.</p>
+              <p>Cuando envía el formulario de cotización, sus datos y archivos viajan cifrados y se entregan al correo de nuestro equipo comercial mediante un proveedor de envío de correo electrónico; también podemos recibir un aviso interno por WhatsApp Business (Meta) con los datos de la solicitud. Estos proveedores procesan la información sólo para entregarla. El sitio no conserva copia de los archivos adjuntos. Cuando la recepción automática está activa, le enviamos un acuse de recibo con su folio al correo que indique.</p>
               <p>Si elige enviar su solicitud usted mismo por WhatsApp o por correo, el mensaje se transmite mediante esos servicios, sujetos a sus propias políticas de privacidad.</p>
             </Block>
             <Block title="Derechos ARCO">

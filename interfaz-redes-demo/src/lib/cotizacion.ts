@@ -32,23 +32,32 @@ export const FILES = { max: 5, totalBytes: 4 * 1024 * 1024, extensions: ['pdf', 
 export const FILE_ACCEPT = FILES.extensions.map((e) => `.${e}`).join(',')
 export const fileExtension = (name: string) => name.split('.').pop()?.toLowerCase() ?? ''
 
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+// Lineal (sin retroceso costoso aunque llegue un texto enorme) y estricta: sin espacios, <>, ?, &, ni puntos dobles o finales.
+const EMAIL = /^[A-Za-z0-9._+'-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/
+const PHONE = /^\+?[\d\s().-]{10,25}$/
+const TEXT_FIELDS = Object.keys(MAX_LENGTH) as TextField[]
 
 /** Errores por campo; vacío si la solicitud está completa. */
 export function validateQuote(r: QuoteRequest): Partial<Record<QuoteField, string>> {
   const e: Partial<Record<QuoteField, string>> = {}
+  // Longitudes primero: un campo excedido se rechaza sin evaluar su formato.
+  for (const k of TEXT_FIELDS) if ((r[k]?.length ?? 0) > MAX_LENGTH[k]) e[k] = `Use como máximo ${MAX_LENGTH[k]} caracteres.`
   if (!r.types.length) e.types = 'Seleccione al menos una opción.'
-  if (r.location.trim().length < 3) e.location = 'Indique la ciudad o zona del proyecto.'
-  if (r.description.trim().length < 15) e.description = 'Describa la necesidad en al menos una frase (15 caracteres).'
-  if (r.name.trim().length < 3) e.name = 'Escriba su nombre.'
-  if (r.company.trim().length < 2) e.company = 'Escriba el nombre de la empresa.'
-  if (!EMAIL.test(r.email.trim())) e.email = 'Revise el formato del correo, por ejemplo nombre@empresa.com.'
-  if (r.phone.replace(/\D/g, '').length < 10) e.phone = 'Escriba un número de 10 dígitos.'
-  for (const k of Object.keys(MAX_LENGTH) as TextField[]) {
-    if (!e[k] && (r[k]?.length ?? 0) > MAX_LENGTH[k]) e[k] = `Use como máximo ${MAX_LENGTH[k]} caracteres.`
+  if (!e.location && r.location.trim().length < 3) e.location = 'Indique la ciudad o zona del proyecto.'
+  if (!e.description && r.description.trim().length < 15) e.description = 'Describa la necesidad en al menos una frase (15 caracteres).'
+  if (!e.name && r.name.trim().length < 3) e.name = 'Escriba su nombre.'
+  if (!e.company && r.company.trim().length < 2) e.company = 'Escriba el nombre de la empresa.'
+  if (!e.email && !EMAIL.test(r.email.trim())) e.email = 'Revise el formato del correo, por ejemplo nombre@empresa.com.'
+  if (!e.phone) {
+    const digits = r.phone.replace(/\D/g, '').length
+    if (digits < 10) e.phone = 'Escriba un número de 10 dígitos.'
+    else if (digits > 15 || !PHONE.test(r.phone.trim())) e.phone = 'Use sólo números, espacios, guiones o paréntesis (hasta 15 dígitos).'
   }
   return e
 }
+
+/** Campos de una línea: saltos, tabuladores y separadores Unicode se vuelven un espacio (no inyectan renglones). */
+export const singleLine = (s: string) => s.replace(/[\r\n\t\u2028\u2029]+/g, ' ')
 
 export const typeLabels = (types: QuoteType[]) => types.map((t) => QUOTE_TYPES.find((q) => q.id === t)?.label ?? t)
 

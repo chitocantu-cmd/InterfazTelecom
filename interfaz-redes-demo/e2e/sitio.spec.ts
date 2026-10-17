@@ -355,6 +355,12 @@ test.describe('recepción de cotizaciones', () => {
     }
     expect(readFileSync(`.cotizaciones-prueba/${folio}-ventas.html`, 'utf8')).toContain('NUEVA SOLICITUD DE COTIZACIÓN')
     expect(readFileSync(`.cotizaciones-prueba/${folio}-acuse.txt`, 'utf8')).toContain(`Folio: ${folio}`)
+    expect(ventas).toContain('los envió una persona externa')
+    // El acuse no repite texto libre del formulario (no sirve para mandar mensajes a terceros).
+    const acuse = readFileSync(`.cotizaciones-prueba/${folio}-acuse.txt`, 'utf8')
+    expect(acuse).toContain('Hola, Ana:')
+    expect(acuse).toContain('Tipo de inmueble: Planta industrial')
+    expect(acuse).not.toContain('Apodaca')
     const aviso = readFileSync(`.cotizaciones-prueba/${folio}-whatsapp.txt`, 'utf8')
     expect(aviso).toContain('*NUEVA COTIZACIÓN — INTERFAZ REDES*')
     expect(aviso).toContain(`Folio: ${folio}`)
@@ -372,7 +378,7 @@ test.describe('recepción de cotizaciones', () => {
     const invalid = await post({ ...ok, email: 'ana@', phone: '81' })
     expect(invalid.status()).toBe(400)
     expect(Object.keys((await invalid.json()).errores)).toEqual(['email', 'phone'])
-    expect((await (await post({ ...ok, website: 'https://spam.example' })).json()).codigo, 'campo trampa').toBe('rechazada')
+    expect((await (await post({ ...ok, hp_ref: 'https://spam.example' })).json()).codigo, 'campo trampa').toBe('rechazada')
     expect((await (await post({ ...ok, elapsed: '500' })).json()).codigo, 'demasiado rápido').toBe('rechazada')
     const fake = await post({ ...ok, files: { name: 'plano.pdf', mimeType: 'application/pdf', buffer: Buffer.from('no es un pdf') } })
     expect((await fake.json()).codigo, 'archivo falso').toBe('archivos')
@@ -466,5 +472,85 @@ test.describe('correcciones P1', () => {
     await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Nosotros' }).click()
     await expect(page).toHaveURL('/nosotros')
     await expect(page.locator('#contenido')).toBeFocused()
+  })
+})
+
+// Correcciones P2 de la auditoría: antes de activar la recepción automática.
+test.describe('correcciones P2 (recepción)', () => {
+  const ok = { types: 'fibra', location: 'Apodaca', description: 'Enlace de fibra entre dos naves.', name: 'Ana López', company: 'Empresa', email: 'ana@empresa.mx', phone: '8112345678', elapsed: '9000' }
+
+  test('el servidor normaliza saltos de línea y valida estricto', async ({ request, baseURL }) => {
+    test.skip(!!process.env.BASE_URL, 'sólo en local')
+    const post = (multipart: Record<string, string>) => request.post('/api/cotizacion', { multipart, headers: { Origin: baseURL! } })
+    // 3 990 caracteres con 60 saltos CRLF: en el navegador miden 3 990 y caben en el máximo de 4 000.
+    const line = 'x'.repeat(65)
+    const description = Array.from({ length: 60 }, () => line).join('\r\n').padEnd(3990 + 60, 'y')
+    const res = await post({ ...ok, description: description.slice(0, 3990 + 60), key: `${Date.now()}-p2-saltos-de-linea` })
+    expect(res.status(), await res.text()).toBe(200)
+
+    for (const email of ['juan@acme..com', 'juan@acme.com.', '<a@b.co>', 'x@evil.mx?cc=otro@b.co']) {
+      const r = await post({ ...ok, email })
+      expect(r.status(), email).toBe(400)
+      expect(Object.keys((await r.json()).errores), email).toEqual(['email'])
+    }
+    expect(Object.keys((await (await post({ ...ok, phone: 'abc 81 1234 5678' })).json()).errores)).toEqual(['phone'])
+    const long = await post({ ...ok, name: 'A'.repeat(500) })
+    expect(long.status()).toBe(413)
+    expect((await long.json()).errores.name).toContain('120')
+    const notForm = await request.post('/api/cotizacion', { data: ok, headers: { Origin: baseURL! } })
+    expect((await notForm.json()).codigo).toBe('formato')
+  })
+
+  async function toReview(page: Page) {
+    await page.goto('/contacto')
+    const form = page.locator('main')
+    await form.getByText('Fibra óptica', { exact: true }).click()
+    await form.getByRole('button', { name: 'Continuar' }).click()
+    await form.getByRole('textbox', { name: 'Ciudad o ubicación general' }).fill('Apodaca, N.L.')
+    await form.getByRole('textbox', { name: 'Describa la necesidad' }).fill('Enlace de fibra entre dos naves a 180 m.')
+    await form.getByRole('button', { name: 'Continuar' }).click()
+    await form.getByRole('textbox', { name: 'Nombre' }).fill('Ana López')
+    await form.getByRole('textbox', { name: 'Empresa' }).fill('Empresa de Prueba')
+    await form.getByRole('textbox', { name: 'Correo corporativo' }).fill('ana@empresa.mx')
+    await form.getByRole('textbox', { name: 'WhatsApp' }).fill('81 1234 5678')
+    await form.getByRole('button', { name: 'Revisar solicitud' }).click()
+    return form
+  }
+  const mockPost = (page: Page, reply: (route: import('@playwright/test').Route) => Promise<void>) =>
+    page.route('**/api/cotizacion', (r) => (r.request().method() === 'GET' ? r.fulfill({ json: { recepcion: true, whatsapp: true } }) : reply(r)))
+
+  test('si sólo llegó el WhatsApp, la confirmación lo dice y ofrece mandar los archivos', async ({ page }) => {
+    await mockPost(page, (r) => r.fulfill({ json: { ok: true, folio: 'COT-261017-ABCDEF', fecha: '17 de octubre de 2026', estados: { correo: 'error', whatsapp: 'enviado', acuse: 'omitido' } } }))
+    const form = await toReview(page)
+    await form.getByRole('button', { name: 'Enviar solicitud' }).click()
+    await expect(form.getByRole('heading', { name: 'Solicitud recibida' })).toBeFocused()
+    await expect(form.getByText('Su solicitud llegó al equipo por WhatsApp, pero sin archivos')).toBeVisible()
+    await expect(form.getByRole('link', { name: 'Enviar por correo' })).toHaveAttribute('href', /Folio%20COT-261017-ABCDEF/)
+    await expect(form.getByText('Enviamos un acuse')).toHaveCount(0)
+  })
+
+  test('los errores del servidor vuelven al campo que hay que corregir', async ({ page }) => {
+    await mockPost(page, (r) => r.fulfill({ status: 400, json: { ok: false, codigo: 'invalida', mensaje: 'Revise los datos de la solicitud.', errores: { email: 'Revise el formato del correo, por ejemplo nombre@empresa.com.' } } }))
+    const form = await toReview(page)
+    await form.getByRole('button', { name: 'Enviar solicitud' }).click()
+    await expect(form.getByRole('heading', { name: '¿Con quién hablamos?' })).toBeVisible()
+    await expect(form.getByRole('alert')).toHaveText('Revise el formato del correo, por ejemplo nombre@empresa.com.')
+    await expect(form.getByRole('textbox', { name: 'Correo corporativo' })).toBeFocused()
+    // Al corregir el dato, el error del servidor desaparece.
+    await form.getByRole('textbox', { name: 'Correo corporativo' }).fill('ana@empresa.com.mx')
+    await expect(form.getByRole('alert')).toHaveCount(0)
+  })
+
+  test('«Editar» y el envío manual se bloquean mientras se envía', async ({ page }) => {
+    await mockPost(page, async (r) => {
+      await new Promise((ok) => setTimeout(ok, 1500))
+      await r.fulfill({ json: { ok: true, folio: 'COT-261017-ZZZZZZ', fecha: 'hoy', estados: { correo: 'enviado', whatsapp: 'enviado', acuse: 'enviado' } } })
+    })
+    const form = await toReview(page)
+    await form.getByRole('button', { name: 'Enviar solicitud' }).click()
+    await expect(form.getByRole('button', { name: 'Editar contacto' })).toBeDisabled()
+    await expect(form.getByRole('link', { name: 'Enviar por WhatsApp' })).toHaveAttribute('aria-disabled', 'true')
+    await expect(form.getByRole('heading', { name: 'Solicitud recibida' })).toBeVisible()
+    await expect(form.getByText('Enviamos un acuse de recibo a ana@empresa.mx.')).toBeVisible()
   })
 })

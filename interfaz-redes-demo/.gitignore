@@ -2,7 +2,7 @@ node_modules
 dist
 dist-preview
 .vercel
-.env.local
+.env*.local
 *.log
 .DS_Store
 tools/renders/node_modules

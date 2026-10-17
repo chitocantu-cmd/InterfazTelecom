@@ -131,10 +131,19 @@ navegador, en `src/lib/cotizacion.ts`), asigna un folio (`COT-AAMMDD-XXXXXX`) y 
 (con los archivos adjuntos y Reply-To al cliente) y por **WhatsApp** (si está configurado). Si llegó a ventas por
 al menos un canal, manda un **acuse de recibo** al cliente y le muestra el folio; si no llegó por ningún canal,
 el cotizador lo dice y ofrece enviarla por WhatsApp o correo. Nunca muestra "Solicitud recibida" sin que el
-servidor la haya entregado.
+servidor la haya entregado. Si sólo llegó el WhatsApp (falló el correo), la confirmación lo dice: la solicitud llegó
+sin archivos y con la descripción resumida, y ofrece mandarlos citando el folio.
 
-Mientras no haya ningún canal configurado, `GET /api/cotizacion` responde `recepcion: false` y el cotizador funciona
-como antes: abre WhatsApp o el correo con la solicitud escrita.
+**La recepción se activa con el correo** (`RESEND_API_KEY`). WhatsApp es un aviso adicional: los archivos y la
+descripción completa sólo viajan por correo, así que configurar sólo WhatsApp no activa nada. Mientras no haya
+correo configurado, `GET /api/cotizacion` responde `recepcion: false` y el cotizador funciona como antes: abre
+WhatsApp o el correo con la solicitud escrita.
+
+**Orden para activarla:** 1) dominio verificado en Resend y registro DMARC; 2) variables en el entorno **Preview**
+con destinatarios de prueba; 3) prueba completa en una vista previa (correo, acuse, WhatsApp con todos los campos
+al máximo, adjuntos, reintento y límite); 4) variables en **Production** (marcadas como *Sensitive*) y Redeploy;
+5) monitoreo (ver «Seguridad y registro»). Hasta tener un límite compartido (Firewall de Vercel), conviene activar
+con `COTIZACION_ACUSE=0`.
 
 ### Variables (Vercel → Settings → Environment Variables, entorno Production)
 
@@ -174,7 +183,11 @@ una app con el producto WhatsApp, un número dado de alta en la plataforma (no p
 de WhatsApp), un token permanente de usuario del sistema y una plantilla aprobada. Como los destinatarios no le
 escriben antes al número de la empresa, Meta sólo permite avisarles con una **plantilla aprobada**.
 
-Plantilla `nueva_cotizacion` (categoría *Utilidad*, idioma *Spanish (MEX)*), cuerpo:
+Plantilla `nueva_cotizacion` (categoría *Utilidad*, idioma *Spanish (MEX)*). Debe tener **exactamente** las 10
+variables `{{1}}`…`{{10}}` en este orden (folio, fecha, cliente, empresa, servicio, ubicación, WhatsApp, correo,
+descripción, archivos); si se cambia el número o el orden, cada aviso falla. Al enviarla a revisión, Meta pide un
+ejemplo por variable. El texto fijo mide 236 caracteres y el código recorta cada variable para que el mensaje armado
+no pase de 1 024 (límite de Meta); la descripción llega resumida a 230 caracteres. Cuerpo:
 
 ```
 *NUEVA COTIZACIÓN — INTERFAZ REDES*
@@ -202,19 +215,40 @@ Mientras no esté configurada, después de enviar la solicitud el cliente ve un 
 WhatsApp" que abre WhatsApp con su folio y la solicitud escrita; el envío lo confirma él (no es automático).
 Al configurar las variables de WhatsApp, el aviso pasa a ser automático y ese botón deja de mostrarse.
 
+`WHATSAPP_DESTINATARIOS` va con lada de país y sin "+" (para México, `52` + 10 dígitos; confirme el formato con un
+envío de prueba). En modo de desarrollo de la app de Meta sólo se puede enviar a números de prueba registrados.
+
 ### Seguridad y registro
 
 - Validación en el navegador y otra vez en el servidor; longitudes máximas por campo.
-- Sólo acepta envíos desde el propio sitio (cabecera `Origin`), con campo trampa contra bots, tiempo mínimo de
-  captura y límite de solicitudes por IP (`COTIZACION_LIMITE_POR_IP`, por omisión 5 cada 10 minutos).
-- Archivos: tipo, cantidad y tamaño revisados, y el contenido debe corresponder a la extensión.
-- Un doble clic o un reintento con la misma clave conserva el folio y no duplica avisos.
+- Sólo acepta envíos desde el propio sitio (cabecera `Origin`; en vistas previas, también su propia dirección de
+  Vercel; `localhost` sólo fuera de Vercel), con campo trampa contra bots (`hp_ref`), tiempo mínimo de captura y
+  límite de solicitudes válidas por IP (`COTIZACION_LIMITE_POR_IP`, por omisión 5 cada 10 minutos; IPv6 por bloque
+  /64; el 429 lleva `Retry-After`).
+- **El límite y la memoria de reintentos son por instancia de la función.** Para un límite real conviene una regla
+  de rate limit en el Firewall de Vercel para `POST /api/cotizacion` y, si hace falta, Vercel BotID o Turnstile.
+- Textos: el correo y el teléfono se validan con expresiones lineales (un texto enorme no traba la función) y los
+  campos de una línea no aceptan saltos de línea.
+- Archivos: tipo, cantidad y tamaño revisados, y el contenido debe corresponder a la extensión (firmas de PDF, JPG,
+  PNG, HEIC, DWG, DXF y Office); el nombre se limpia de caracteres de control.
+- Un doble clic o un reintento con la misma clave conserva el folio y no duplica el correo (Resend usa la clave de
+  idempotencia). Un aviso de WhatsApp sí podría repetirse si el reintento cae en otra instancia.
+- El acuse al cliente no repite texto libre del formulario (no sirve para mandar mensajes a terceros).
 - Credenciales sólo en variables de entorno del servidor; los errores al cliente no exponen detalles internos.
-- Cada solicitud deja en los logs de Vercel (Project → Logs) una línea `{"evento":"cotizacion", ...}` con el
-  folio y el estado de cada canal (`enviado`, `parcial`, `error`, `no_configurado`, `omitido`), sin datos
-  personales; los fallos se registran como `cotizacion_error` con el detalle del proveedor.
+- Registro en los logs de Vercel (Project → Logs), sin datos personales:
+  - `{"evento":"cotizacion", folio, recibida, correo, whatsapp, acuse, archivos, tipos}` por cada solicitud, con el
+    estado de cada canal (`enviado`, `parcial`, `error`, `no_configurado`, `omitido`, `prueba`).
+  - `{"evento":"cotizacion", "resultado":"limite" | "descartada_spam"}` para lo rechazado.
+  - `{"evento":"cotizacion_error", folio, canal, detalle, archivos, descripcion_recortada}` por cada canal que
+    falló, y `canal: "servidor"` (con un hash de la clave) si la función falló.
+- Monitoreo recomendado: un monitor externo que consulte `GET /api/cotizacion` y avise si deja de responder
+  `"recepcion":true`, alertas o Log Drain para `cotizacion_error`, y los webhooks de rebote de Resend.
 
 ### Probar en local
+
+Copie la plantilla como `.env.local` (en PowerShell: `Copy-Item .env.example .env.local`). **Nunca ponga claves en
+`.env`**: ese archivo se sube a GitHub y el repositorio es público. Si cambia `.env.local` con `npm run dev`
+corriendo, reinicie el servidor.
 
 `.env.local` con `COTIZACION_PRUEBA=1` y `npm run dev`: el cotizador envía a la función local, que escribe el
 correo a ventas, el acuse y el aviso de WhatsApp en `.cotizaciones-prueba/` en lugar de enviarlos (las pruebas
