@@ -44,7 +44,7 @@ export function Footer() {
           <nav aria-label="Soluciones" className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 lg:col-span-9 lg:grid-cols-5">
             {CATEGORIES.map((cat) => (
               <div key={cat.id}>
-                <Link to={`/soluciones?s=${cat.id}`} className="font-display text-[0.98rem] font-semibold leading-snug text-ink hover:text-corp">{cat.name}</Link>
+                <Link to={`/soluciones#${cat.id}`} className="font-display text-[0.98rem] font-semibold leading-snug text-ink hover:text-corp">{cat.name}</Link>
                 <ul className="mt-4 space-y-2.5 text-small">
                   {servicesOf(cat.id).map((s) => <li key={s.slug}><Link to={`/soluciones/${s.slug}`} className="text-body hover:text-corp">{s.name}</Link></li>)}
                 </ul>

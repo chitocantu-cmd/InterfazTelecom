@@ -105,13 +105,13 @@ test.describe('acomodo en otros anchos', () => {
 test.describe('logotipo', () => {
   test('aparece en header y footer y lleva al inicio', async ({ page }) => {
     await page.goto('/nosotros')
-    const headerLogo = page.locator('header').getByRole('img', { name: 'Interfaz Telecomunicaciones' })
+    const headerLogo = page.locator('header').getByRole('img', { name: 'Interfaz Redes y Telecomunicaciones' })
     await expect(headerLogo).toBeVisible()
-    await expect(page.locator('footer').getByRole('img', { name: 'Interfaz Telecomunicaciones' })).toBeVisible()
+    await expect(page.locator('footer').getByRole('img', { name: 'Interfaz Redes y Telecomunicaciones' })).toBeVisible()
     await expect.poll(() => headerLogo.evaluate((i: HTMLImageElement) => i.naturalWidth), { message: 'el logotipo carga' }).toBeGreaterThan(0)
     await page.getByRole('link', { name: /ir al inicio/i }).click()
     await expect(page).toHaveURL('/')
-    await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', '/favicon.jpg')
+    await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', '/favicon.ico')
   })
 })
 
@@ -265,7 +265,16 @@ test.describe('pestañas y filtros', () => {
     await page.getByRole('tab', { name: 'Centros de distribución' }).click()
     await expect(page.getByRole('tab', { name: 'Centros de distribución' })).toHaveAttribute('aria-selected', 'true')
     await expect(page).toHaveURL('/industrias?sector=cedis')
-    await expect(page.locator('#ind-panel h2')).toHaveText('Centros de distribución')
+    await expect(page.getByRole('tabpanel').getByRole('heading', { level: 2 })).toHaveText('Centros de distribución')
+  })
+
+  test('industrias: el enlace con ?sector= abre ese sector y los cinco están en el HTML', async ({ page }) => {
+    await page.goto('/industrias?sector=educacion')
+    await expect(page.getByRole('tab', { name: 'Instituciones educativas' })).toHaveAttribute('aria-selected', 'true')
+    await expect(page.getByRole('tabpanel').getByRole('heading', { level: 2 })).toHaveText('Instituciones educativas')
+    // Los otros cuatro van ocultos (para buscadores), fuera del árbol de accesibilidad.
+    await expect(page.locator('[role=tabpanel]')).toHaveCount(5)
+    await expect(page.locator('[role=tabpanel][hidden]')).toHaveCount(4)
   })
 
   test('proyectos se filtran por categoría y sector', async ({ page }) => {
@@ -313,7 +322,31 @@ test.describe('HTML de cada página (sitio publicado)', () => {
       const og = html.match(/<meta property="og:image" content="([^"]+)"/)?.[1]
       expect(og, `${path} og:image`).toMatch(/^https:\/\//)
       if (path === '/') expect((await request.get(og!)).status(), 'og:image responde').toBe(200)
+      expect(html, `${path} og:image:alt`).toContain('<meta property="og:image:alt"')
+      // Datos estructurados: empresa y sitio en todas; servicio y ruta de navegación donde aplica.
+      const ld = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)![1])
+      const types = ld['@graph'].map((n: { '@type': string }) => n['@type'])
+      expect(types, path).toEqual(expect.arrayContaining(['LocalBusiness', 'WebSite']))
+      if (path.startsWith('/soluciones/')) expect(types, path).toContain('Service')
+      if (path !== '/') expect(types, path).toContain('BreadcrumbList')
     }
+  })
+
+  test('sitemap, robots, íconos y redirección del slug anterior', async ({ request }) => {
+    const sitemap = await (await request.get('/sitemap.xml')).text()
+    expect(sitemap.match(/<loc>/g)).toHaveLength(SEO_ROUTES.length)
+    expect(sitemap).toContain('/soluciones/redes-empresariales</loc>')
+    const robots = await (await request.get('/robots.txt')).text()
+    expect(robots).toContain('Disallow: /api/')
+    expect(robots).toMatch(/Sitemap: https:\/\/\S+\/sitemap\.xml/)
+    for (const icon of ['/favicon.ico', '/apple-touch-icon.png']) {
+      const res = await request.get(icon)
+      expect(res.status(), icon).toBe(200)
+      expect(res.headers()['cache-control'], icon).toContain('max-age=86400')
+    }
+    const old = await request.get('/soluciones/switching-routing', { maxRedirects: 0 })
+    expect(old.status()).toBe(308)
+    expect(old.headers().location).toMatch(/\/soluciones\/redes-empresariales$/)
   })
 })
 
@@ -552,5 +585,33 @@ test.describe('correcciones P2 (recepción)', () => {
     await expect(form.getByRole('link', { name: 'Enviar por WhatsApp' })).toHaveAttribute('aria-disabled', 'true')
     await expect(form.getByRole('heading', { name: 'Solicitud recibida' })).toBeVisible()
     await expect(form.getByText('Enviamos un acuse de recibo a ana@empresa.mx.')).toBeVisible()
+  })
+})
+
+// Correcciones P3 de la auditoría: SEO sin cambios visuales.
+test.describe('correcciones P3 (SEO)', () => {
+  test('las categorías enlazan con #ancla y los enlaces anteriores (?s=) siguen funcionando', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('footer').getByRole('link', { name: 'Fibra óptica', exact: true }).first().click()
+    await expect(page).toHaveURL('/soluciones#fibra')
+    await expect(page.locator('#fibra')).toBeInViewport()
+    await expect(page.locator('#fibra')).toBeFocused()
+    await page.goto('/soluciones?s=seguridad')
+    await expect(page.locator('#seguridad')).toBeInViewport()
+  })
+
+  test('el menú móvil marca la página actual', async ({ page, isMobile }) => {
+    test.skip(!isMobile, 'sólo móvil')
+    await page.goto('/nosotros')
+    await page.getByRole('button', { name: 'Abrir menú' }).click()
+    const menu = page.getByRole('navigation', { name: 'Menú móvil' })
+    await expect(menu.getByRole('link', { name: 'Nosotros' })).toHaveAttribute('aria-current', 'page')
+    await expect(menu.getByRole('link', { name: 'Inicio' })).not.toHaveAttribute('aria-current', 'page')
+  })
+
+  test('el botón «Soluciones» anuncia que es la sección actual', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'sólo escritorio')
+    await page.goto('/soluciones/fibra-optica')
+    await expect(page.getByRole('navigation', { name: 'Principal' }).getByRole('button', { name: 'Soluciones (sección actual)' })).toBeVisible()
   })
 })

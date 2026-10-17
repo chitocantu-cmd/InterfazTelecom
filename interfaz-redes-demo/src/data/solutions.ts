@@ -12,6 +12,8 @@ export interface Service {
   name: string
   category: CategoryId
   short: string
+  /** Descripción para buscadores (120 a 160 caracteres) cuando la que se arma con `short` e `intro` queda corta o repetida. */
+  seoDescription?: string
   plate: PlateKind
   img?: ImgKey
   code: string
@@ -86,7 +88,7 @@ export const CATEGORIES: Category[] = [
     technical:
       'La red activa que transporta la operación: switching con segmentación por VLAN y PoE, routing, cobertura inalámbrica diseñada con site survey y enlaces punto a punto o multipunto.',
     plate: 'wifi',
-    services: ['switching-routing', 'wifi-empresarial', 'enlaces-inalambricos', 'telefonia-ip'],
+    services: ['redes-empresariales', 'wifi-empresarial', 'enlaces-inalambricos', 'telefonia-ip'],
     cta: 'Cotizar conectividad',
   },
   {
@@ -246,7 +248,7 @@ export const SERVICES: Service[] = [
       { label: 'Energía', value: 'UPS · PDU' },
     ],
     quoteType: 'infra',
-    related: ['cableado-estructurado', 'switching-routing', 'calidad-de-energia'],
+    related: ['cableado-estructurado', 'redes-empresariales', 'calidad-de-energia'],
   },
   {
     slug: 'wifi-empresarial',
@@ -267,10 +269,10 @@ export const SERVICES: Service[] = [
       { label: 'Alimentación', value: 'PoE' },
     ],
     quoteType: 'infra',
-    related: ['switching-routing', 'cableado-estructurado'],
+    related: ['redes-empresariales', 'cableado-estructurado'],
   },
   {
-    slug: 'switching-routing',
+    slug: 'redes-empresariales',
     code: 'CON-01',
     img: 'aisle',
     name: 'Redes empresariales',
@@ -292,6 +294,7 @@ export const SERVICES: Service[] = [
   },
   {
     slug: 'enlaces-inalambricos',
+    seoDescription: 'Enlaces inalámbricos punto a punto y multipunto en Monterrey para casetas, patios y sedes cercanas sin trayectoria para fibra, con validación de línea de vista.',
     code: 'CON-03',
     name: 'Enlaces punto a punto y multipunto',
     category: 'conectividad',
@@ -312,6 +315,7 @@ export const SERVICES: Service[] = [
   },
   {
     slug: 'telefonia-ip',
+    seoDescription: 'Conmutadores y teléfonos IP sobre la red de datos, con segmentación y prioridad para la voz. Para oficinas, recepciones y migración desde telefonía análoga.',
     code: 'CON-04',
     name: 'Voz y telefonía IP',
     category: 'conectividad',
@@ -327,7 +331,7 @@ export const SERVICES: Service[] = [
       { label: 'Equipos', value: 'PoE' },
     ],
     quoteType: 'infra',
-    related: ['cableado-estructurado', 'switching-routing'],
+    related: ['cableado-estructurado', 'redes-empresariales'],
   },
   {
     slug: 'cctv-videovigilancia',
@@ -384,10 +388,11 @@ export const SERVICES: Service[] = [
       { q: '¿Dan mantenimiento a sistemas existentes?', a: 'Sí: diagnóstico, mantenimiento preventivo y correctivo de sistemas instalados.' },
     ],
     quoteType: 'cctv',
-    related: ['control-de-acceso', 'switching-routing', 'fibra-optica'],
+    related: ['control-de-acceso', 'redes-empresariales', 'fibra-optica'],
   },
   {
     slug: 'control-de-acceso',
+    seoDescription: 'Control de acceso peatonal y vehicular en Monterrey: permisos por horario y área, áreas restringidas como site o almacén, casetas y reportes de asistencia.',
     code: 'SEG-02',
     img: 'access',
     name: 'Control de acceso',
@@ -405,7 +410,7 @@ export const SERVICES: Service[] = [
       { label: 'Reportes', value: 'Acceso · asistencia' },
     ],
     quoteType: 'acceso',
-    related: ['cctv-videovigilancia', 'switching-routing'],
+    related: ['cctv-videovigilancia', 'redes-empresariales'],
   },
   {
     slug: 'deteccion-perimetral',
@@ -428,6 +433,7 @@ export const SERVICES: Service[] = [
   },
   {
     slug: 'diseno-e-ingenieria',
+    seoDescription: 'Levantamiento, ingeniería y proyecto ejecutivo en Monterrey para obra nueva, ampliaciones y licitaciones con especificación técnica de su infraestructura.',
     code: 'ING-01',
     name: 'Ingeniería y proyectos',
     category: 'ingenieria',
@@ -448,6 +454,7 @@ export const SERVICES: Service[] = [
   },
   {
     slug: 'certificacion-y-pruebas',
+    seoDescription: 'Certificación de cada enlace de cobre y medición de cada hilo de fibra, con reporte entregable, para entrega de obra, validación o fallas intermitentes.',
     code: 'ING-02',
     img: 'patchPanel',
     name: 'Certificación de enlaces',

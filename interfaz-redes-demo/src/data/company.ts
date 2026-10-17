@@ -11,7 +11,12 @@ export const COMPANY = {
   emailProjects: 'proyectos@interfazredes.com',
   site: 'https://interfaztelecom.com.mx/',
   address: 'Av. 8 Norte #1750, Col. Industrial, Monterrey, N.L.',
+  /** La misma dirección por partes, para los datos estructurados (schema.org). */
+  addressParts: { street: 'Av. 8 Norte #1750, Col. Industrial', city: 'Monterrey', region: 'Nuevo León', country: 'MX' },
   hours: 'Lunes a viernes, 8:00 a 18:00 h',
+  /** El mismo horario en el formato de schema.org. */
+  hoursSchema: 'Mo-Fr 08:00-18:00',
+  areaServed: 'Monterrey y área metropolitana, Nuevo León',
   years: '+15',
   facebook: 'https://www.facebook.com/interfazredes',
 } as const

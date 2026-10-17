@@ -14,7 +14,7 @@ export function Logo({ className, size = 'md', variant = 'color' }: { className?
       src={asset.src}
       width={asset.width}
       height={asset.height}
-      alt="Interfaz Telecomunicaciones"
+      alt="Interfaz Redes y Telecomunicaciones"
       decoding="async"
       className={cn('block w-auto select-none', h, variant === 'tile' && 'rounded-[2px]', className)}
       draggable={false}

@@ -17,7 +17,7 @@ export const NEEDS: Need[] = [
     id: 'red-nueva',
     label: 'Implementar una red desde cero',
     context: 'Oficina, nave o edificio nuevo',
-    services: ['diseno-e-ingenieria', 'cableado-estructurado', 'racks-y-site', 'switching-routing', 'wifi-empresarial'],
+    services: ['diseno-e-ingenieria', 'cableado-estructurado', 'racks-y-site', 'redes-empresariales', 'wifi-empresarial'],
     answer: 'Se parte de un levantamiento y un diseño: ubicación del site, trayectorias, cantidad de nodos, equipo activo y cobertura inalámbrica.',
     prepare: ['Planos o croquis del inmueble', 'Número aproximado de usuarios y puestos', 'Fecha prevista de ocupación'],
     quoteType: 'cableado',
@@ -26,7 +26,7 @@ export const NEEDS: Need[] = [
     id: 'ampliar',
     label: 'Ampliar la infraestructura existente',
     context: 'Más nodos, áreas o capacidad',
-    services: ['cableado-estructurado', 'switching-routing', 'racks-y-site', 'certificacion-y-pruebas'],
+    services: ['cableado-estructurado', 'redes-empresariales', 'racks-y-site', 'certificacion-y-pruebas'],
     answer: 'Revisamos lo instalado antes de agregar: capacidad del rack, puertos libres, distancias y estado de la documentación.',
     prepare: ['Fotografías del rack o site actual', 'Cantidad de nodos nuevos', 'Áreas que se integran'],
     quoteType: 'infra',
@@ -35,7 +35,7 @@ export const NEEDS: Need[] = [
     id: 'edificios',
     label: 'Conectar edificios o naves',
     context: 'Enlace entre construcciones del mismo predio',
-    services: ['fibra-optica', 'enlaces-inalambricos', 'switching-routing'],
+    services: ['fibra-optica', 'enlaces-inalambricos', 'redes-empresariales'],
     answer: 'Normalmente fibra óptica por ducto o vía aérea, con medición OTDR. Si no hay trayectoria posible, se evalúa un enlace inalámbrico punto a punto.',
     prepare: ['Distancia aproximada entre edificios', 'Si existe ducto o registro disponible', 'Fotografías de ambos extremos'],
     quoteType: 'fibra',
@@ -44,7 +44,7 @@ export const NEEDS: Need[] = [
     id: 'cctv',
     label: 'Modernizar el sistema de videovigilancia',
     context: 'Migración, ampliación o reemplazo',
-    services: ['cctv-videovigilancia', 'switching-routing', 'deteccion-perimetral', 'mantenimiento-y-soporte'],
+    services: ['cctv-videovigilancia', 'redes-empresariales', 'deteccion-perimetral', 'mantenimiento-y-soporte'],
     answer: 'Se define cobertura por zona, tipo de cámara, grabación y la red PoE que lo soporta. Lo existente se evalúa para reutilizar lo que funcione.',
     prepare: ['Número y tipo de cámaras actuales', 'Áreas que se necesita cubrir', 'Tiempo de grabación que se requiere conservar'],
     quoteType: 'cctv',
@@ -138,7 +138,7 @@ export const INDUSTRIES: Industry[] = [
     lede: 'Seguridad en piso de venta y red confiable para puntos de venta y oficinas.',
     areas: ['Piso de venta', 'Cajas', 'Almacén', 'Accesos'],
     challenges: ['Operación en horario extendido', 'Instalación sin interrumpir la venta', 'Monitoreo remoto de varias sucursales'],
-    services: ['cctv-videovigilancia', 'cableado-estructurado', 'switching-routing', 'control-de-acceso'],
+    services: ['cctv-videovigilancia', 'cableado-estructurado', 'redes-empresariales', 'control-de-acceso'],
     plate: 'access',
     img: 'indComercio',
   },
@@ -160,6 +160,8 @@ export interface Project {
   technologies: string[]
   services: string[]
   summary: string
+  /** Descripción para buscadores (120 a 160 caracteres). */
+  seoDescription?: string
 }
 
 export const PROJECT_CATEGORIES: ProjectCategory[] = ['Infraestructura TI industrial', 'Fibra óptica', 'CCTV', 'Racks y site', 'Redes corporativas']
@@ -167,6 +169,7 @@ export const PROJECT_CATEGORIES: ProjectCategory[] = ['Infraestructura TI indust
 export const PROJECTS: Project[] = [
   {
     slug: 'red-de-planta-nave-industrial',
+    seoDescription: 'Caso demostrativo: backbone de fibra desde el site principal, cuarto de distribución con rack y UPS, nodos Cat6A y cobertura WiFi en piso de producción.',
     code: 'DEMO-01',
     services: ['fibra-optica', 'racks-y-site', 'cableado-estructurado', 'wifi-empresarial'],
     img: 'proyNave',
@@ -181,6 +184,7 @@ export const PROJECTS: Project[] = [
   },
   {
     slug: 'renovacion-cableado-corporativo',
+    seoDescription: 'Caso demostrativo: cableado de oficinas sin documentación sustituido por Cat6, con plano de nodos, rack reordenado y cada punto certificado y etiquetado.',
     code: 'DEMO-02',
     services: ['cableado-estructurado', 'racks-y-site', 'certificacion-y-pruebas'],
     img: 'proyCorporativo',
@@ -195,8 +199,9 @@ export const PROJECTS: Project[] = [
   },
   {
     slug: 'videovigilancia-cedis',
+    seoDescription: 'Caso demostrativo: videovigilancia de andenes, patios y perímetro de un CEDIS con cámaras fijas y PTZ, red PoE dedicada, NVR central y acceso remoto.',
     code: 'DEMO-03',
-    services: ['cctv-videovigilancia', 'switching-routing', 'enlaces-inalambricos'],
+    services: ['cctv-videovigilancia', 'redes-empresariales', 'enlaces-inalambricos'],
     img: 'proyCedis',
     title: 'Videovigilancia en centro de distribución',
     category: 'CCTV',
@@ -209,8 +214,9 @@ export const PROJECTS: Project[] = [
   },
   {
     slug: 'enlace-fibra-entre-edificios',
+    seoDescription: 'Caso demostrativo: fibra monomodo por ducto subterráneo entre un edificio administrativo y la nave, con fusión, medición OTDR por hilo e integración al núcleo.',
     code: 'DEMO-04',
-    services: ['fibra-optica', 'certificacion-y-pruebas', 'switching-routing'],
+    services: ['fibra-optica', 'certificacion-y-pruebas', 'redes-empresariales'],
     img: 'proyFibra',
     title: 'Enlace de fibra entre dos edificios',
     category: 'Fibra óptica',
@@ -223,6 +229,7 @@ export const PROJECTS: Project[] = [
   },
   {
     slug: 'ordenamiento-site',
+    seoDescription: 'Caso demostrativo: reorganización de un rack saturado con organizadores, patch cords nuevos, etiquetado y tabla de puertos para acortar cada diagnóstico.',
     code: 'DEMO-05',
     services: ['racks-y-site', 'calidad-de-energia', 'mantenimiento-y-soporte'],
     img: 'proySite',
@@ -237,8 +244,9 @@ export const PROJECTS: Project[] = [
   },
   {
     slug: 'wifi-campus-educativo',
+    seoDescription: 'Caso demostrativo: WiFi para un campus educativo con site survey por edificio, access points ubicados por densidad, redes por perfil y gestión centralizada.',
     code: 'DEMO-06',
-    services: ['wifi-empresarial', 'switching-routing', 'cableado-estructurado'],
+    services: ['wifi-empresarial', 'redes-empresariales', 'cableado-estructurado'],
     img: 'proyCampus',
     title: 'Conectividad para campus educativo',
     category: 'Redes corporativas',

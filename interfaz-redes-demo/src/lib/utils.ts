@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useSyncExternalStore } from 'react'
 import { useLocation } from 'react-router-dom'
 import { COMPANY } from '../data/company'
 
@@ -13,12 +13,23 @@ export const WA_GENERAL = waLink('Hola, quiero hablar con un especialista de Int
 /** Nombre a mitad de frase: baja sólo la inicial y respeta siglas («CCTV y videovigilancia», «WiFi empresarial»). */
 export const lowerFirst = (name: string) => (/[A-Z].*[A-Z]/.test(name.split(' ')[0]) ? name : name.charAt(0).toLowerCase() + name.slice(1))
 
+const subscribeNever = () => () => {}
+/**
+ * `false` en el prerender y mientras React hidrata ese HTML; `true` después (y en cada página que se abre ya en
+ * el navegador). Para lo que depende del navegador (parámetros ?, almacenamiento) y debe coincidir con el HTML
+ * prerenderizado en el primer render: al terminar de hidratar, React vuelve a renderizar con `true`.
+ */
+export const useHydrated = () => useSyncExternalStore(subscribeNever, () => true, () => false)
+
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-/** Lleva la vista arriba al cambiar de ruta (o a la sección indicada por ?s=) y pasa ahí el foco del teclado. */
+/**
+ * Lleva la vista arriba al cambiar de ruta (o a la sección indicada por #id; también por ?s=id, el formato de los
+ * enlaces anteriores) y pasa ahí el foco del teclado.
+ */
 export function useScrollToTop() {
-  const { pathname, search, key } = useLocation()
-  const target = new URLSearchParams(search).get('s')
+  const { pathname, search, hash, key } = useLocation()
+  const target = hash.slice(1) || new URLSearchParams(search).get('s')
   const firstRender = useRef(true)
   useEffect(() => {
     const initial = firstRender.current
@@ -30,7 +41,7 @@ export function useScrollToTop() {
     window.scrollTo({ top: 0, behavior: 'auto' })
     // Al navegar, el foco va al contenido para que el teclado y los lectores de pantalla empiecen por la página nueva.
     if (!initial) document.getElementById('contenido')?.focus({ preventScroll: true })
-    // `key` cambia con cada clic: un enlace ?s= a la sección actual vuelve a desplazarse.
+    // `key` cambia con cada clic: un enlace a la sección actual vuelve a desplazarse.
   }, [pathname, target, target ? key : null])
 }
 

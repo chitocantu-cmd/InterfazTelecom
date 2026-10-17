@@ -4,7 +4,7 @@
   "description": "Sitio web de Interfaz Redes y Telecomunicaciones",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && tsc -p tsconfig.server.json && node scripts/sitemap.mjs && vite build && node scripts/prerender.mjs",
+    "build": "tsc && tsc -p tsconfig.server.json && vite build && node scripts/prerender.mjs",
     "build:preview": "tsc && vite build --mode preview && node scripts/artifact.mjs",
     "preview": "vite preview",
     "typecheck": "tsc && tsc -p tsconfig.server.json",

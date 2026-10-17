@@ -11,12 +11,12 @@ interface Edge { a: string; b: string; type: 'fibra' | 'cobre' | 'inalambrico' |
 
 const NODES: Node[] = [
   { id: 'isp', x: 70, y: 250, label: 'Internet', sub: 'Proveedor', kind: 'wan', info: 'Enlace del proveedor de servicio. Llega al site y termina en el router o firewall.' },
-  { id: 'fw', x: 205, y: 250, label: 'Router / FW', sub: 'Perímetro', kind: 'net', info: 'Salida a internet y control del tráfico entre la red interna y el exterior.', service: 'switching-routing' },
+  { id: 'fw', x: 205, y: 250, label: 'Router / FW', sub: 'Perímetro', kind: 'net', info: 'Salida a internet y control del tráfico entre la red interna y el exterior.', service: 'redes-empresariales' },
   { id: 'core', x: 375, y: 250, label: 'Switch núcleo', sub: 'Site · MDF', kind: 'net', info: 'Centro de la red en el site principal. Recibe los enlaces de fibra de cada cuarto de distribución.', service: 'racks-y-site', w: 116 },
   { id: 'srv', x: 375, y: 100, label: 'Servidores', sub: 'Site', kind: 'end', info: 'Servicios internos conectados directamente al núcleo.' },
   { id: 'nvr', x: 375, y: 400, label: 'NVR', sub: 'Grabación', kind: 'sec', info: 'Grabación centralizada de video en el site, con almacenamiento y acceso remoto controlado.', service: 'cctv-videovigilancia' },
-  { id: 'idfa', x: 590, y: 150, label: 'Switch acceso', sub: 'IDF-A · PoE', kind: 'net', info: 'Cuarto de distribución en oficinas. Alimenta por PoE access points y teléfonos.', service: 'switching-routing', w: 116 },
-  { id: 'idfb', x: 590, y: 360, label: 'Switch acceso', sub: 'IDF-B · PoE', kind: 'net', info: 'Cuarto de distribución en nave. Alimenta cámaras y controladoras de acceso.', service: 'switching-routing', w: 116 },
+  { id: 'idfa', x: 590, y: 150, label: 'Switch acceso', sub: 'IDF-A · PoE', kind: 'net', info: 'Cuarto de distribución en oficinas. Alimenta por PoE access points y teléfonos.', service: 'redes-empresariales', w: 116 },
+  { id: 'idfb', x: 590, y: 360, label: 'Switch acceso', sub: 'IDF-B · PoE', kind: 'net', info: 'Cuarto de distribución en nave. Alimenta cámaras y controladoras de acceso.', service: 'redes-empresariales', w: 116 },
   { id: 'ap', x: 840, y: 70, label: 'Access points', sub: 'WiFi', kind: 'net', info: 'Cobertura inalámbrica diseñada con site survey y alimentada por PoE.', service: 'wifi-empresarial' },
   { id: 'pc', x: 840, y: 150, label: 'Estaciones', sub: 'Datos', kind: 'end', info: 'Puestos de trabajo conectados por cableado estructurado certificado.', service: 'cableado-estructurado' },
   { id: 'tel', x: 840, y: 230, label: 'Telefonía IP', sub: 'Voz', kind: 'end', info: 'Voz sobre la red de datos, en su propio segmento y con prioridad.', service: 'telefonia-ip' },

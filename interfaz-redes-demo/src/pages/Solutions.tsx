@@ -24,7 +24,7 @@ export default function Solutions() {
       >
         <nav aria-label="Frentes técnicos" className="mt-14 flex flex-wrap gap-x-8 gap-y-3 border-t border-line pt-6">
           {CATEGORIES.map((c) => (
-            <Link key={c.id} to={`/soluciones?s=${c.id}`} className="text-[0.98rem] text-body transition-colors hover:text-corp">{c.name}</Link>
+            <Link key={c.id} to={`/soluciones#${c.id}`} className="text-[0.98rem] text-body transition-colors hover:text-corp">{c.name}</Link>
           ))}
         </nav>
       </PageHero>

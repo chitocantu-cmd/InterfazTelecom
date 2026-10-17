@@ -40,7 +40,7 @@ export function Header() {
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
-  useEffect(() => { setMega(false); setMobile(false); hoverOpened.current = false }, [location.pathname, location.search])
+  useEffect(() => { setMega(false); setMobile(false); hoverOpened.current = false }, [location.pathname, location.search, location.hash])
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
@@ -129,6 +129,7 @@ export function Header() {
                     className={linkCls(solActive || mega)}
                   >
                     Soluciones
+                    {solActive && <span className="sr-only"> (sección actual)</span>}
                     <ChevronDown aria-hidden className={cn('h-4 w-4 transition-transform duration-200', mega && 'rotate-180')} strokeWidth={1.75} />
                   </button>
                 </li>
@@ -176,7 +177,7 @@ export function Header() {
             <div className="container grid grid-cols-5 gap-10 pb-10 pt-9">
               {CATEGORIES.map((cat, ci) => (
                 <div key={cat.id}>
-                  <Link ref={ci === 0 ? firstLink : undefined} to={`/soluciones?s=${cat.id}`} className="block font-display text-[1.05rem] font-semibold leading-snug text-ink hover:text-corp">{cat.name}</Link>
+                  <Link ref={ci === 0 ? firstLink : undefined} to={`/soluciones#${cat.id}`} className="block font-display text-[1.05rem] font-semibold leading-snug text-ink hover:text-corp">{cat.name}</Link>
                   <p className="mt-1.5 text-small text-muted">{cat.lede}</p>
                   <ul className="mt-5 space-y-1">
                     {servicesOf(cat.id).map((s) => (
@@ -210,6 +211,7 @@ export function Header() {
 
 function MobileNav({ onClose, reduce }: { onClose: () => void; reduce: boolean }) {
   const [open, setOpen] = useState<string | null>(null)
+  const solActive = useLocation().pathname.startsWith('/soluciones')
   return (
     <motion.div
       id="menu-movil"
@@ -222,10 +224,10 @@ function MobileNav({ onClose, reduce }: { onClose: () => void; reduce: boolean }
     >
       <nav aria-label="Menú móvil" className="container flex min-h-full flex-col pb-6 pt-2">
         <ul>
-          <li className="border-b border-line"><Link onClick={onClose} to="/" className="flex min-h-[60px] items-center font-display text-[1.35rem] font-medium text-ink">Inicio</Link></li>
+          <li className="border-b border-line"><NavLink onClick={onClose} to="/" end className="flex min-h-[60px] items-center font-display text-[1.35rem] font-medium text-ink">Inicio</NavLink></li>
           <li className="border-b border-line">
             <button type="button" aria-expanded={open === 'sol'} onClick={() => setOpen(open === 'sol' ? null : 'sol')} className="flex min-h-[60px] w-full items-center justify-between font-display text-[1.35rem] font-medium text-ink">
-              Soluciones
+              <span>Soluciones{solActive && <span className="sr-only"> (sección actual)</span>}</span>
               <ChevronDown aria-hidden className={cn('h-5 w-5 text-muted transition-transform', open === 'sol' && 'rotate-180')} strokeWidth={1.75} />
             </button>
             {open === 'sol' && (
@@ -245,7 +247,7 @@ function MobileNav({ onClose, reduce }: { onClose: () => void; reduce: boolean }
             )}
           </li>
           {NAV.slice(2).map((n) => (
-            <li key={n.to} className="border-b border-line"><Link onClick={onClose} to={n.to} className="flex min-h-[60px] items-center font-display text-[1.35rem] font-medium text-ink">{n.label}</Link></li>
+            <li key={n.to} className="border-b border-line"><NavLink onClick={onClose} to={n.to} className="flex min-h-[60px] items-center font-display text-[1.35rem] font-medium text-ink">{n.label}</NavLink></li>
           ))}
         </ul>
         <div className="mt-auto space-y-3 pt-10">

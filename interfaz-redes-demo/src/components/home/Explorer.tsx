@@ -13,7 +13,7 @@ function Panel({ cat, inline }: { cat: Category; inline?: boolean }) {
         <div className="md:col-span-5">
           {!inline && <h3 className="text-h3">{cat.name}</h3>}
           <p className={cn('text-small text-body', !inline && 'mt-3')}>{cat.technical}</p>
-          <Link to={`/soluciones?s=${cat.id}`} className="mt-5 inline-block text-small font-medium text-corp link-line">Ver {lowerFirst(cat.name)}</Link>
+          <Link to={`/soluciones#${cat.id}`} className="mt-5 inline-block text-small font-medium text-corp link-line">Ver {lowerFirst(cat.name)}</Link>
         </div>
         <ul className="border-t border-line md:col-span-7">
           {servicesOf(cat.id).map((s) => (

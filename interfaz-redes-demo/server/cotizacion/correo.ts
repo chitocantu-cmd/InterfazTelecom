@@ -21,7 +21,7 @@ function layout(cfg: Config, band: string, preheader: string, content: string, f
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:#ffffff;border:1px solid ${C.line};font-family:${FONT};color:${C.ink};">
 <tr><td style="padding:22px 28px;border-bottom:3px solid ${C.corp};">
 <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-<td style="padding-right:14px;"><img src="${cfg.site}/email/interfaz-logo.png" width="64" height="57" alt="Interfaz Telecomunicaciones" style="display:block;border:0;"></td>
+<td style="padding-right:14px;"><img src="${cfg.site}/email/interfaz-logo.png" width="64" height="57" alt="Interfaz Redes y Telecomunicaciones" style="display:block;border:0;"></td>
 <td style="font-family:${FONT};"><div style="font-size:16px;font-weight:bold;color:${C.ink};">Interfaz Redes</div><div style="font-size:13px;color:${C.muted};">y Telecomunicaciones</div></td>
 </tr></table></td></tr>
 <tr><td style="background:${C.navy};padding:18px 28px;font-family:${FONT};font-size:15px;font-weight:bold;letter-spacing:1.5px;color:#ffffff;">${esc(band)}</td></tr>

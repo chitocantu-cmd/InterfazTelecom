@@ -7,7 +7,9 @@ export interface Seo { title: string; description: string }
 
 const BRAND = 'Interfaz Redes'
 /** Google corta las descripciones más largas. */
-const MAX_DESCRIPTION = 160
+export const MAX_DESCRIPTION = 160
+/** Las más cortas desaprovechan el espacio del resultado de búsqueda (el prerender avisa). */
+export const MIN_DESCRIPTION = 110
 
 /** Título completo de la pestaña: agrega la marca si el título no la trae. */
 export const fullTitle = (title: string) => (title.includes(BRAND) ? title : `${title} · ${BRAND}`)
@@ -47,24 +49,48 @@ export const SEO = {
   },
 } satisfies Record<string, Seo>
 
-/** Servicio: su frase corta más la primera oración de la introducción, si cabe; si no, la que quepa. */
+/**
+ * Servicio: su descripción para buscadores si la tiene; si no, su frase corta más la primera oración de la
+ * introducción, si cabe, o la que quepa.
+ */
 export function serviceSeo(s: Service): Seo {
+  const title = `${s.name} en Monterrey`
+  if (s.seoDescription) return { title, description: s.seoDescription }
   const first = `${s.intro.split('. ')[0].replace(/\.$/, '')}.`
   const description = [`${s.short} ${first}`, first, s.short].find((d) => d.length <= MAX_DESCRIPTION) ?? s.short
-  return { title: `${s.name} en Monterrey`, description }
+  return { title, description }
 }
 
-export const projectSeo = (p: Project): Seo => ({ title: p.title, description: p.summary })
+export const projectSeo = (p: Project): Seo => ({ title: p.title, description: p.seoDescription ?? p.summary })
+
+/** Paso de la ruta de navegación (la misma de pantalla, sin «Inicio», que siempre va primero). */
+export interface Crumb { label: string; path: string }
+
+/** Página pública: ruta, título, descripción y ruta de navegación. `service` marca las páginas de servicio. */
+export interface Page { path: string; seo: Seo; crumbs: Crumb[]; service?: Service }
+
+const page = (path: string, seo: Seo, label: string): Page => ({ path, seo, crumbs: [{ label, path }] })
+const SOLUTIONS: Crumb = { label: 'Soluciones', path: '/soluciones' }
+const PROJECTS_CRUMB: Crumb = { label: 'Proyectos', path: '/proyectos' }
+
+/** Rutas públicas. Las usan el prerender (un HTML por ruta, sitemap y datos estructurados) y las pruebas. */
+export const PAGES: Page[] = [
+  { path: '/', seo: SEO.home, crumbs: [] },
+  page('/soluciones', SEO.solutions, 'Soluciones'),
+  ...SERVICES.map((s): Page => {
+    const path = `/soluciones/${s.slug}`
+    return { path, seo: serviceSeo(s), crumbs: [SOLUTIONS, { label: s.name, path }], service: s }
+  }),
+  page('/industrias', SEO.industries, 'Industrias'),
+  page('/proyectos', SEO.projects, 'Proyectos'),
+  ...PROJECTS.map((p): Page => {
+    const path = `/proyectos/${p.slug}`
+    return { path, seo: projectSeo(p), crumbs: [PROJECTS_CRUMB, { label: p.title, path }] }
+  }),
+  page('/nosotros', SEO.about, 'Nosotros'),
+  page('/contacto', SEO.contact, 'Contacto'),
+  page('/aviso-de-privacidad', SEO.privacy, 'Aviso de privacidad'),
+]
 
 /** Rutas públicas con su título y descripción. */
-export const SEO_ROUTES: [string, Seo][] = [
-  ['/', SEO.home],
-  ['/soluciones', SEO.solutions],
-  ...SERVICES.map((s): [string, Seo] => [`/soluciones/${s.slug}`, serviceSeo(s)]),
-  ['/industrias', SEO.industries],
-  ['/proyectos', SEO.projects],
-  ...PROJECTS.map((p): [string, Seo] => [`/proyectos/${p.slug}`, projectSeo(p)]),
-  ['/nosotros', SEO.about],
-  ['/contacto', SEO.contact],
-  ['/aviso-de-privacidad', SEO.privacy],
-]
+export const SEO_ROUTES: [string, Seo][] = PAGES.map((p) => [p.path, p.seo])

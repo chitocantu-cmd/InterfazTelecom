@@ -39,7 +39,7 @@ export default function ServiceDetail() {
         <div className="container relative order-1">
           <div className="flex flex-col pb-14 pt-10 lg:min-h-[620px] lg:w-[46%] lg:pb-20">
             {/* Si el servicio se llama igual que su categoría (Fibra óptica), no se repite el nombre. */}
-            <Breadcrumbs items={[{ to: '/soluciones', label: 'Soluciones' }, ...(sameName ? [] : [{ to: `/soluciones?s=${cat.id}`, label: cat.name }]), { label: s.name }]} />
+            <Breadcrumbs items={[{ to: '/soluciones', label: 'Soluciones' }, ...(sameName ? [] : [{ to: `/soluciones#${cat.id}`, label: cat.name }]), { label: s.name }]} />
             <div className="mt-14 lg:my-auto lg:pt-10">
               {!sameName && <p className="mb-3 text-small font-medium text-corp">{cat.name}</p>}
               <h1 className="text-h1">{s.name}</h1>
