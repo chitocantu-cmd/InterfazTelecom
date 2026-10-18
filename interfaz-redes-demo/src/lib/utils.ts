@@ -1,3 +1,4 @@
+import { useReducedMotion as useMotionPreference } from 'motion/react'
 import { useEffect, useRef, useSyncExternalStore } from 'react'
 import { useLocation } from 'react-router-dom'
 import { COMPANY } from '../data/company'
@@ -21,6 +22,16 @@ const subscribeNever = () => () => {}
  */
 export const useHydrated = () => useSyncExternalStore(subscribeNever, () => true, () => false)
 
+/**
+ * ¿El usuario pidió reducir el movimiento? Mientras se hidrata responde `null` (como en el prerender, que no lo
+ * sabe) para que el primer render coincida con el HTML. Las animaciones de desplazamiento ya se omiten para
+ * esos usuarios con <MotionConfig reducedMotion="user"> (App.tsx).
+ */
+export function useReducedMotion() {
+  const reduce = useMotionPreference()
+  return useHydrated() ? reduce : null
+}
+
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /**
@@ -38,9 +49,12 @@ export function useScrollToTop() {
       const t = window.setTimeout(() => scrollToId(target), 60)
       return () => window.clearTimeout(t)
     }
+    // Al abrir el sitio no se mueve la vista: el HTML ya llegó con el contenido y el usuario pudo haberse desplazado
+    // (o el navegador restauró la posición al recargar).
+    if (initial) return
     window.scrollTo({ top: 0, behavior: 'auto' })
     // Al navegar, el foco va al contenido para que el teclado y los lectores de pantalla empiecen por la página nueva.
-    if (!initial) document.getElementById('contenido')?.focus({ preventScroll: true })
+    document.getElementById('contenido')?.focus({ preventScroll: true })
     // `key` cambia con cada clic: un enlace a la sección actual vuelve a desplazarse.
   }, [pathname, target, target ? key : null])
 }

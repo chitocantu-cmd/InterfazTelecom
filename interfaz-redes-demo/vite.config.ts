@@ -56,6 +56,7 @@ export default defineConfig(({ mode }) => {
     optimizeDeps: { entries: ['index.html'] },
     build: single
       ? { outDir: 'dist-preview', target: 'es2020', cssCodeSplit: false, assetsInlineLimit: 100_000_000 }
-      : { outDir: 'dist', target: 'es2020', assetsInlineLimit: 4096, sourcemap: false },
+      : // El manifiesto dice qué archivos JS usa cada página; prerender.mjs los precarga y luego lo borra.
+        { outDir: 'dist', target: 'es2020', assetsInlineLimit: 4096, sourcemap: false, manifest: true },
   }
 })

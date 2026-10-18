@@ -1,4 +1,4 @@
-import { motion, useReducedMotion } from 'motion/react'
+import { motion } from 'motion/react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { cn } from '../../lib/utils'
@@ -58,9 +58,8 @@ export function SectionHead({ overline, kicker, title, lede, dark, className, as
 }
 
 export function Reveal({ children, delay = 0, className, as = 'div' }: { children: ReactNode; delay?: number; className?: string; as?: 'div' | 'li' | 'section' | 'article' }) {
-  const reduce = useReducedMotion()
   const Comp = motion[as]
-  if (reduce) return <Comp className={className}>{children}</Comp>
+  // Con «reducir movimiento», MotionConfig (App.tsx) lo pone en su lugar sin animar.
   return (
     <Comp className={className} initial={{ y: 16 }} whileInView={{ y: 0 }} viewport={{ once: true, margin: '0px 0px -6% 0px' }} transition={{ duration: 0.7, delay, ease: [0.2, 0.7, 0.2, 1] }}>
       {children}

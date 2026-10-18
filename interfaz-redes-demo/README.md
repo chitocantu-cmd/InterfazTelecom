@@ -18,7 +18,7 @@ usa el siguiente libre, por ejemplo `5174`). Los cambios en el código se ven al
 ## Versión de producción
 
 ```bash
-npm run build          # compila a dist/ (genera también sitemap.xml, robots.txt y un HTML por página)
+npm run build          # compila a dist/: un HTML por página con su contenido ya dibujado, sitemap.xml y robots.txt
 npm run preview        # sirve dist/ localmente para revisarla
 npm run build:preview  # un solo HTML autocontenido → dist-preview/ (para compartir una vista previa)
 ```
@@ -28,7 +28,14 @@ npm run build:preview  # un solo HTML autocontenido → dist-preview/ (para comp
 ```bash
 npm run typecheck      # TypeScript
 npm run test:e2e       # pruebas de navegador (rutas, header, menú móvil, cotizador, filtros) en escritorio y móvil
+npm run check:hydration  # el HTML prerenderizado coincide con lo que dibuja React (correr tras cambiar componentes)
 ```
+
+**Prerender.** Cada página llega con su contenido en el HTML (`src/entry-server.tsx`, compilado con
+`vite build --ssr`) y React lo toma sin volver a dibujarlo (`hydrateRoot` en `src/main.tsx`). Por eso el primer
+render de cada componente debe ser igual en el servidor y en el navegador: lo que dependa del navegador (parámetros
+`?`, preferencias, almacenamiento) se lee con `useHydrated()` o en un efecto, no al dibujar. `check:hydration`
+avisa si algo no coincide.
 
 Las pruebas usan el Google Chrome instalado en el equipo. Con Edge: `PW_CHANNEL=msedge npm run test:e2e`
 (en PowerShell: `$env:PW_CHANNEL='msedge'; npm run test:e2e`). Levantan su propio servidor en el puerto 5199.
@@ -50,8 +57,9 @@ Para probar el sitio publicado en lugar del local: `BASE_URL=https://interfaztel
 | Fotografías | archivos en `src/assets/img/` y su registro en `src/data/media.ts` |
 | Galería "Nuestro equipo en campo" | `src/pages/Home.tsx` y `src/pages/About.tsx` |
 | Razón social del aviso de privacidad | constante `RAZON_SOCIAL` en `src/pages/Privacy.tsx` |
-| Logotipo | `src/assets/brand/` (ver `index.ts`) y `public/favicon.jpg` |
-| Título y descripción de cada página (Google y vista previa al compartir) | `src/data/seo.ts` |
+| Logotipo | `src/assets/brand/` (ver `index.ts`); íconos en `public/favicon.ico` y `public/apple-touch-icon.png` |
+| Título y descripción de cada página (Google y vista previa al compartir) | `src/data/seo.ts` (`seoDescription` en servicios y proyectos) |
+| Datos estructurados para Google (empresa, servicios, ruta de navegación) | `src/data/structured-data.ts` (con los datos de `company.ts`) |
 | Colores y tipografía | `tailwind.config.js` y `src/index.css` |
 | Páginas | `src/pages/` · rutas en `src/App.tsx` |
 
@@ -80,8 +88,8 @@ src/
 api/                funciones de Vercel (api/cotizacion.ts)
 server/cotizacion/  recepción de cotizaciones: validación, folio, correo (Resend) y WhatsApp (Cloud API)
 e2e/                pruebas de navegador (Playwright)
-public/             favicon, og-image, logotipo para correos (email/), sitemap.xml y robots.txt
-scripts/            sitemap, HTML por página (prerender) y empaquetado de la vista previa
+public/             íconos, og-image y logotipo para correos (email/)
+scripts/            HTML por página con sitemap y robots (prerender), revisión de hidratación y vista previa
 tools/renders/      escenas 3D de la primera versión de las imágenes de referencia (no forman parte del sitio)
 tools/variantes.py  genera las versiones de 640 y 1024 px de las imágenes
 ```
@@ -118,10 +126,11 @@ y usan los servidores de nombres de Vercel (`ns1.vercel-dns.com`, `ns2.vercel-dn
 
 `vercel.json` ya incluye:
 - Sin reescrituras: cada ruta pública tiene su propio HTML (`scripts/prerender.mjs`, servido con `cleanUrls` como
-  `/soluciones/fibra-optica`) con su título y descripción, para que WhatsApp, Facebook y Google los lean sin
-  JavaScript. Cualquier otra dirección recibe `404.html` con estado 404 y `noindex`, y la app muestra «Esta página
+  `/soluciones/fibra-optica`) con su contenido, título, descripción y datos estructurados, para que WhatsApp,
+  Facebook y los buscadores los lean sin JavaScript. El sitemap y robots.txt salen de las mismas rutas. Cualquier otra dirección recibe `404.html` con estado 404 y `noindex`, y la app muestra «Esta página
   no existe». **Una página nueva debe agregarse a `src/data/seo.ts`** (si no, su dirección directa daría 404).
-- Redirecciones 301 desde URLs del sitio anterior en WordPress (`/servicios/`, etc.).
+- Redirecciones 301 desde URLs del sitio anterior en WordPress (`/servicios/`, etc.) y 308 de slugs renombrados
+  (`/soluciones/switching-routing` → `/soluciones/redes-empresariales`).
 - Caché de un año para `/assets/*`, cabeceras básicas de seguridad y `noindex` en `*.vercel.app`.
 
 ## Recepción de cotizaciones

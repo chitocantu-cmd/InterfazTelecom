@@ -7,15 +7,20 @@ import { QuoteWizard, SITES } from '../components/quote/QuoteWizard'
 import { COMPANY } from '../data/company'
 import { NEEDS } from '../data/content'
 import { QUOTE_TYPES, serviceBySlug, type QuoteType } from '../data/solutions'
-import { waLink } from '../lib/utils'
+import { useHydrated, waLink } from '../lib/utils'
 import { useSeo } from '../lib/seo'
 import { SEO } from '../data/seo'
 
 const SECTOR_TO_SITE: Record<string, string> = { industria: SITES[0], corporativos: SITES[1], cedis: SITES[2], educacion: SITES[3], comercio: SITES[4] }
 
+const NO_PARAMS = new URLSearchParams()
+
 export default function Contact() {
   useSeo(SEO.contact)
-  const [params] = useSearchParams()
+  const [urlParams] = useSearchParams()
+  // Lo que llega en la URL (?tipo=, ?servicio=…) se aplica al terminar de hidratar: el HTML prerenderizado no lo
+  // conoce. Al aplicarse cambia la `key` del cotizador, que arranca de nuevo con esos datos.
+  const params = useHydrated() ? urlParams : NO_PARAMS
   const tipoParam = params.get('tipo')
   const tipo = QUOTE_TYPES.some((q) => q.id === tipoParam) ? (tipoParam as QuoteType) : undefined
   const service = serviceBySlug(params.get('servicio') ?? undefined)

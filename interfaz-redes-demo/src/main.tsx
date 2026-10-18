@@ -1,5 +1,5 @@
 import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
+import { createRoot, hydrateRoot } from 'react-dom/client'
 import App from './App'
 import '@fontsource/archivo/latin-500.css'
 import '@fontsource/archivo/latin-600.css'
@@ -24,8 +24,13 @@ window.addEventListener('vite:preloadError', (e) => {
   window.location.reload()
 })
 
-createRoot(document.getElementById('root')!).render(
+const root = document.getElementById('root')!
+const app = (
   <StrictMode>
     <App />
-  </StrictMode>,
+  </StrictMode>
 )
+// En producción cada página llega prerenderizada (scripts/prerender.mjs): React toma ese HTML en lugar de
+// volver a dibujarlo. En desarrollo y en la vista previa de un solo archivo, #root llega vacío.
+if (root.hasChildNodes()) hydrateRoot(root, app)
+else createRoot(root).render(app)

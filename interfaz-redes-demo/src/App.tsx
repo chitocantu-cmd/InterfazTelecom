@@ -7,6 +7,7 @@ import { useContactClicks, usePageViews } from './lib/analytics'
 import { SEO } from './data/seo'
 import { useSeo } from './lib/seo'
 import { useScrollToTop } from './lib/utils'
+import { MotionConfig } from 'motion/react'
 import { Component, lazy, Suspense, type ReactNode } from 'react'
 import Home from './pages/Home'
 
@@ -54,13 +55,15 @@ class SectionBoundary extends Component<{ children: ReactNode }, { failed: boole
   }
 }
 
-function Shell() {
+/** El sitio sin el router: App lo envuelve en el del navegador y src/entry-server.tsx en uno estático (prerender). */
+export function Shell() {
   const { pathname } = useLocation()
   useScrollToTop()
   usePageViews()
   useContactClicks()
   return (
-    <>
+    // Con «reducir movimiento» en el sistema, los desplazamientos y cambios de tamaño animados se omiten.
+    <MotionConfig reducedMotion="user">
       <a href="#contenido" onClick={(e) => { e.preventDefault(); document.getElementById('contenido')?.focus() }} className="sr-only z-[60] bg-ink px-4 py-2 text-white focus:not-sr-only focus:fixed focus:left-4 focus:top-4">Saltar al contenido</a>
       <Header />
       <main id="contenido" tabIndex={-1} className="outline-none">
@@ -84,7 +87,7 @@ function Shell() {
       </main>
       <Footer />
       <WhatsAppButton />
-    </>
+    </MotionConfig>
   )
 }
 

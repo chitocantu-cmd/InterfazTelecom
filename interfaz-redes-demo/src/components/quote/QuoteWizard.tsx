@@ -1,4 +1,4 @@
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { AnimatePresence, motion } from 'motion/react'
 import { ArrowLeft, Cable, Cctv, Check, Copy, DoorClosed, FileText, Mail, MessageCircle, Paperclip, Pencil, Plus, Send, Server, Spline, X } from 'lucide-react'
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { COMPANY } from '../../data/company'
@@ -6,7 +6,7 @@ import { QUOTE_TYPES, type QuoteType } from '../../data/solutions'
 import { Link } from 'react-router-dom'
 import { track } from '../../lib/analytics'
 import { FILE_ACCEPT, FILES, MAX_LENGTH, SITES, fileExtension, quoteNotice, validateQuote, type QuoteRequest } from '../../lib/cotizacion'
-import { cn, copyText, mailLink, waLink } from '../../lib/utils'
+import { cn, copyText, mailLink, waLink, useReducedMotion } from '../../lib/utils'
 
 const ICONS: Record<QuoteType, typeof Cable> = { cableado: Cable, fibra: Spline, cctv: Cctv, acceso: DoorClosed, infra: Server, otro: Plus }
 export { SITES }

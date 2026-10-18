@@ -7,15 +7,17 @@ import { Button, Chip, Reveal } from '../components/ui'
 import { PROJECT_CATEGORIES, PROJECTS, projectBySlug } from '../data/content'
 import { IMG } from '../data/media'
 import { serviceBySlug } from '../data/solutions'
-import { cn, waLink } from '../lib/utils'
+import { cn, useHydrated, waLink } from '../lib/utils'
 import { useSeo } from '../lib/seo'
 import { projectSeo, SEO } from '../data/seo'
 
 export function Projects() {
   useSeo(SEO.projects)
   const [params, setParams] = useSearchParams()
-  const cat = params.get('categoria') ?? 'todas'
-  const sector = params.get('sector') ?? 'todos'
+  // Los filtros de la URL se aplican al terminar de hidratar (el HTML prerenderizado muestra todos los casos).
+  const hydrated = useHydrated()
+  const cat = (hydrated && params.get('categoria')) || 'todas'
+  const sector = (hydrated && params.get('sector')) || 'todos'
   const sectors = useMemo(() => Array.from(new Set(PROJECTS.map((p) => p.sector))), [])
   const list = PROJECTS.filter((p) => (cat === 'todas' || p.category === cat) && (sector === 'todos' || p.sector === sector))
 

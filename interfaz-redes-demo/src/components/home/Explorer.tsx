@@ -1,8 +1,8 @@
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CATEGORIES, servicesOf, type Category } from '../../data/solutions'
-import { cn, lowerFirst } from '../../lib/utils'
+import { cn, lowerFirst, useReducedMotion } from '../../lib/utils'
 import { Media } from '../plates'
 
 function Panel({ cat, inline }: { cat: Category; inline?: boolean }) {

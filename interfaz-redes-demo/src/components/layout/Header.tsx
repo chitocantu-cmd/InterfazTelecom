@@ -1,10 +1,10 @@
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { AnimatePresence, motion } from 'motion/react'
 import { ChevronDown, Menu, X } from 'lucide-react'
 import { useEffect, useRef, useState, type FocusEvent, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { COMPANY } from '../../data/company'
 import { CATEGORIES, servicesOf } from '../../data/solutions'
-import { cn, waLink } from '../../lib/utils'
+import { cn, waLink, useReducedMotion } from '../../lib/utils'
 import { Button } from '../ui'
 import { Logo, LogoLockup } from './Logo'
 

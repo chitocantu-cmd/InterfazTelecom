@@ -1,11 +1,11 @@
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { COMPANY } from '../../data/company'
 import { INDUSTRIES, NEEDS, PROCESS, PROJECTS, type Project } from '../../data/content'
 import { IMG, type ImgKey } from '../../data/media'
 import { serviceBySlug } from '../../data/solutions'
-import { cn, waLink } from '../../lib/utils'
+import { cn, waLink, useReducedMotion } from '../../lib/utils'
 import { Media } from '../plates'
 import { Button, Reveal, SectionHead, TextLink } from '../ui'
 
