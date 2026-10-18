@@ -4,7 +4,7 @@
 // También escribe dist/404.html, dist/sitemap.xml y dist/robots.txt a partir de las mismas rutas
 // (src/data/seo.ts). Con cleanUrls, Vercel sirve cada archivo en su ruta limpia.
 // Uso: después de `vite build` y `vite build --ssr src/entry-server.tsx --outDir dist-ssr` (lo corre `npm run build`).
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -60,6 +60,17 @@ function modulePreloads(path) {
   return [...files].map((f) => `<link rel="modulepreload" crossorigin href="/${f}" />\n`).join('')
 }
 
+// Las dos fuentes del primer pintado (titulares y texto) se piden junto con el HTML, no hasta leer el CSS.
+const FONTS = [/^archivo-latin-600-normal-.+\.woff2$/, /^dm-sans-latin-400-normal-.+\.woff2$/]
+const assets = readdirSync('dist/assets')
+const fontPreloads = FONTS.map((re) => {
+  const file = assets.find((f) => re.test(f))
+  if (!file) throw new Error(`prerender: no se encontró la fuente ${re}`)
+  return `<link rel="preload" as="font" type="font/woff2" crossorigin href="/assets/${file}" />
+`
+}).join('')
+const withFonts = (html) => replace(html, /()(?=<link rel="icon")/, fontPreloads)
+
 for (const page of PAGES) {
   const { path, seo } = page
   const title = esc(fullTitle(seo.title))
@@ -74,7 +85,7 @@ for (const page of PAGES) {
     [/(<link rel="canonical" href=")[^"]*/, absolute(path)],
     [/()(?=<\/head>)/, `${modulePreloads(path)}<script type="application/ld+json">\n${structuredData(site, page)}\n</script>\n`],
   ]) html = replace(html, re, value)
-  html = withNoscript(await withBody(html, path))
+  html = withFonts(withNoscript(await withBody(html, path)))
   const length = seo.description.length
   if (length > MAX_DESCRIPTION || length < MIN_DESCRIPTION) console.warn(`prerender: descripción de ${length} caracteres en ${path} (conviene de ${MIN_DESCRIPTION} a ${MAX_DESCRIPTION})`)
   const file = path === '/' ? 'dist/index.html' : `dist${path}.html`
@@ -86,7 +97,7 @@ for (const page of PAGES) {
 let notFound = replace(base, /(<title>)[^<]*(?=<\/title>)/, esc(fullTitle('Página no encontrada')))
 notFound = replace(notFound, /()<link rel="canonical"[^>]*>\n?/, '<meta name="robots" content="noindex" />\n')
 notFound = replace(notFound, /()<meta property="og:url"[^>]*>\n?/, '')
-writeFileSync('dist/404.html', withNoscript(await withBody(notFound, '/404')))
+writeFileSync('dist/404.html', withFonts(withNoscript(await withBody(notFound, '/404'))))
 
 // Sitemap y robots: las mismas rutas que se prerenderizan. Sin <lastmod>: una fecha inexacta resta confianza.
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>

@@ -47,7 +47,7 @@ export function PageHero({ crumbs, title, lede, img, pos, children, aside }: {
       </div>
       {img && (
         <div className="relative mx-auto h-[300px] max-w-frame overflow-hidden md:h-[440px] lg:h-[520px]">
-          <img src={IMG[img].src} srcSet={IMG[img].srcSet} sizes="(min-width: 1600px) 1600px, 100vw" alt={IMG[img].alt} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: pos ?? IMG[img].pos }} />
+          <img src={IMG[img].src} srcSet={IMG[img].srcSet} sizes="(min-width: 1600px) 1600px, 100vw" alt={IMG[img].alt} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: pos ?? IMG[img].pos }} {...{ fetchpriority: 'high' }} />
           {IMG[img].ref && <p className="img-caption">Imagen de referencia</p>}
         </div>
       )}

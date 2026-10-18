@@ -7,19 +7,64 @@ import { useContactClicks, usePageViews } from './lib/analytics'
 import { SEO } from './data/seo'
 import { useSeo } from './lib/seo'
 import { useScrollToTop } from './lib/utils'
-import { MotionConfig } from 'motion/react'
-import { Component, lazy, Suspense, type ReactNode } from 'react'
+import { LazyMotion, MotionConfig } from 'motion/react'
+import { Component, lazy, Suspense, useEffect, type ReactNode } from 'react'
 import Home from './pages/Home'
 
 // Las páginas interiores se cargan bajo demanda para que el inicio sea más ligero.
-const About = lazy(() => import('./pages/About'))
-const Contact = lazy(() => import('./pages/Contact'))
-const Industries = lazy(() => import('./pages/Industries'))
-const Projects = lazy(() => import('./pages/Projects').then((m) => ({ default: m.Projects })))
-const ProjectDetail = lazy(() => import('./pages/Projects').then((m) => ({ default: m.ProjectDetail })))
-const ServiceDetail = lazy(() => import('./pages/ServiceDetail'))
-const Privacy = lazy(() => import('./pages/Privacy'))
-const Solutions = lazy(() => import('./pages/Solutions'))
+const load = {
+  about: () => import('./pages/About'),
+  contact: () => import('./pages/Contact'),
+  industries: () => import('./pages/Industries'),
+  projects: () => import('./pages/Projects'),
+  service: () => import('./pages/ServiceDetail'),
+  privacy: () => import('./pages/Privacy'),
+  solutions: () => import('./pages/Solutions'),
+}
+const About = lazy(load.about)
+const Contact = lazy(load.contact)
+const Industries = lazy(load.industries)
+const Projects = lazy(() => load.projects().then((m) => ({ default: m.Projects })))
+const ProjectDetail = lazy(() => load.projects().then((m) => ({ default: m.ProjectDetail })))
+const ServiceDetail = lazy(load.service)
+const Privacy = lazy(load.privacy)
+const Solutions = lazy(load.solutions)
+
+const LOAD_BY_PATH: Record<string, () => Promise<unknown>> = {
+  '/soluciones': load.solutions,
+  '/industrias': load.industries,
+  '/proyectos': load.projects,
+  '/nosotros': load.about,
+  '/contacto': load.contact,
+  '/aviso-de-privacidad': load.privacy,
+}
+const loaderFor = (path: string) =>
+  path.startsWith('/soluciones/') ? load.service : path.startsWith('/proyectos/') ? load.projects : LOAD_BY_PATH[path]
+
+/**
+ * Al apuntar o enfocar un enlace interno se adelanta la descarga de esa página, para que al hacer clic llegue sin
+ * el hueco de carga. Sólo con intención de navegar: no gasta datos en páginas que no se visitan.
+ */
+function usePrefetchOnIntent() {
+  useEffect(() => {
+    const started = new Set<() => Promise<unknown>>()
+    const onIntent = (e: Event) => {
+      const link = e.target instanceof Element ? e.target.closest<HTMLAnchorElement>('a[href^="/"]') : null
+      const loader = link && loaderFor(link.pathname)
+      if (!loader || started.has(loader)) return
+      started.add(loader)
+      loader().catch(() => started.delete(loader))
+    }
+    document.addEventListener('pointerover', onIntent, { passive: true })
+    document.addEventListener('focusin', onIntent)
+    return () => {
+      document.removeEventListener('pointerover', onIntent)
+      document.removeEventListener('focusin', onIntent)
+    }
+  }, [])
+}
+
+const motionFeatures = () => import('./lib/motion-features').then((m) => m.default)
 
 function NotFound() {
   useSeo(SEO.notFound, { noindex: true })
@@ -59,11 +104,13 @@ class SectionBoundary extends Component<{ children: ReactNode }, { failed: boole
 export function Shell() {
   const { pathname } = useLocation()
   useScrollToTop()
+  usePrefetchOnIntent()
   usePageViews()
   useContactClicks()
   return (
     // Con «reducir movimiento» en el sistema, los desplazamientos y cambios de tamaño animados se omiten.
     <MotionConfig reducedMotion="user">
+    <LazyMotion features={motionFeatures}>
       <a href="#contenido" onClick={(e) => { e.preventDefault(); document.getElementById('contenido')?.focus() }} className="sr-only z-[60] bg-ink px-4 py-2 text-white focus:not-sr-only focus:fixed focus:left-4 focus:top-4">Saltar al contenido</a>
       <Header />
       <main id="contenido" tabIndex={-1} className="outline-none">
@@ -87,6 +134,7 @@ export function Shell() {
       </main>
       <Footer />
       <WhatsAppButton />
+    </LazyMotion>
     </MotionConfig>
   )
 }

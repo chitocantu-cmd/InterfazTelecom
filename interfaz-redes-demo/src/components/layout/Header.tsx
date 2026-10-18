@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, m } from 'motion/react'
 import { ChevronDown, Menu, X } from 'lucide-react'
 import { useEffect, useRef, useState, type FocusEvent, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
@@ -160,7 +160,7 @@ export function Header() {
 
       <AnimatePresence>
         {mega && (
-          <motion.div
+          <m.div
             ref={megaPanel}
             id="mega-soluciones"
             onPointerEnter={hoverIn}
@@ -200,7 +200,7 @@ export function Header() {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
 
@@ -213,7 +213,7 @@ function MobileNav({ onClose, reduce }: { onClose: () => void; reduce: boolean }
   const [open, setOpen] = useState<string | null>(null)
   const solActive = useLocation().pathname.startsWith('/soluciones')
   return (
-    <motion.div
+    <m.div
       id="menu-movil"
       initial={reduce ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -255,6 +255,6 @@ function MobileNav({ onClose, reduce }: { onClose: () => void; reduce: boolean }
           <Button href={waLink('Hola, quiero hablar con un especialista de Interfaz Redes.')} variant="secondary" className="w-full">WhatsApp {COMPANY.whatsappDisplay}</Button>
         </div>
       </nav>
-    </motion.div>
+    </m.div>
   )
 }

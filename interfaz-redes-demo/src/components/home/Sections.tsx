@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, m } from 'motion/react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { COMPANY } from '../../data/company'
@@ -184,9 +184,9 @@ export function NeedsExplorer() {
           </fieldset>
           <div className="hidden lg:col-span-6 lg:col-start-7 lg:block" aria-live="polite">
             <AnimatePresence mode="wait" initial={false}>
-              <motion.div key={need.id} initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+              <m.div key={need.id} initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
                 <Result />
-              </motion.div>
+              </m.div>
             </AnimatePresence>
           </div>
         </div>

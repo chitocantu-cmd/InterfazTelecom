@@ -1,8 +1,8 @@
 import { Minus, Plus } from 'lucide-react'
+import { lazy, Suspense } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { Breadcrumbs } from '../components/layout/PageHero'
 import { Media } from '../components/plates'
-import { QuoteWizard } from '../components/quote/QuoteWizard'
 import { Button, Reveal } from '../components/ui'
 import { BRANDS_NETWORK, BRANDS_SECURITY } from '../data/company'
 import { PROCESS } from '../data/content'
@@ -11,6 +11,9 @@ import { categoryById, serviceBySlug } from '../data/solutions'
 import { cn, lowerFirst, scrollToId, waLink } from '../lib/utils'
 import { useSeo } from '../lib/seo'
 import { serviceSeo, SEO } from '../data/seo'
+
+// El cotizador está al final de la página: se descarga aparte para que el resto se muestre e hidrate antes.
+const QuoteWizard = lazy(() => import('../components/quote/QuoteWizard').then((m) => ({ default: m.QuoteWizard })))
 
 export default function ServiceDetail() {
   const { slug } = useParams()
@@ -29,7 +32,7 @@ export default function ServiceDetail() {
         <div className="relative order-2 aspect-[4/3] w-full sm:aspect-[16/9] lg:absolute lg:inset-y-0 lg:right-0 lg:aspect-auto lg:w-[48%]">
           {s.img ? (
             <>
-              <img src={IMG[s.img].src} srcSet={IMG[s.img].srcSet} sizes="(min-width: 1024px) 48vw, 100vw" alt={IMG[s.img].alt} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: IMG[s.img].pos }} />
+              <img src={IMG[s.img].src} srcSet={IMG[s.img].srcSet} sizes="(min-width: 1024px) 48vw, 100vw" alt={IMG[s.img].alt} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: IMG[s.img].pos }} {...{ fetchpriority: 'high' }} />
               {IMG[s.img].ref && <p className="img-caption">Imagen de referencia</p>}
             </>
           ) : (
@@ -165,7 +168,7 @@ export default function ServiceDetail() {
             <h2 className="text-h2">Solicite una propuesta</h2>
             <p className="mt-5 text-body">La solicitud ya incluye {lowerFirst(s.name)}. Agregue la ubicación, el alcance aproximado y sus datos de contacto.</p>
           </div>
-          <div className="lg:col-span-8"><QuoteWizard key={s.slug} initialType={s.quoteType} context={s.name} /></div>
+          <div className="lg:col-span-8"><Suspense fallback={<div className="min-h-[640px]" aria-busy="true" />}><QuoteWizard key={s.slug} initialType={s.quoteType} context={s.name} /></Suspense></div>
         </div>
       </section>
 

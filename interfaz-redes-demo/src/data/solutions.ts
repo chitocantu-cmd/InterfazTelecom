@@ -1,8 +1,10 @@
 import type { ImgKey } from './media'
+import type { QuoteType } from './quote-types'
+
+export type { QuoteType } from './quote-types'
 
 export type PlateKind = 'rack' | 'fiber' | 'cctv' | 'cabling' | 'wifi' | 'access' | 'site' | 'engineering'
 export type CategoryId = 'infraestructura' | 'fibra' | 'seguridad' | 'conectividad' | 'ingenieria'
-export type QuoteType = 'cableado' | 'fibra' | 'cctv' | 'acceso' | 'infra' | 'otro'
 
 export interface Spec { label: string; value: string }
 export interface SpecTable { title: string; note?: string; columns: string[]; rows: string[][] }
@@ -517,12 +519,3 @@ export const SERVICES: Service[] = [
 export const serviceBySlug = (slug?: string) => SERVICES.find((s) => s.slug === slug)
 export const categoryById = (id: CategoryId) => CATEGORIES.find((c) => c.id === id)!
 export const servicesOf = (id: CategoryId) => categoryById(id).services.map((slug) => serviceBySlug(slug)!).filter(Boolean)
-
-export const QUOTE_TYPES: { id: QuoteType; label: string; hint: string }[] = [
-  { id: 'cableado', label: 'Cableado y redes', hint: 'Nodos Cat6 / Cat6A, voz y datos' },
-  { id: 'fibra', label: 'Fibra óptica', hint: 'Enlaces entre edificios, racks o pisos' },
-  { id: 'cctv', label: 'CCTV', hint: 'Cámaras, grabación y monitoreo' },
-  { id: 'acceso', label: 'Control de acceso', hint: 'Peatonal, vehicular o asistencia' },
-  { id: 'infra', label: 'Infraestructura TI', hint: 'Site, racks, switching, WiFi' },
-  { id: 'otro', label: 'Otro proyecto', hint: 'Ingeniería, mantenimiento o integral' },
-]

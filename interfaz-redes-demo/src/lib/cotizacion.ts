@@ -1,7 +1,7 @@
 // Solicitud de cotización: campos, límites, validación y textos. Lo comparten el cotizador
 // (navegador) y la función /api/cotizacion (servidor), para que los dos validen y redacten igual.
 // Las importaciones llevan .js porque en Vercel la función corre como módulo ES de Node.
-import { QUOTE_TYPES, type QuoteType } from '../data/solutions.js'
+import { QUOTE_TYPES, type QuoteType } from '../data/quote-types.js'
 
 export const SITES = ['Planta industrial', 'Oficinas / corporativo', 'CEDIS / almacén', 'Institución educativa', 'Comercio / edificio', 'Otro']
 

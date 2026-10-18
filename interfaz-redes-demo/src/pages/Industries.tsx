@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, m, motion } from 'motion/react'
 import { useRef, type KeyboardEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { FinalCTA } from '../components/home/Sections'
@@ -55,6 +55,7 @@ export default function Industries() {
                 className={cn('relative shrink-0 whitespace-nowrap py-4 pr-8 text-[1rem] transition-colors', it.id === active ? 'font-medium text-ink' : 'text-muted hover:text-ink')}
               >
                 {it.name}
+                {/* La línea que se desliza entre pestañas usa layoutId: motion completo (sólo en esta página). */}
                 {it.id === active && <motion.span layoutId={reduce ? undefined : 'ind-line'} aria-hidden className="absolute bottom-[-1px] left-0 right-8 h-[2px] bg-corp" />}
               </button>
             ))}
@@ -62,9 +63,9 @@ export default function Industries() {
 
           <div ref={panelRef} role="tabpanel" id={`ind-panel-${ind.id}`} aria-labelledby={`ind-tab-${ind.id}`} className="mt-12">
             <AnimatePresence mode="wait" initial={false}>
-              <motion.div key={ind.id} initial={reduce ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.28 }} className="grid gap-10 lg:grid-cols-12 lg:gap-14">
+              <m.div key={ind.id} initial={reduce ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.28 }} className="grid gap-10 lg:grid-cols-12 lg:gap-14">
                 <SectorPanel ind={ind} />
-              </motion.div>
+              </m.div>
             </AnimatePresence>
           </div>
           {/* Los demás sectores también van en el HTML, ocultos: así los buscadores leen los cinco. */}

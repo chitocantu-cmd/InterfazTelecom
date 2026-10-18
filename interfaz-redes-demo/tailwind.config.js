@@ -26,8 +26,8 @@ export default {
         slate: { DEFAULT: '#3A4656', muted: '#616D7C', faint: '#98A2AE' },
       },
       fontFamily: {
-        display: ['Archivo', 'Helvetica Neue', 'Arial', 'sans-serif'],
-        sans: ['"DM Sans"', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        display: ['Archivo', '"Archivo Fallback"', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        sans: ['"DM Sans"', '"DM Sans Fallback"', 'Helvetica Neue', 'Arial', 'sans-serif'],
         mono: ['"IBM Plex Mono"', 'ui-monospace', 'Menlo', 'monospace'],
       },
       fontSize: {

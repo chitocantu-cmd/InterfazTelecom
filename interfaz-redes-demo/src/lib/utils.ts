@@ -46,7 +46,14 @@ export function useScrollToTop() {
     const initial = firstRender.current
     firstRender.current = false
     if (target) {
-      const t = window.setTimeout(() => scrollToId(target), 60)
+      // La página puede seguir descargándose (se carga bajo demanda): se espera hasta 3 s a que exista la sección.
+      let tries = 0
+      let t = 0
+      const attempt = () => {
+        if (document.getElementById(target)) scrollToId(target)
+        else if (++tries < 50) t = window.setTimeout(attempt, 60)
+      }
+      t = window.setTimeout(attempt, 60)
       return () => window.clearTimeout(t)
     }
     // Al abrir el sitio no se mueve la vista: el HTML ya llegó con el contenido y el usuario pudo haberse desplazado

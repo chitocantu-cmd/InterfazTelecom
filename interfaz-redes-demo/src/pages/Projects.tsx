@@ -110,7 +110,7 @@ export function ProjectDetail() {
           </div>
         </div>
         <div className="relative mx-auto h-[320px] max-w-frame overflow-hidden md:h-[480px] lg:h-[600px]">
-          {m ? <img src={m.src} srcSet={m.srcSet} sizes="(min-width: 1600px) 1600px, 100vw" alt={m.alt} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: m.pos }} /> : <Media plate={p.plate} ratio="h-full w-full" />}
+          {m ? <img src={m.src} srcSet={m.srcSet} sizes="(min-width: 1600px) 1600px, 100vw" alt={m.alt} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: m.pos }} {...{ fetchpriority: 'high' }} /> : <Media plate={p.plate} ratio="h-full w-full" />}
           {m?.ref && <p className="img-caption">Imagen de referencia, no corresponde a este caso</p>}
         </div>
       </section>

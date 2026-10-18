@@ -1,6 +1,6 @@
 // Recepción de cotizaciones: valida, asigna folio, avisa a ventas por correo y WhatsApp,
 // manda acuse al cliente y registra el estado de cada canal en los logs de Vercel.
-import { QUOTE_TYPES, type QuoteType } from '../../src/data/solutions.js'
+import { QUOTE_TYPES, type QuoteType } from '../../src/data/quote-types.js'
 import { FILES, MAX_LENGTH, SITES, fileExtension, quoteNotice, singleLine, validateQuote, type QuoteRequest } from '../../src/lib/cotizacion.js'
 import { emailReady, getConfig, receptionReady, whatsappReady, type Config } from './config.js'
 import { ackEmail, salesEmail, sendEmail } from './correo.js'

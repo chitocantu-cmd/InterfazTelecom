@@ -1,8 +1,8 @@
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, m } from 'motion/react'
 import { ArrowLeft, Cable, Cctv, Check, Copy, DoorClosed, FileText, Mail, MessageCircle, Paperclip, Pencil, Plus, Send, Server, Spline, X } from 'lucide-react'
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { COMPANY } from '../../data/company'
-import { QUOTE_TYPES, type QuoteType } from '../../data/solutions'
+import { QUOTE_TYPES, type QuoteType } from '../../data/quote-types'
 import { Link } from 'react-router-dom'
 import { track } from '../../lib/analytics'
 import { FILE_ACCEPT, FILES, MAX_LENGTH, SITES, fileExtension, quoteNotice, validateQuote, type QuoteRequest } from '../../lib/cotizacion'
@@ -266,7 +266,7 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
 
       <div ref={topRef} tabIndex={-1} className="outline-none p-5 sm:p-8">
         <AnimatePresence mode="wait" initial={false} onExitComplete={focusStep}>
-          <motion.div
+          <m.div
             key={send.state === 'done' ? 'recibida' : step}
             initial={reduce ? false : { opacity: 0, x: 14 }}
             animate={{ opacity: 1, x: 0 }}
@@ -508,7 +508,7 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
                 )}
               </div>
             )}
-          </motion.div>
+          </m.div>
         </AnimatePresence>
 
         {/* navegación */}

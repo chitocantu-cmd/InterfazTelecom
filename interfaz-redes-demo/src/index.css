@@ -8,6 +8,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  Respaldo con las medidas de Archivo y DM Sans: mientras llegan las fuentes, el texto en Arial ocupa lo mismo y
+  no se reacomoda al cambiar. size-adjust = ancho del mismo texto con la fuente real ÷ con Arial (medido en Chrome);
+  ascent/descent = métricas de cada fuente ÷ size-adjust. Para pesos 600 o más se compara con Arial Bold.
+*/
+@font-face { font-family: 'Archivo Fallback'; src: local('Arial'), local('ArialMT'); font-weight: 100 550; size-adjust: 100.61%; ascent-override: 87.27%; descent-override: 20.87%; line-gap-override: 0%; }
+@font-face { font-family: 'Archivo Fallback'; src: local('Arial Bold'), local('Arial-BoldMT'); font-weight: 551 1000; size-adjust: 95.64%; ascent-override: 91.8%; descent-override: 21.96%; line-gap-override: 0%; }
+@font-face { font-family: 'DM Sans Fallback'; src: local('Arial'), local('ArialMT'); font-weight: 100 550; size-adjust: 103.88%; ascent-override: 95.49%; descent-override: 29.84%; line-gap-override: 0%; }
+@font-face { font-family: 'DM Sans Fallback'; src: local('Arial Bold'), local('Arial-BoldMT'); font-weight: 551 1000; size-adjust: 101.04%; ascent-override: 98.18%; descent-override: 30.68%; line-gap-override: 0%; }
+
 @layer base {
   :root { color-scheme: light; --gutter: 1.25rem; }
   @media (min-width: 640px) { :root { --gutter: 1.75rem; } }
@@ -19,7 +29,7 @@
   body {
     background: #ffffff;
     color: #3a4656;
-    font-family: 'DM Sans', 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'DM Sans', 'DM Sans Fallback', 'Helvetica Neue', Arial, sans-serif;
     font-size: 1.0625rem;
     line-height: 1.65;
     font-feature-settings: 'ss01' on;
@@ -27,7 +37,7 @@
     overflow-x: hidden;
   }
   h1, h2, h3, h4 {
-    font-family: Archivo, 'Helvetica Neue', Arial, sans-serif;
+    font-family: Archivo, 'Archivo Fallback', 'Helvetica Neue', Arial, sans-serif;
     font-weight: 600;
     color: #0e1c2d;
     text-wrap: balance;

@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, m } from 'motion/react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CATEGORIES, servicesOf, type Category } from '../../data/solutions'
@@ -62,9 +62,9 @@ export function Explorer() {
 
           <div className="hidden lg:col-span-8 lg:block">
             <AnimatePresence mode="wait" initial={false}>
-              <motion.div key={cat.id} initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+              <m.div key={cat.id} initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
                 <Panel cat={cat} />
-              </motion.div>
+              </m.div>
             </AnimatePresence>
           </div>
         </div>
