@@ -229,8 +229,13 @@ publicar. No hay correos ni teléfonos de destino escritos en el código, salvo 
    (MX y TXT de `send`, y TXT `resend._domainkey`) y espere a que Resend lo marque como verificado.
 3. Cree una API key con permiso de envío y guárdela como `RESEND_API_KEY` en Vercel.
 
-Cada correo lleva una clave de idempotencia (`<folio>-ventas`, `<folio>-acuse`): si un envío se reintenta, Resend
-no lo duplica. Los archivos (hasta 5, 4 MB en total; PDF, DWG, DXF, JPG, PNG, HEIC, DOCX, XLSX) llegan adjuntos
+A cada dirección de `COTIZACION_DESTINATARIOS` le llega **su propio correo** (no uno con todos en «Para»): si un
+buzón lo filtra o lo rechaza, los demás lo reciben igual, y en Resend → Emails se ve el estado de cada dirección.
+Si sólo llegó a algunas, el estado del correo es `parcial` y la solicitud cuenta como recibida. Cada solicitud usa
+un correo por destinatario más el acuse (el plan gratuito de Resend permite 100 correos al día).
+
+Cada correo lleva una clave de idempotencia (`<folio>-ventas-<n>`, `<folio>-acuse`): si un envío se reintenta,
+Resend no lo duplica. Los archivos (hasta 5, 4 MB en total; PDF, DWG, DXF, JPG, PNG, HEIC, DOCX, XLSX) llegan adjuntos
 al correo de ventas y no se guardan en el sitio; el límite viene de Vercel (4.5 MB por solicitud).
 
 ### WhatsApp (WhatsApp Business Platform · Cloud API de Meta)

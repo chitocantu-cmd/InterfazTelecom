@@ -234,7 +234,8 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
     requestAnimationFrame(() => topRef.current?.focus())
   }
   const sending = send.state === 'sending'
-  const sent = (s: Status) => s === 'enviado' || s === 'prueba'
+  // «parcial»: llegó a parte del equipo (algunos correos o números), así que sí se recibió.
+  const sent = (s: Status) => s === 'enviado' || s === 'parcial' || s === 'prueba'
 
   // Mientras el cotizador está en pantalla se oculta el botón flotante de WhatsApp (WhatsAppButton).
   const root = useRef<HTMLDivElement>(null)

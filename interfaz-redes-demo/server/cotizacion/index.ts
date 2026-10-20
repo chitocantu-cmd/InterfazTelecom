@@ -134,16 +134,34 @@ const shortHash = async (s: string) =>
 
 // --- Entrega ----------------------------------------------------------------------------------
 
+/** Pausa entre envíos a Resend (límite de unas 2 solicitudes por segundo por cuenta). */
+const RESEND_GAP_MS = 550
+const pause = (ms: number) => new Promise((done) => setTimeout(done, ms))
+
 async function deliver(q: Quote, cfg: Config): Promise<Outcome> {
   if (cfg.testDir) return writeTestOutput(q, cfg)
   const sales = salesEmail(q, cfg)
   const attachments = q.files.map((f) => ({ filename: f.name, content: f.content }))
-  const sendSales = async (): Promise<Delivery> => {
-    const first = await sendEmail(cfg, { to: cfg.email.to, replyTo: q.request.email.trim(), ...sales, attachments, key: `${q.folio}-ventas`, tag: 'cotizacion' })
+  const sendSalesTo = async (to: string, n: number): Promise<Delivery> => {
+    const key = `${q.folio}-ventas-${n}`
+    const first = await sendEmail(cfg, { to: [to], replyTo: q.request.email.trim(), ...sales, attachments, key, tag: 'cotizacion' })
     // Si Resend rechaza la solicitud (4xx), puede ser por el Reply-To del cliente: se reintenta una vez sin él.
     if (first.status !== 'error' || !/^HTTP 4(?!29)/.test(first.detail ?? '')) return first
-    logError({ folio: q.folio, canal: 'correo', detalle: first.detail, accion: 'reintento sin reply_to' })
-    return sendEmail(cfg, { to: cfg.email.to, ...sales, attachments, key: `${q.folio}-ventas-sin-reply`, tag: 'cotizacion', attempts: 2 })
+    logError({ folio: q.folio, canal: 'correo', destinatario: n, detalle: first.detail, accion: 'reintento sin reply_to' })
+    return sendEmail(cfg, { to: [to], ...sales, attachments, key: `${key}-sin-reply`, tag: 'cotizacion', attempts: 2 })
+  }
+  // Un correo para cada destinatario (no uno con todos en «Para»): si un buzón lo filtra o lo rechaza, los demás lo
+  // reciben igual, y en Resend se ve el estado de cada dirección. Uno tras otro: Resend admite unas 2 solicitudes
+  // por segundo.
+  const sendSales = async (): Promise<Delivery> => {
+    const results: Delivery[] = []
+    for (const [i, to] of cfg.email.to.entries()) {
+      if (i > 0) await pause(RESEND_GAP_MS)
+      results.push(await sendSalesTo(to, i + 1))
+    }
+    const failed = results.flatMap((r, i) => (r.status === 'enviado' ? [] : [`destinatario ${i + 1}: ${r.detail ?? r.status}`]))
+    if (!failed.length) return { status: 'enviado' }
+    return { status: failed.length < results.length ? 'parcial' : 'error', detail: failed.join(' | ') }
   }
   const [email, whatsapp] = await Promise.all([
     emailReady(cfg) ? sendSales() : Promise.resolve<Delivery>({ status: 'no_configurado' }),
@@ -151,7 +169,9 @@ async function deliver(q: Quote, cfg: Config): Promise<Outcome> {
   ])
   // Recibida = llegó a ventas por al menos un canal. Si sólo llegó el WhatsApp, el cotizador lo dice (sin archivos
   // y con la descripción resumida). El acuse sólo se manda si de verdad se recibió.
-  const received = email.status === 'enviado' || whatsapp.status === 'enviado' || whatsapp.status === 'parcial'
+  const reached = (d: Delivery) => d.status === 'enviado' || d.status === 'parcial'
+  const received = reached(email) || reached(whatsapp)
+  if (received && cfg.email.ack && emailReady(cfg)) await pause(RESEND_GAP_MS)
   const ack: Delivery = received && cfg.email.ack && emailReady(cfg)
     ? await sendEmail(cfg, { to: [q.request.email.trim()], replyTo: cfg.email.replyTo, ...ackEmail(q, cfg), key: `${q.folio}-acuse`, tag: 'acuse', attempts: 2 })
     : { status: 'omitido' }
@@ -167,7 +187,7 @@ async function writeTestOutput(q: Quote, cfg: Config): Promise<Outcome> {
   const ack = ackEmail(q, cfg)
   const files = q.files.map((f) => f.name)
   await writeFile(`${dir}/${q.folio}-ventas.html`, sales.html)
-  await writeFile(`${dir}/${q.folio}-ventas.txt`, `Para: ${cfg.email.to.join(', ')}\nDe: ${cfg.email.from}\nResponder a: ${q.request.email.trim()}\nAsunto: ${sales.subject}\nAdjuntos: ${files.join(', ') || '—'}\n\n${sales.text}\n`)
+  await writeFile(`${dir}/${q.folio}-ventas.txt`, `Para: ${cfg.email.to.join(', ')} (un correo a cada uno)\nDe: ${cfg.email.from}\nResponder a: ${q.request.email.trim()}\nAsunto: ${sales.subject}\nAdjuntos: ${files.join(', ') || '—'}\n\n${sales.text}\n`)
   await writeFile(`${dir}/${q.folio}-acuse.html`, ack.html)
   await writeFile(`${dir}/${q.folio}-acuse.txt`, `Para: ${q.request.email.trim()}\nResponder a: ${cfg.email.replyTo}\nAsunto: ${ack.subject}\n\n${ack.text}\n`)
   await writeFile(`${dir}/${q.folio}-whatsapp.txt`, `${quoteNotice(q.request, { files, folio: q.folio, date: q.date })}\n\nParámetros de la plantilla ${cfg.whatsapp.template}:\n${templateParams(q).map((p, i) => `{{${i + 1}}} ${p}`).join('\n')}\n`)

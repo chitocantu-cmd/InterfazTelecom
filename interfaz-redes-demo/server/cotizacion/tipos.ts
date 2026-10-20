@@ -18,7 +18,7 @@ export interface Quote {
 
 /**
  * Estado de cada canal:
- * enviado · parcial (WhatsApp: llegó a parte de los números) · error · no_configurado · omitido · prueba (modo local).
+ * enviado · parcial (llegó a parte de los correos o números de ventas) · error · no_configurado · omitido · prueba (modo local).
  */
 export type Status = 'enviado' | 'parcial' | 'error' | 'no_configurado' | 'omitido' | 'prueba'
 
