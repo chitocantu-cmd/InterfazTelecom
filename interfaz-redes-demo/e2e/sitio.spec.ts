@@ -304,7 +304,11 @@ test.describe('WhatsApp flotante', () => {
     await page.goto('/soluciones/fibra-optica')
     await expect(wa).toBeVisible()
     await page.locator('[aria-label="Progreso de la solicitud"]').scrollIntoViewIfNeeded()
-    await expect(wa).toHaveCSS('opacity', '0')
+    // Oculto también para el teclado y el lector de pantalla (visibility), no sólo transparente.
+    const fab = page.locator('a[aria-label="Hablar por WhatsApp con un especialista"]')
+    await expect(fab).toHaveCSS('opacity', '0')
+    await expect(fab).toHaveCSS('visibility', 'hidden')
+    await expect(wa).toHaveCount(0)
     await page.goto('/contacto')
     await expect(wa).toHaveCount(0)
   })

@@ -4,12 +4,13 @@ import { Topology } from '../components/home/Topology'
 import { PageHero } from '../components/layout/PageHero'
 import { Media } from '../components/plates'
 import { Reveal } from '../components/ui'
-import { CATEGORIES, SERVICES, servicesOf } from '../data/solutions'
+import type { QuoteType } from '../data/quote-types'
+import { CATEGORIES, SERVICES, servicesOf, type CategoryId } from '../data/solutions'
 import { cn } from '../lib/utils'
 import { useSeo } from '../lib/seo'
 import { SEO } from '../data/seo'
 
-const QUOTE_FOR: Record<string, string> = { infraestructura: 'cableado', fibra: 'fibra', seguridad: 'cctv', conectividad: 'infra', ingenieria: 'otro' }
+const QUOTE_FOR: Record<CategoryId, QuoteType> = { infraestructura: 'cableado', fibra: 'fibra', seguridad: 'cctv', conectividad: 'infra', ingenieria: 'otro' }
 
 export default function Solutions() {
   useSeo(SEO.solutions)

@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
+import { COMPANY } from '../data/company'
 import { fullTitle, type Seo } from '../data/seo'
 
-export const SITE_URL = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/$/, '') || 'https://interfaztelecom.com.mx'
+export const SITE_URL = ((import.meta.env.VITE_SITE_URL as string | undefined) || COMPANY.site).replace(/\/$/, '')
 
 function setMeta(selector: string, attr: 'name' | 'property', key: string, content: string) {
   let el = document.head.querySelector<HTMLMetaElement>(selector)

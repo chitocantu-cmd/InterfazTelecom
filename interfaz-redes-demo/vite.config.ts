@@ -1,7 +1,14 @@
+import { existsSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { Readable } from 'node:stream'
 import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import { viteSingleFile } from 'vite-plugin-singlefile'
+import { COMPANY } from './src/data/company'
+
+// Una sola URL del sitio: COMPANY.site (también la usa el servidor para aceptar envíos del cotizador).
+// VITE_SITE_URL sólo sirve para sobrescribirla en un build puntual; de aquí la leen index.html y lib/seo.ts.
+process.env.VITE_SITE_URL ||= COMPANY.site.replace(/\/$/, '')
 
 /**
  * En desarrollo, atiende /api/<nombre> con la función de api/<nombre>.ts (como Vercel en producción),
@@ -17,12 +24,19 @@ function localApi(): Plugin {
       server.middlewares.use(async (req, res, next) => {
         const match = req.url?.match(/^\/api\/([\w-]+)(?:[?#]|$)/)
         if (!match) return next()
+        const json = (status: number, body: unknown) => {
+          res.statusCode = status
+          res.setHeader('Content-Type', 'application/json; charset=utf-8')
+          res.end(JSON.stringify(body))
+        }
+        // Como en Vercel: una función que no existe es un 404 (no la página de error de Vite).
+        if (!existsSync(resolve(server.config.root, 'api', `${match[1]}.ts`))) return json(404, { ok: false, codigo: 'no_existe' })
         try {
           const mod = await server.ssrLoadModule(`/api/${match[1]}.ts`)
           const handler = mod[req.method ?? 'GET'] as ((r: Request) => Response | Promise<Response>) | undefined
           if (!handler) {
-            res.statusCode = 405
-            return res.end()
+            res.setHeader('Allow', Object.keys(mod).filter((k) => /^[A-Z]+$/.test(k)).join(', '))
+            return json(405, { ok: false, codigo: 'metodo' })
           }
           const headers = new Headers()
           for (const [k, v] of Object.entries(req.headers)) if (v !== undefined) headers.set(k, Array.isArray(v) ? v.join(', ') : v)
@@ -39,7 +53,9 @@ function localApi(): Plugin {
           response.headers.forEach((v, k) => res.setHeader(k, v))
           res.end(Buffer.from(await response.arrayBuffer()))
         } catch (e) {
-          next(e)
+          // El detalle va a la terminal; al navegador, sólo un error genérico (como en producción).
+          server.config.logger.error(`api/${match[1]}: ${e instanceof Error ? e.stack : String(e)}`)
+          if (!res.headersSent) json(500, { ok: false, codigo: 'servidor' })
         }
       })
     },

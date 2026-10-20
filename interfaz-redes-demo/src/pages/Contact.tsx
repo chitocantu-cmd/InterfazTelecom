@@ -3,11 +3,12 @@ import { useSearchParams } from 'react-router-dom'
 import { CopyValue } from '../components/layout/Footer'
 import { Logo } from '../components/layout/Logo'
 import { PageHero } from '../components/layout/PageHero'
-import { QuoteWizard, SITES } from '../components/quote/QuoteWizard'
+import { QuoteWizard } from '../components/quote/QuoteWizard'
 import { COMPANY } from '../data/company'
 import { NEEDS } from '../data/content'
-import { QUOTE_TYPES, type QuoteType } from '../data/quote-types'
+import { isQuoteType } from '../data/quote-types'
 import { serviceBySlug } from '../data/solutions'
+import { SITES } from '../lib/cotizacion'
 import { useHydrated, waLink } from '../lib/utils'
 import { useSeo } from '../lib/seo'
 import { SEO } from '../data/seo'
@@ -23,7 +24,7 @@ export default function Contact() {
   // conoce. Al aplicarse cambia la `key` del cotizador, que arranca de nuevo con esos datos.
   const params = useHydrated() ? urlParams : NO_PARAMS
   const tipoParam = params.get('tipo')
-  const tipo = QUOTE_TYPES.some((q) => q.id === tipoParam) ? (tipoParam as QuoteType) : undefined
+  const tipo = isQuoteType(tipoParam) ? tipoParam : undefined
   const service = serviceBySlug(params.get('servicio') ?? undefined)
   const need = NEEDS.find((n) => n.id === params.get('necesidad'))
   const site = SECTOR_TO_SITE[params.get('sector') ?? '']
@@ -34,7 +35,7 @@ export default function Contact() {
       links: [{ href: waLink('Hola, quiero cotizar un proyecto con Interfaz Redes.'), label: 'Abrir WhatsApp' }, { href: `tel:${COMPANY.phoneIntl}`, label: 'Llamar' }],
     },
     { icon: Mail, k: 'Correo', v: <CopyValue dark value={COMPANY.email} label="correo" />, links: [{ href: `mailto:${COMPANY.email}`, label: 'Escribir correo' }] },
-    { icon: MapPin, k: 'Oficina', v: COMPANY.address, links: [{ href: 'https://www.google.com/maps/search/?api=1&query=Av.+8+Norte+1750+Col.+Industrial+Monterrey+N.L.', label: 'Ver en mapa' }] },
+    { icon: MapPin, k: 'Oficina', v: COMPANY.address, links: [{ href: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(COMPANY.address)}`, label: 'Ver en mapa' }] },
     { icon: Clock, k: 'Horario', v: COMPANY.hours, links: [] },
   ]
 

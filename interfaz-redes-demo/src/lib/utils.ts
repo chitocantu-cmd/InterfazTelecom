@@ -41,6 +41,8 @@ const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia('
 export function useScrollToTop() {
   const { pathname, search, hash, key } = useLocation()
   const target = hash.slice(1) || new URLSearchParams(search).get('s')
+  // `key` cambia con cada clic: un enlace a la sección en la que ya está vuelve a desplazarse.
+  const clickToSection = target ? key : null
   const firstRender = useRef(true)
   useEffect(() => {
     const initial = firstRender.current
@@ -62,8 +64,7 @@ export function useScrollToTop() {
     window.scrollTo({ top: 0, behavior: 'auto' })
     // Al navegar, el foco va al contenido para que el teclado y los lectores de pantalla empiecen por la página nueva.
     document.getElementById('contenido')?.focus({ preventScroll: true })
-    // `key` cambia con cada clic: un enlace a la sección actual vuelve a desplazarse.
-  }, [pathname, target, target ? key : null])
+  }, [pathname, target, clickToSection])
 }
 
 /** Desplaza hasta la sección y le pasa el foco del teclado (sin animación si el usuario pidió reducir el movimiento). */

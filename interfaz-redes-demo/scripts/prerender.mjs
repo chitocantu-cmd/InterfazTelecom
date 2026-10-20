@@ -13,7 +13,7 @@ const { render, PAGES, fullTitle, MAX_DESCRIPTION, MIN_DESCRIPTION, structuredDa
 )
 
 const base = readFileSync('dist/index.html', 'utf8')
-// VITE_SITE_URL (en .env) ya viene sustituida por Vite en el canonical de index.html.
+// La URL del sitio (COMPANY.site, o VITE_SITE_URL si se sobrescribe) ya viene sustituida en el canonical de index.html.
 const site = base.match(/<link rel="canonical" href="(.*?)\/?"/)?.[1] ?? ''
 if (!/^https:\/\/[a-z0-9.-]+$/i.test(site)) throw new Error(`prerender: VITE_SITE_URL debe ser una URL https:// sin ruta (es «${site}»)`)
 

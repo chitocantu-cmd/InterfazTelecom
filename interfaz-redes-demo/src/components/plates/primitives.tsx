@@ -8,7 +8,7 @@ export const C = {
   line: '#8FA3B5',
   soft: '#D3E0EA',
   softer: '#E3ECF2',
-  red: '#176FB0',
+  accent: '#176FB0',
   muted: '#5D7086',
   green: '#2F9E6E',
 }
@@ -67,13 +67,13 @@ export function PlateSvg({
 export function Callout({ x, y, tx, ty, letter, text, anchor = 'start', active = true }: {
   x: number; y: number; tx: number; ty: number; letter: string; text: string; anchor?: 'start' | 'end'; active?: boolean
 }) {
-  const col = active ? C.red : C.line
+  const col = active ? C.accent : C.line
   return (
     <g style={{ transition: 'opacity .35s' }} opacity={active ? 1 : 0.55}>
       <polyline points={`${x},${y} ${tx},${ty}`} fill="none" stroke={col} strokeWidth="1" />
       <circle cx={x} cy={y} r="2.5" fill={col} />
       <circle cx={tx} cy={ty} r="9" fill={C.paper} stroke={col} strokeWidth="1" />
-      <text x={tx} y={ty + 3.5} textAnchor="middle" fontFamily={MONO} fontSize="10" fontWeight="500" fill={active ? C.red : C.ink}>
+      <text x={tx} y={ty + 3.5} textAnchor="middle" fontFamily={MONO} fontSize="10" fontWeight="500" fill={active ? C.accent : C.ink}>
         {letter}
       </text>
       <text x={anchor === 'start' ? tx + 16 : tx - 16} y={ty + 3.5} textAnchor={anchor} fontFamily={MONO} fontSize="10" fill={C.ink}>
@@ -118,7 +118,7 @@ export function Camera({ x, y, dir, spread = 70, r = 110, ptz = false, active = 
         ) : (
           <>
             <rect x="-7" y="-4" width="12" height="8" rx="1" fill={C.ink} />
-            <rect x="5" y="-2.5" width="4" height="5" fill={C.red} />
+            <rect x="5" y="-2.5" width="4" height="5" fill={C.accent} />
           </>
         )}
       </g>

@@ -26,19 +26,19 @@ export function FiberPlate() {
           ))}
         </g>
       ))}
-      <rect x="84" y="268" width="56" height="44" fill="#EAF3F9" stroke={C.red} strokeWidth="1.2" />
+      <rect x="84" y="268" width="56" height="44" fill="#EAF3F9" stroke={C.accent} strokeWidth="1.2" />
       <rect x="96" y="276" width="14" height="30" fill={C.ink} />
       <rect x="114" y="276" width="14" height="30" fill={C.ink2} />
       <Label x="60" y="80" color={C.ink} weight={500}>EDIFICIO A · SITE PRINCIPAL</Label>
       {/* nave B */}
       <path d="M520 320 V170 L560 140 V170 L600 140 V170 L640 140 V170 L680 140 V170 L720 140 V320 Z" fill={C.paper} stroke={C.ink} strokeWidth="1.4" />
-      <rect x="640" y="262" width="56" height="50" fill="#EAF3F9" stroke={C.red} strokeWidth="1.2" />
+      <rect x="640" y="262" width="56" height="50" fill="#EAF3F9" stroke={C.accent} strokeWidth="1.2" />
       <rect x="652" y="270" width="14" height="36" fill={C.ink} />
       <rect x="548" y="240" width="60" height="80" fill={C.softer} stroke={C.soft} />
       <Label x="520" y="128" color={C.ink} weight={500}>NAVE B · CUARTO DE DISTRIBUCIÓN</Label>
       {/* ducto y registros */}
       <path d="M112 312 V372 H668 V312" fill="none" stroke={C.line} strokeWidth="10" strokeLinejoin="round" opacity="0.45" />
-      <path d="M112 312 V372 H668 V312" fill="none" stroke={C.red} strokeWidth="2" strokeDasharray="10 5" strokeLinejoin="round">
+      <path d="M112 312 V372 H668 V312" fill="none" stroke={C.accent} strokeWidth="2" strokeDasharray="10 5" strokeLinejoin="round">
         <animate attributeName="stroke-dashoffset" from="30" to="0" dur="1.6s" repeatCount="indefinite" />
       </path>
       {[300, 480].map((x) => (
@@ -59,9 +59,9 @@ export function FiberPlate() {
         <line key={i} x1={ox} x2={ox + ow} y1={oy + i * 33} y2={oy + i * 33} stroke={C.softer} />
       ))}
       <path d={trace} fill="none" stroke={C.ink} strokeWidth="1.4" />
-      <circle cx={ox + 141} cy={oy + 44} r="3" fill="none" stroke={C.red} />
-      <circle cx={ox + 254} cy={oy + 50} r="3" fill="none" stroke={C.red} />
-      <circle cx={ox + 362} cy={oy + 66} r="3" fill="none" stroke={C.red} />
+      <circle cx={ox + 141} cy={oy + 44} r="3" fill="none" stroke={C.accent} />
+      <circle cx={ox + 254} cy={oy + 50} r="3" fill="none" stroke={C.accent} />
+      <circle cx={ox + 362} cy={oy + 66} r="3" fill="none" stroke={C.accent} />
       <Label x={ox + 141} y={oy + 66} anchor="middle" size={8}>empalme</Label>
       <Label x={ox + 254} y={oy + 40} anchor="middle" size={8}>conector</Label>
       <Label x={ox + 362} y={oy + 56} anchor="middle" size={8}>fin</Label>
@@ -88,9 +88,9 @@ export function CctvPlate() {
       {Array.from({ length: 8 }).map((_, i) => (
         <rect key={i} x={150 + i * 46} y="96" width="16" height="170" fill={C.softer} stroke={C.soft} />
       ))}
-      <rect x="100" y="280" width="90" height="50" fill="#EAF3F9" stroke={C.red} strokeWidth="1" />
+      <rect x="100" y="280" width="90" height="50" fill="#EAF3F9" stroke={C.accent} strokeWidth="1" />
       <Label x="108" y="300" color={C.ink} size={9}>OFICINA</Label>
-      <Label x="108" y="316" color={C.red} size={9} weight={500}>NVR</Label>
+      <Label x="108" y="316" color={C.accent} size={9} weight={500}>NVR</Label>
       <Label x="300" y="62" anchor="middle" color={C.ink} weight={500}>ALMACÉN</Label>
       {/* andenes */}
       {Array.from({ length: 6 }).map((_, i) => (
@@ -104,7 +104,7 @@ export function CctvPlate() {
       {/* caseta */}
       <rect x="680" y="452" width="44" height="34" fill={C.paper} stroke={C.ink} />
       <Label x="702" y="502" anchor="middle" size={9}>CASETA</Label>
-      <line x1="724" y1="470" x2="770" y2="470" stroke={C.red} strokeWidth="3" />
+      <line x1="724" y1="470" x2="770" y2="470" stroke={C.accent} strokeWidth="3" />
       {/* cámaras */}
       <Camera x={560} y={340} dir={160} spread={60} r={170} />
       <Camera x={90} y={340} dir={-10} spread={50} r={130} />
@@ -117,7 +117,7 @@ export function CctvPlate() {
       {/* leyenda */}
       <g transform="translate(600 70)">
         <rect width="150" height="78" fill={C.paper} stroke={C.soft} />
-        <g transform="translate(16 20)"><rect x="-6" y="-4" width="12" height="8" fill={C.ink} /><rect x="6" y="-2.5" width="4" height="5" fill={C.red} /></g>
+        <g transform="translate(16 20)"><rect x="-6" y="-4" width="12" height="8" fill={C.ink} /><rect x="6" y="-2.5" width="4" height="5" fill={C.accent} /></g>
         <Label x="34" y="24" color={C.ink} size={9}>Cámara fija</Label>
         <circle cx="16" cy="42" r="6" fill={C.ink} />
         <Label x="34" y="45" color={C.ink} size={9}>PTZ</Label>
@@ -152,7 +152,7 @@ export function CablingPlate() {
       <rect x="56" y="66" width="88" height="170" fill="#EAF3F9" />
       <rect x="74" y="150" width="22" height="34" fill={C.ink} />
       <rect x="100" y="150" width="22" height="34" fill={C.ink2} />
-      <Label x="98" y="132" anchor="middle" color={C.red} weight={500}>SITE</Label>
+      <Label x="98" y="132" anchor="middle" color={C.accent} weight={500}>SITE</Label>
       {/* charola */}
       <g>
         <rect x="96" y="258" width="640" height="14" fill="none" stroke={C.ink2} strokeWidth="1" />
@@ -168,10 +168,10 @@ export function CablingPlate() {
           <path key={i} d={y < 240 ? `M${x} 258 V${y + 6}` : `M${x} 272 V${y - 6}`} />
         ))}
       </g>
-      <path d="M110 184 V265 H680 V200" fill="none" stroke={C.red} strokeWidth="2" />
+      <path d="M110 184 V265 H680 V200" fill="none" stroke={C.accent} strokeWidth="2" />
       {/* nodos */}
       {outlets.map(([x, y], i) => (
-        <path key={i} d={`M${x - 6} ${y + 5} L${x} ${y - 5} L${x + 6} ${y + 5} Z`} fill={i === 10 ? C.red : C.ink} />
+        <path key={i} d={`M${x - 6} ${y + 5} L${x} ${y - 5} L${x + 6} ${y + 5} Z`} fill={i === 10 ? C.accent : C.ink} />
       ))}
       {/* escritorios */}
       <g fill="none" stroke={C.soft}>
@@ -185,7 +185,7 @@ export function CablingPlate() {
         <line x1="110" x2="110" y1="502" y2="518" stroke={C.ink} strokeWidth="0.8" />
         <line x1="680" x2="680" y1="502" y2="518" stroke={C.ink} strokeWidth="0.8" />
         <rect x="290" y="502" width="210" height="16" fill={C.bg} />
-        <Label x="395" y="514" anchor="middle" color={C.red} weight={500}>ENLACE PERMANENTE ≤ 90 m</Label>
+        <Label x="395" y="514" anchor="middle" color={C.accent} weight={500}>ENLACE PERMANENTE ≤ 90 m</Label>
       </g>
       <Callout x={680} y={200} tx={705} ty={180} letter="N" text="" />
       <Label x="60" y="50" color={C.ink} weight={500}>NIVEL 1 · OFICINAS</Label>
@@ -217,7 +217,7 @@ export function WifiPlate() {
         <g key={i}>
           <circle cx={x} cy={y} r="11" fill={C.paper} stroke={C.ink} strokeWidth="1.4" />
           <text x={x} y={y + 3.2} textAnchor="middle" fontFamily={MONO} fontSize="8" fill={C.ink} fontWeight="500">AP</text>
-          <path d={`M${x - 18} ${y - 14} q 18 -14 36 0`} fill="none" stroke={C.red} strokeWidth="1" />
+          <path d={`M${x - 18} ${y - 14} q 18 -14 36 0`} fill="none" stroke={C.accent} strokeWidth="1" />
           <Label x={x + 16} y={y + 24} size={8}>{`AP-0${i + 1}`}</Label>
         </g>
       ))}
@@ -246,10 +246,10 @@ export function AccessPlate() {
       <rect x="180" y="118" width="90" height="12" fill={C.ink} />
       {/* lector */}
       <rect x="318" y="270" width="26" height="40" rx="3" fill={C.ink} />
-      <rect x="324" y="278" width="14" height="10" fill={C.red} />
+      <rect x="324" y="278" width="14" height="10" fill={C.accent} />
       {/* botón salida */}
       <rect x="104" y="280" width="22" height="22" fill={C.paper} stroke={C.ink} />
-      <circle cx="115" cy="291" r="6" fill={C.red} />
+      <circle cx="115" cy="291" r="6" fill={C.accent} />
       {/* sensor */}
       <rect x="292" y="140" width="12" height="18" fill={C.ink2} />
       {/* controladora */}
@@ -262,10 +262,10 @@ export function AccessPlate() {
       <rect x="640" y="360" width="120" height="80" fill={C.paper} stroke={C.ink} />
       <line x1="652" y1="380" x2="740" y2="380" stroke={C.soft} strokeWidth="4" />
       <line x1="652" y1="396" x2="720" y2="396" stroke={C.soft} strokeWidth="4" />
-      <line x1="652" y1="412" x2="730" y2="412" stroke={C.red} strokeWidth="4" />
+      <line x1="652" y1="412" x2="730" y2="412" stroke={C.accent} strokeWidth="4" />
       <Label x="700" y="460" anchor="middle">PERMISOS · REPORTES</Label>
       {/* cableado */}
-      <g fill="none" stroke={C.red} strokeWidth="1.3">
+      <g fill="none" stroke={C.accent} strokeWidth="1.3">
         <path d="M344 290 H420 V240 H470" />
         <path d="M270 124 H430 V220 H470" />
         <path d="M304 150 H410 V260 H470" />
@@ -298,14 +298,14 @@ export function SitePlate() {
       {/* racks */}
       {[0, 1, 2, 3].map((i) => (
         <g key={i}>
-          <rect x={230 + i * 92} y="160" width="80" height="80" fill={i === 1 ? '#EAF3F9' : C.softer} stroke={i === 1 ? C.red : C.ink} strokeWidth="1.4" />
+          <rect x={230 + i * 92} y="160" width="80" height="80" fill={i === 1 ? '#EAF3F9' : C.softer} stroke={i === 1 ? C.accent : C.ink} strokeWidth="1.4" />
           <line x1={230 + i * 92} x2={310 + i * 92} y1="236" y2="236" stroke={C.ink} strokeWidth="3" />
           <Label x={270 + i * 92} y="205" anchor="middle" size={9} color={C.ink}>{`R-0${i + 1}`}</Label>
         </g>
       ))}
       {/* área de trabajo */}
       <rect x="230" y="250" width="356" height="100" fill="rgba(23,111,176,0.05)" stroke="rgba(23,111,176,0.4)" strokeDasharray="5 4" />
-      <Label x="408" y="304" anchor="middle" color={C.red}>FRENTE DE TRABAJO</Label>
+      <Label x="408" y="304" anchor="middle" color={C.accent}>FRENTE DE TRABAJO</Label>
       {/* UPS y tierra */}
       <rect x="600" y="380" width="64" height="74" fill={C.ink} />
       <Label x="632" y="372" anchor="middle" size={9}>UPS</Label>
@@ -335,8 +335,8 @@ export function EngineeringPlate() {
       </g>
       <g fill="none" strokeWidth="1.3">
         <path d="M200 130 H290" stroke={C.ink} />
-        <path d="M400 125 H450 V98 H490" stroke={C.red} strokeWidth="2" />
-        <path d="M400 135 H450 V168 H490" stroke={C.red} strokeWidth="2" />
+        <path d="M400 125 H450 V98 H490" stroke={C.accent} strokeWidth="2" />
+        <path d="M400 135 H450 V168 H490" stroke={C.accent} strokeWidth="2" />
         <path d="M345 150 V250" stroke={C.ink} />
       </g>
       <Label x="155" y="134" anchor="middle" color={C.ink} size={9}>FW</Label>
@@ -344,7 +344,7 @@ export function EngineeringPlate() {
       <Label x="540" y="102" anchor="middle" color={C.ink} size={9}>IDF-A</Label>
       <Label x="540" y="172" anchor="middle" color={C.ink} size={9}>IDF-B</Label>
       <Label x="345" y="272" anchor="middle" color={C.ink} size={9}>NVR</Label>
-      <Label x="450" y="76" color={C.red} size={8}>OS2</Label>
+      <Label x="450" y="76" color={C.accent} size={8}>OS2</Label>
       {/* notas */}
       <g fontFamily={MONO} fontSize="9" fill={C.muted}>
         <text x="80" y="340">NOTAS GENERALES</text>
@@ -359,7 +359,7 @@ export function EngineeringPlate() {
         <line x1="470" y1="444" x2="748" y2="444" stroke={C.ink} strokeWidth="0.6" />
         <line x1="470" y1="476" x2="748" y2="476" stroke={C.ink} strokeWidth="0.6" />
         <line x1="610" y1="444" x2="610" y2="512" stroke={C.ink} strokeWidth="0.6" />
-        <text x="482" y="402" fontFamily="Archivo, Arial, sans-serif" fontSize="15" fontWeight="700" fill={C.ink}>interfaz<tspan fill={C.red}>.</tspan></text>
+        <text x="482" y="402" fontFamily="Archivo, Arial, sans-serif" fontSize="15" fontWeight="700" fill={C.ink}>interfaz<tspan fill={C.accent}>.</tspan></text>
         <Label x="736" y="401" anchor="end" size={8}>REDES Y TELECOMUNICACIONES</Label>
         <Label x="482" y="432" color={C.ink} size={9}>PROYECTO · DIAGRAMA GENERAL DE RED</Label>
         <Label x="482" y="464" size={8}>LÁMINA</Label>
@@ -367,7 +367,7 @@ export function EngineeringPlate() {
         <Label x="622" y="464" size={8}>ESCALA</Label>
         <Label x="736" y="464" anchor="end" color={C.ink} size={9}>S/E</Label>
         <Label x="482" y="497" size={8}>REVISIÓN</Label>
-        <Label x="560" y="497" color={C.red} size={9}>R0</Label>
+        <Label x="560" y="497" color={C.accent} size={9}>R0</Label>
         <Label x="622" y="497" size={8}>FECHA</Label>
         <Label x="736" y="497" anchor="end" color={C.ink} size={9}>—</Label>
       </g>

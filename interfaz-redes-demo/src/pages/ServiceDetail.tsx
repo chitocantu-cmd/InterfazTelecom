@@ -29,16 +29,6 @@ export default function ServiceDetail() {
     <>
       {/* encabezado: texto sobre blanco + imagen a sangre */}
       <section className="relative mx-auto flex max-w-frame flex-col overflow-hidden bg-white lg:block">
-        <div className="relative order-2 aspect-[4/3] w-full sm:aspect-[16/9] lg:absolute lg:inset-y-0 lg:right-0 lg:aspect-auto lg:w-[48%]">
-          {s.img ? (
-            <>
-              <img src={IMG[s.img].src} srcSet={IMG[s.img].srcSet} sizes="(min-width: 1024px) 48vw, 100vw" alt={IMG[s.img].alt} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: IMG[s.img].pos }} {...{ fetchpriority: 'high' }} />
-              {IMG[s.img].ref && <p className="img-caption">Imagen de referencia</p>}
-            </>
-          ) : (
-            <div className="absolute inset-0"><Media plate={s.plate} ratio="h-full w-full" /></div>
-          )}
-        </div>
         <div className="container relative order-1">
           <div className="flex flex-col pb-14 pt-10 lg:min-h-[620px] lg:w-[46%] lg:pb-20">
             {/* Si el servicio se llama igual que su categoría (Fibra óptica), no se repite el nombre. */}
@@ -61,6 +51,17 @@ export default function ServiceDetail() {
               ))}
             </dl>
           </div>
+        </div>
+        {/* Después del texto en el HTML (el lector de pantalla empieza por el título); en pantalla, a la derecha. */}
+        <div className="relative order-2 aspect-[4/3] w-full sm:aspect-[16/9] lg:absolute lg:inset-y-0 lg:right-0 lg:aspect-auto lg:w-[48%]">
+          {s.img ? (
+            <>
+              <img src={IMG[s.img].src} srcSet={IMG[s.img].srcSet} sizes="(min-width: 1024px) 48vw, 100vw" alt={IMG[s.img].alt} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: IMG[s.img].pos }} {...{ fetchpriority: 'high' }} />
+              {IMG[s.img].ref && <p className="img-caption">Imagen de referencia</p>}
+            </>
+          ) : (
+            <div className="absolute inset-0"><Media plate={s.plate} ratio="h-full w-full" /></div>
+          )}
         </div>
       </section>
 

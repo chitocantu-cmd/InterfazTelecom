@@ -20,10 +20,6 @@ export default {
         line: '#E1E6EB',
         mist: '#F4F6F8',
         ice: '#EAF1F7',
-        // compatibilidad con componentes previos
-        cold: '#F4F6F8',
-        paper: '#FFFFFF',
-        slate: { DEFAULT: '#3A4656', muted: '#616D7C', faint: '#98A2AE' },
       },
       fontFamily: {
         display: ['Archivo', '"Archivo Fallback"', 'Helvetica Neue', 'Arial', 'sans-serif'],

@@ -20,23 +20,23 @@ export const SEO = {
     description: 'Ingeniería, instalación y mantenimiento de cableado estructurado, fibra óptica, redes, CCTV y control de acceso para empresas e industria en Monterrey, N.L.',
   },
   solutions: {
-    title: 'Soluciones de infraestructura tecnológica',
+    title: 'Soluciones de infraestructura TI en Monterrey',
     description: 'Cableado estructurado, fibra óptica, seguridad electrónica, conectividad empresarial e ingeniería y mantenimiento para empresas e industria en Monterrey.',
   },
   industries: {
-    title: 'Soluciones por industria',
+    title: 'Soluciones por industria en Monterrey',
     description: 'Redes, fibra óptica, CCTV y control de acceso para industria, corporativos, centros de distribución, instituciones educativas y comercio.',
   },
   projects: {
-    title: 'Proyectos',
+    title: 'Proyectos de redes y CCTV en Monterrey',
     description: 'Tipos de proyecto de infraestructura que ejecuta Interfaz Redes: redes industriales, fibra óptica, CCTV, racks y sites, y redes corporativas.',
   },
   about: {
-    title: 'Nosotros',
+    title: 'Nosotros · Empresa de redes en Monterrey',
     description: 'Interfaz Redes y Telecomunicaciones: más de 15 años desarrollando proyectos de redes, fibra óptica y seguridad electrónica desde Monterrey. Registro REPSE.',
   },
   contact: {
-    title: 'Cotizar proyecto',
+    title: 'Cotice su proyecto de redes en Monterrey',
     description: 'Solicite una cotización de cableado estructurado, fibra óptica, CCTV, control de acceso o infraestructura TI. Respuesta por WhatsApp o correo.',
   },
   privacy: {

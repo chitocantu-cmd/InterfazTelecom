@@ -72,7 +72,7 @@ function NotFound() {
     <section className="container py-32">
       <p className="text-small font-medium text-corp">Error 404</p>
       <h1 className="mt-4 text-h1">Esta página no existe.</h1>
-      <p className="mt-4 text-slate-muted">Puede volver al inicio o revisar el índice de soluciones.</p>
+      <p className="mt-4 text-muted">Puede volver al inicio o revisar el índice de soluciones.</p>
       <div className="mt-8 flex gap-3"><Button to="/">Ir al inicio</Button><Button to="/soluciones" variant="secondary">Ver soluciones</Button></div>
     </section>
   )
@@ -93,7 +93,7 @@ class SectionBoundary extends Component<{ children: ReactNode }, { failed: boole
       <section className="container py-32">
         <p className="text-small font-medium text-corp">Error de carga</p>
         <h1 className="mt-4 text-h1">No se pudo cargar esta sección.</h1>
-        <p className="mt-4 text-slate-muted">Puede deberse a una actualización reciente del sitio o a la conexión. Recargue la página para continuar.</p>
+        <p className="mt-4 text-muted">Puede deberse a una actualización reciente del sitio o a la conexión. Recargue la página para continuar.</p>
         <div className="mt-8 flex gap-3"><Button onClick={() => window.location.reload()}>Recargar</Button><Button to="/" variant="secondary">Ir al inicio</Button></div>
       </section>
     )

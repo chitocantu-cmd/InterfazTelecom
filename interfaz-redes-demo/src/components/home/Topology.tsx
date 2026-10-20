@@ -81,7 +81,7 @@ export function Topology() {
             <Chip key={l.id} active={layer === l.id} onClick={() => setLayer(l.id)} controls="diagrama-red">{l.label}</Chip>
           ))}
         </div>
-        <p className="mt-4 max-w-prose text-[0.95rem] text-slate-muted" aria-live="polite">{L.text}</p>
+        <p className="mt-4 max-w-prose text-[0.95rem] text-muted" aria-live="polite">{L.text}</p>
 
         <div className="mt-8 grid gap-0 border border-line lg:grid-cols-12">
           <div className="overflow-x-auto bg-[#EEF4F8] lg:col-span-9" id="diagrama-red">
@@ -97,12 +97,12 @@ export function Topology() {
                 const on = edgeOn(e, layer)
                 const mx = (a.x + b.x) / 2
                 const d = a.y === b.y ? `M${a.x} ${a.y} H${b.x}` : a.x === b.x ? `M${a.x} ${a.y} V${b.y}` : `M${a.x} ${a.y} H${mx} V${b.y} H${b.x}`
-                const color = e.type === 'fibra' ? C.red : e.type === 'wan' ? C.line : C.ink
+                const color = e.type === 'fibra' ? C.accent : e.type === 'wan' ? C.line : C.ink
                 return (
                   <g key={i} style={{ transition: 'opacity .35s' }} opacity={on ? 1 : 0.15}>
                     <path d={d} fill="none" stroke={color} strokeWidth={e.type === 'fibra' ? 2.4 : 1.4} strokeDasharray={e.type === 'inalambrico' ? '2 5' : e.type === 'wan' ? '6 4' : undefined} strokeLinecap="round" />
                     {e.label && (
-                      <text x={mx + 6} y={(a.y + b.y) / 2 - 6} fontFamily={MONO} fontSize="9.5" fill={e.type === 'fibra' ? C.red : C.muted}>{e.label}</text>
+                      <text x={mx + 6} y={(a.y + b.y) / 2 - 6} fontFamily={MONO} fontSize="9.5" fill={e.type === 'fibra' ? C.accent : C.muted}>{e.label}</text>
                     )}
                   </g>
                 )
@@ -126,8 +126,8 @@ export function Topology() {
                     opacity={on ? 1 : 0.25}
                     className="topo-node"
                   >
-                    <rect x={n.x - w / 2} y={n.y - 22} width={w} height="44" fill={fill} stroke={active ? C.red : n.kind === 'net' ? C.ink : C.line} strokeWidth={active ? 2.5 : 1} />
-                    {n.kind === 'sec' && <rect x={n.x - w / 2} y={n.y - 22} width="4" height="44" fill={C.red} />}
+                    <rect x={n.x - w / 2} y={n.y - 22} width={w} height="44" fill={fill} stroke={active ? C.accent : n.kind === 'net' ? C.ink : C.line} strokeWidth={active ? 2.5 : 1} />
+                    {n.kind === 'sec' && <rect x={n.x - w / 2} y={n.y - 22} width="4" height="44" fill={C.accent} />}
                     <text x={n.x} y={n.y - 2} textAnchor="middle" fontFamily="'DM Sans', Arial, sans-serif" fontSize="12" fontWeight="600" fill={txt}>{n.label}</text>
                     <text x={n.x} y={n.y + 13} textAnchor="middle" fontFamily={MONO} fontSize="9" fill={n.kind === 'net' ? '#AEB6BC' : C.muted}>{n.sub}</text>
                   </g>
@@ -135,25 +135,25 @@ export function Topology() {
               })}
               {/* leyenda */}
               <g transform="translate(24 470)" fontFamily={MONO} fontSize="9.5" fill={C.muted}>
-                <line x1="0" x2="26" y1="0" y2="0" stroke={C.red} strokeWidth="2.4" /><text x="34" y="3">Fibra</text>
+                <line x1="0" x2="26" y1="0" y2="0" stroke={C.accent} strokeWidth="2.4" /><text x="34" y="3">Fibra</text>
                 <line x1="90" x2="116" y1="0" y2="0" stroke={C.ink} strokeWidth="1.4" /><text x="124" y="3">Cobre</text>
                 <line x1="0" x2="26" y1="20" y2="20" stroke={C.ink} strokeDasharray="2 5" strokeWidth="1.4" /><text x="34" y="23">Inalámbrico</text>
                 <line x1="120" x2="146" y1="20" y2="20" stroke={C.line} strokeDasharray="6 4" strokeWidth="1.4" /><text x="154" y="23">WAN</text>
               </g>
             </svg>
           </div>
-          <aside className="flex flex-col border-t border-line bg-paper p-6 lg:col-span-3 lg:border-l lg:border-t-0" aria-live="polite">
+          <aside className="flex flex-col border-t border-line bg-white p-6 lg:col-span-3 lg:border-l lg:border-t-0" aria-live="polite">
             <p className="text-small text-muted">Equipo seleccionado</p>
             <p className="mt-3 font-display text-[1.4rem] font-semibold leading-tight text-ink">{node.label}</p>
-            <p className="mono-tag mt-1 text-slate-muted">{node.sub}</p>
-            <p className="mt-4 text-[0.92rem] leading-relaxed text-slate-muted">{node.info}</p>
+            <p className="mono-tag mt-1 text-muted">{node.sub}</p>
+            <p className="mt-4 text-[0.92rem] leading-relaxed text-muted">{node.info}</p>
             {node.service && (
               <Link to={`/soluciones/${node.service}`} className="mt-auto pt-6 text-[0.9rem] font-medium text-tech link-underline">Ver servicio relacionado</Link>
             )}
-            <p className="mt-6 border-t border-line pt-4 font-mono text-[0.68rem] text-slate-muted">Diagrama de referencia. Cada red se diseña según el levantamiento.</p>
+            <p className="mt-6 border-t border-line pt-4 font-mono text-[0.68rem] text-muted">Diagrama de referencia. Cada red se diseña según el levantamiento.</p>
           </aside>
         </div>
-        <p className="mt-3 font-mono text-[0.7rem] text-slate-muted lg:hidden">Deslice el diagrama horizontalmente para verlo completo.</p>
+        <p className="mt-3 font-mono text-[0.7rem] text-muted lg:hidden">Deslice el diagrama horizontalmente para verlo completo.</p>
       </div>
     </section>
   )

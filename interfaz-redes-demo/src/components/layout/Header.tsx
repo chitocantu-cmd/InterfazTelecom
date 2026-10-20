@@ -6,9 +6,7 @@ import { COMPANY } from '../../data/company'
 import { CATEGORIES, servicesOf } from '../../data/solutions'
 import { cn, waLink, useReducedMotion } from '../../lib/utils'
 import { Button } from '../ui'
-import { Logo, LogoLockup } from './Logo'
-
-export { Logo }
+import { LogoLockup } from './Logo'
 
 const NAV = [
   { to: '/', label: 'Inicio', end: true },

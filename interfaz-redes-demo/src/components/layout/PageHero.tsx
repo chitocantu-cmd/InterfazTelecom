@@ -22,7 +22,6 @@ export function Breadcrumbs({ items, dark }: { items: { to?: string; label: stri
 /** Encabezado de página interior: claro, tipográfico y con imagen panorámica opcional. */
 export function PageHero({ crumbs, title, lede, img, pos, children, aside }: {
   crumbs: { to?: string; label: string }[]
-  kicker?: string
   title: ReactNode
   lede?: ReactNode
   img?: ImgKey

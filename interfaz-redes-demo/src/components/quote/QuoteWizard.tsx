@@ -9,7 +9,6 @@ import { FILE_ACCEPT, FILES, MAX_LENGTH, SITES, fileExtension, quoteNotice, vali
 import { cn, copyText, mailLink, waLink, useReducedMotion } from '../../lib/utils'
 
 const ICONS: Record<QuoteType, typeof Cable> = { cableado: Cable, fibra: Spline, cctv: Cctv, acceso: DoorClosed, infra: Server, otro: Plus }
-export { SITES }
 const FREE_MAIL = /@(gmail|hotmail|outlook|live|yahoo|icloud|prodigy)\./i
 
 type Data = Omit<QuoteRequest, 'context'>
@@ -250,15 +249,15 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
   const subject = `Solicitud de cotización · ${typeLabels[0] ?? 'Proyecto'} · ${d.company.trim() || 'Empresa'}`
 
   return (
-    <div ref={root} className="border border-line bg-paper shadow-[0_1px_0_rgba(18,21,24,0.04)]">
+    <div ref={root} className="border border-line bg-white shadow-[0_1px_0_rgba(18,21,24,0.04)]">
       {/* progreso */}
       <ol className="flex border-b border-line" aria-label="Progreso de la solicitud">
         {STEPS.map((s, i) => (
           <li key={s} className={cn('relative flex-1 px-3 py-3.5 sm:px-5', i > 0 && 'border-l border-line')} aria-current={i === step ? 'step' : undefined}>
-            <span className={cn('font-mono text-[0.68rem] tracking-[0.1em]', i === step ? 'text-tech' : i < step ? 'text-ink' : 'text-slate-muted')}>
+            <span className={cn('font-mono text-[0.68rem] tracking-[0.1em]', i === step ? 'text-tech' : i < step ? 'text-ink' : 'text-muted')}>
               {i < step ? <Check aria-hidden className="mb-0.5 inline h-3 w-3" /> : `0${i + 1}`}
             </span>
-            <span className={cn('ml-2 hidden text-[0.86rem] sm:inline', i === step ? 'font-medium text-ink' : 'text-slate-muted')}>{s}</span>
+            <span className={cn('ml-2 hidden text-[0.86rem] sm:inline', i === step ? 'font-medium text-ink' : 'text-muted')}>{s}</span>
             <span aria-hidden className={cn('absolute inset-x-0 bottom-0 h-[2px] transition-colors', i <= step ? 'bg-tech' : 'bg-transparent')} />
           </li>
         ))}
@@ -276,8 +275,8 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
             {step === 0 && (
               <fieldset>
                 <legend data-step-title tabIndex={-1} className="font-display text-[1.6rem] font-semibold text-ink outline-none">¿Qué necesita implementar?</legend>
-                <p className="mt-1.5 text-[0.9rem] text-slate-muted">Puede elegir más de una opción.</p>
-                {context && <p className="mt-3 inline-block bg-cold px-2.5 py-1 font-mono text-[0.75rem] text-ink">Desde: {context}</p>}
+                <p className="mt-1.5 text-[0.9rem] text-muted">Puede elegir más de una opción.</p>
+                {context && <p className="mt-3 inline-block bg-mist px-2.5 py-1 font-mono text-[0.75rem] text-ink">Desde: {context}</p>}
                 <div className="mt-6 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
                   {QUOTE_TYPES.map((q) => {
                     const Icon = ICONS[q.id]
@@ -294,7 +293,7 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
                         <Icon aria-hidden className={cn('mt-0.5 h-5 w-5 shrink-0', on ? 'text-tech' : 'text-ink')} strokeWidth={1.6} />
                         <span className="min-w-0">
                           <span className="block font-medium leading-tight">{q.label}</span>
-                          <span className={cn('mt-1 block text-[0.8rem] leading-snug', on ? 'text-white/70' : 'text-slate-muted')}>{q.hint}</span>
+                          <span className={cn('mt-1 block text-[0.8rem] leading-snug', on ? 'text-white/70' : 'text-muted')}>{q.hint}</span>
                         </span>
                         <span aria-hidden className={cn('absolute right-3 top-3 grid h-4 w-4 place-items-center border', on ? 'border-tech bg-tech' : 'border-line')}>
                           {on && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
@@ -311,10 +310,10 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
             {step === 1 && (
               <div>
                 <h3 data-step-title tabIndex={-1} className="font-display text-[1.6rem] font-semibold text-ink outline-none">Sobre el proyecto</h3>
-                <p className="mt-1.5 text-[0.9rem] text-slate-muted">Lo suficiente para preparar el levantamiento.</p>
+                <p className="mt-1.5 text-[0.9rem] text-muted">Lo suficiente para preparar el levantamiento.</p>
                 <div className="mt-6 grid gap-5">
                   <fieldset>
-                    <legend className="mb-2 text-[0.88rem] font-medium text-ink">Tipo de inmueble <span className="font-normal text-slate-muted">(opcional)</span></legend>
+                    <legend className="mb-2 text-[0.88rem] font-medium text-ink">Tipo de inmueble <span className="font-normal text-muted">(opcional)</span></legend>
                     <div className="flex flex-wrap gap-2">
                       {SITES.map((s) => (
                         <button key={s} type="button" aria-pressed={d.site === s} onClick={() => set('site', d.site === s ? '' : s)} className={cn('rounded-[2px] border px-3.5 py-2 text-[0.9rem] transition-colors', d.site === s ? 'border-corp bg-corp text-white' : 'border-line hover:border-tech')}>
@@ -330,7 +329,7 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
                     <textarea id={`${uid}-desc`} rows={4} className="field resize-y" maxLength={MAX_LENGTH.description} value={d.description} onChange={(e) => set('description', e.target.value)} placeholder="Ej. Necesitamos conectar una nave nueva a 180 m del site principal, con WiFi para escáneres y 8 cámaras en andenes." aria-invalid={!!err('description', 1)} aria-describedby={err('description', 1) ? `${uid}-desc-e` : `${uid}-desc-h`} />
                   </Field>
                   <div>
-                    <p className="text-[0.88rem] font-medium text-ink">Planos, fotografías o documentos <span className="font-normal text-slate-muted">(opcional)</span></p>
+                    <p className="text-[0.88rem] font-medium text-ink">Planos, fotografías o documentos <span className="font-normal text-muted">(opcional)</span></p>
                     <input
                       ref={fileRef}
                       id={`${uid}-files`}
@@ -343,25 +342,25 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
                         e.target.value = ''
                       }}
                     />
-                    <label htmlFor={`${uid}-files`} className="mt-2 flex cursor-pointer items-center gap-3 border border-dashed border-line bg-cold px-4 py-4 text-[0.9rem] text-ink transition-colors hover:border-tech peer-focus-visible:ring-2 peer-focus-visible:ring-lumen peer-focus-visible:ring-offset-2">
+                    <label htmlFor={`${uid}-files`} className="mt-2 flex cursor-pointer items-center gap-3 border border-dashed border-line bg-mist px-4 py-4 text-[0.9rem] text-ink transition-colors hover:border-tech peer-focus-visible:ring-2 peer-focus-visible:ring-lumen peer-focus-visible:ring-offset-2">
                       <Paperclip aria-hidden className="h-4 w-4" />
-                      <span>Seleccionar archivos <span className="text-slate-muted">· PDF, DWG/DXF, imágenes, Word o Excel</span></span>
+                      <span>Seleccionar archivos <span className="text-muted">· PDF, DWG/DXF, imágenes, Word o Excel</span></span>
                     </label>
                     {files.length > 0 && (
                       <ul className="mt-2 divide-y divide-line border border-line">
                         {files.map((f) => (
                           <li key={fileId(f)} className="flex items-center justify-between gap-3 px-3 py-2 text-[0.85rem]">
-                            <span className="flex min-w-0 items-center gap-2"><FileText aria-hidden className="h-4 w-4 shrink-0 text-slate-faint" /><span className="truncate">{f.name}</span></span>
-                            <span className="flex shrink-0 items-center gap-3 font-mono text-[0.75rem] text-slate-muted">
+                            <span className="flex min-w-0 items-center gap-2"><FileText aria-hidden className="h-4 w-4 shrink-0 text-faint" /><span className="truncate">{f.name}</span></span>
+                            <span className="flex shrink-0 items-center gap-3 font-mono text-[0.75rem] text-muted">
                               {fmtSize(f.size)}
-                              <button type="button" aria-label={`Quitar ${f.name}`} onClick={() => { setFiles(files.filter((x) => fileId(x) !== fileId(f))); setFileError(undefined) }} className="text-slate-faint hover:text-tech"><X className="h-4 w-4" /></button>
+                              <button type="button" aria-label={`Quitar ${f.name}`} onClick={() => { setFiles(files.filter((x) => fileId(x) !== fileId(f))); setFileError(undefined) }} className="text-faint hover:text-tech"><X className="h-4 w-4" /></button>
                             </span>
                           </li>
                         ))}
                       </ul>
                     )}
                     {fileError && <p role="alert" className="mt-2 text-[0.82rem] text-[#B42318]">{fileError}</p>}
-                    <p className="mt-2 font-mono text-[0.72rem] leading-snug text-slate-muted">
+                    <p className="mt-2 font-mono text-[0.72rem] leading-snug text-muted">
                       {api
                         ? `Se envían con su solicitud y llegan adjuntos al correo del equipo comercial. Hasta ${FILES.max} archivos y ${MAX_MB} MB en total.`
                         : 'Por ahora los archivos no se envían a ningún servidor: se listan en la solicitud para adjuntarlos en WhatsApp o correo.'}
@@ -374,7 +373,7 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
             {step === 2 && (
               <div>
                 <h3 data-step-title tabIndex={-1} className="font-display text-[1.6rem] font-semibold text-ink outline-none">¿Con quién hablamos?</h3>
-                <p className="mt-1.5 text-[0.9rem] text-slate-muted">Sólo para dar seguimiento a esta solicitud.</p>
+                <p className="mt-1.5 text-[0.9rem] text-muted">Sólo para dar seguimiento a esta solicitud.</p>
                 <div className="mt-6 grid gap-5 sm:grid-cols-2">
                   <Field id={`${uid}-name`} label="Nombre" error={err('name', 2)}>
                     <input id={`${uid}-name`} className="field" maxLength={MAX_LENGTH.name} value={d.name} onChange={(e) => set('name', e.target.value)} autoComplete="name" aria-invalid={!!err('name', 2)} aria-describedby={err('name', 2) ? `${uid}-name-e` : undefined} />
@@ -409,10 +408,10 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
                   <Info label="Fecha">{send.fecha}</Info>
                   <Info label="Servicio">{send.sent.labels.join(', ')}</Info>
                 </dl>
-                {sent(send.estados.acuse) && <p className="mt-4 text-[0.88rem] text-slate-muted">Enviamos un acuse de recibo a <span className="text-ink">{send.sent.request.email.trim()}</span>.</p>}
+                {sent(send.estados.acuse) && <p className="mt-4 text-[0.88rem] text-muted">Enviamos un acuse de recibo a <span className="text-ink">{send.sent.request.email.trim()}</span>.</p>}
                 {!sent(send.estados.correo) ? (
                   // Sólo llegó el WhatsApp: sin archivos y con la descripción resumida.
-                  <div className="mt-6 bg-cold px-4 py-4 text-[0.88rem] text-slate-muted">
+                  <div className="mt-6 bg-mist px-4 py-4 text-[0.88rem] text-muted">
                     <p>Su solicitud llegó al equipo por WhatsApp, pero sin archivos y con la descripción resumida. Envíe los archivos y el detalle por correo o WhatsApp citando el folio <span className="font-mono text-ink">{send.folio}</span>.</p>
                     <p className="mt-3 flex flex-wrap gap-x-6 gap-y-2">
                       <a href={waLink(quoteNotice(send.sent.request, { files: send.sent.files, folio: send.folio, date: send.fecha }))} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 font-medium text-ink hover:text-tech">
@@ -424,7 +423,7 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
                     </p>
                   </div>
                 ) : !sent(send.estados.whatsapp) && (
-                  <div className="mt-6 bg-cold px-4 py-4 text-[0.88rem] text-slate-muted">
+                  <div className="mt-6 bg-mist px-4 py-4 text-[0.88rem] text-muted">
                     <p>Si lo desea, avísenos también por WhatsApp. Se abre WhatsApp con su folio y la solicitud escrita; usted confirma el envío.</p>
                     <a href={waLink(quoteNotice(send.sent.request, { files: send.sent.files, folio: send.folio, date: send.fecha }))} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-2 font-medium text-ink hover:text-tech">
                       <MessageCircle aria-hidden className="h-4 w-4" /> Enviar aviso por WhatsApp
@@ -438,32 +437,32 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
               <div>
                 <p className="inline-flex items-center gap-2 bg-[#E7F6EF] px-2.5 py-1 font-mono text-[0.72rem] uppercase tracking-[0.08em] text-[#1D7A53]"><Check aria-hidden className="h-3.5 w-3.5" />Solicitud lista para enviar</p>
                 <h3 data-step-title tabIndex={-1} className="mt-3 font-display text-[1.6rem] font-semibold text-ink outline-none">Revise su solicitud</h3>
-                <p className="mt-1.5 text-[0.9rem] text-slate-muted">{api ? 'Revise los datos y envíe la solicitud. Al recibirla le mostraremos su folio.' : 'Al elegir un canal se abre con el mensaje escrito. El envío se completa en esa aplicación.'}</p>
+                <p className="mt-1.5 text-[0.9rem] text-muted">{api ? 'Revise los datos y envíe la solicitud. Al recibirla le mostraremos su folio.' : 'Al elegir un canal se abre con el mensaje escrito. El envío se completa en esa aplicación.'}</p>
                 <dl className="mt-6 divide-y divide-line border-y border-line text-[0.92rem]">
-                  <Row label="Necesidad" onEdit={() => go(0)} disabled={sending}>{typeLabels.join(', ')}{context && <span className="block text-[0.82rem] text-slate-muted">Referencia: {context}</span>}</Row>
+                  <Row label="Necesidad" onEdit={() => go(0)} disabled={sending}>{typeLabels.join(', ')}{context && <span className="block text-[0.82rem] text-muted">Referencia: {context}</span>}</Row>
                   <Row label="Proyecto" onEdit={() => go(1)} disabled={sending}>
                     <span className="block">{[d.site, d.location].filter(Boolean).join(' · ')}</span>
-                    <span className="mt-1 block whitespace-pre-line text-slate-muted">{d.description}</span>
-                    {files.length > 0 && <span className="mt-1 block font-mono text-[0.78rem] text-slate-muted">{files.length} archivo(s) {api ? 'adjunto(s)' : 'por adjuntar'}: {fileNames.join(', ')}</span>}
+                    <span className="mt-1 block whitespace-pre-line text-muted">{d.description}</span>
+                    {files.length > 0 && <span className="mt-1 block font-mono text-[0.78rem] text-muted">{files.length} archivo(s) {api ? 'adjunto(s)' : 'por adjuntar'}: {fileNames.join(', ')}</span>}
                   </Row>
                   <Row label="Contacto" onEdit={() => go(2)} disabled={sending}>
                     <span className="block">{d.name} · {d.company}</span>
-                    <span className="block text-slate-muted">{d.email} · {d.phone}</span>
+                    <span className="block text-muted">{d.email} · {d.phone}</span>
                   </Row>
                 </dl>
                 {api ? (
                   <>
                     {send.state === 'error' && (
-                      <div role="alert" className="mt-6 border-l-2 border-[#B42318] bg-cold px-4 py-3 text-[0.88rem]">
+                      <div role="alert" className="mt-6 border-l-2 border-[#B42318] bg-mist px-4 py-3 text-[0.88rem]">
                         <p className="font-medium text-[#B42318]">No se pudo enviar la solicitud.</p>
-                        <p className="mt-1 text-slate-muted">{send.message}{SUGGESTS_MANUAL.includes(send.code) ? '' : ' También puede enviarla usted mismo por WhatsApp o correo.'}</p>
+                        <p className="mt-1 text-muted">{send.message}{SUGGESTS_MANUAL.includes(send.code) ? '' : ' También puede enviarla usted mismo por WhatsApp o correo.'}</p>
                       </div>
                     )}
                     <button type="button" onClick={submit} disabled={sending} aria-busy={sending} className="mt-6 inline-flex w-full items-center justify-center gap-2.5 rounded-[2px] bg-corp px-5 py-3.5 font-medium text-white transition-colors hover:bg-navy disabled:cursor-wait disabled:opacity-70">
                       <Send aria-hidden className="h-4 w-4" /> {sending ? 'Enviando solicitud…' : send.state === 'error' ? 'Intentar de nuevo' : 'Enviar solicitud'}
                     </button>
-                    <p className="mt-3 text-[0.82rem] text-slate-muted">Al enviar su solicitud acepta el <Link to="/aviso-de-privacidad" className="text-ink link-line">aviso de privacidad</Link>.</p>
-                    <p className="mt-4 text-[0.85rem] text-slate-muted">
+                    <p className="mt-3 text-[0.82rem] text-muted">Al enviar su solicitud acepta el <Link to="/aviso-de-privacidad" className="text-ink link-line">aviso de privacidad</Link>.</p>
+                    <p className="mt-4 text-[0.85rem] text-muted">
                       ¿Prefiere enviarla usted mismo?{' '}
                       <a href={waLink(message)} onClick={() => track('generate_lead', { method: 'whatsapp', need: d.types.join(',') })} target="_blank" rel="noopener noreferrer" aria-disabled={sending || undefined} tabIndex={sending ? -1 : undefined} className={cn('font-medium text-ink link-line', sending && 'pointer-events-none opacity-50')}>Enviar por WhatsApp</a>
                       {' · '}
@@ -480,8 +479,8 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
                     <Mail aria-hidden className="h-4 w-4" /> Enviar por correo
                   </a>
                 </div>
-                <p className="mt-3 text-[0.82rem] text-slate-muted">Al enviar su solicitud acepta el <Link to="/aviso-de-privacidad" className="text-ink link-line">aviso de privacidad</Link>.</p>
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 bg-cold px-4 py-3 text-[0.85rem] text-slate-muted">
+                <p className="mt-3 text-[0.82rem] text-muted">Al enviar su solicitud acepta el <Link to="/aviso-de-privacidad" className="text-ink link-line">aviso de privacidad</Link>.</p>
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 bg-mist px-4 py-3 text-[0.85rem] text-muted">
                   <span>¿No se abrió la aplicación? Copie la solicitud y envíela a <span className="select-all text-ink">{COMPANY.whatsappDisplay}</span> o <span className="select-all text-ink">{COMPANY.email}</span>.</span>
                   <button
                     type="button"
@@ -501,7 +500,7 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
                   {copyFailed && <span role="alert" className="w-full text-[#B42318]">No se pudo copiar automáticamente; seleccione el texto del mensaje de abajo.</span>}
                 </div>
                 <details ref={msgDetails} className="mt-4 text-[0.85rem]">
-                  <summary className="cursor-pointer text-slate-muted hover:text-ink">Ver el mensaje que se enviará</summary>
+                  <summary className="cursor-pointer text-muted hover:text-ink">Ver el mensaje que se enviará</summary>
                   <textarea id={`${uid}-msg`} readOnly rows={10} value={message} className="field mt-2 font-mono text-[0.78rem]" onFocus={(e) => e.currentTarget.select()} aria-label="Mensaje de la solicitud" />
                 </details>
                 </>
@@ -515,11 +514,11 @@ export function QuoteWizard({ initialType, context, initialDescription, initialS
         {send.state !== 'done' && (
         <div className="mt-8 flex items-center justify-between gap-4 border-t border-line pt-5">
           {step > 0 ? (
-            <button type="button" onClick={() => go(step - 1)} disabled={sending} className="inline-flex items-center gap-2 text-[0.92rem] text-slate-muted hover:text-ink">
+            <button type="button" onClick={() => go(step - 1)} disabled={sending} className="inline-flex items-center gap-2 text-[0.92rem] text-muted hover:text-ink">
               <ArrowLeft aria-hidden className="h-4 w-4" /> Atrás
             </button>
           ) : (
-            <span className="font-mono text-[0.72rem] text-slate-muted">Paso 1 de 4</span>
+            <span className="font-mono text-[0.72rem] text-muted">Paso 1 de 4</span>
           )}
           {step < 3 && (
             <button type="button" onClick={next} className="group inline-flex items-center gap-2.5 rounded-[2px] bg-corp px-6 py-3 text-[0.95rem] font-medium text-white transition-colors hover:bg-navy">
@@ -539,7 +538,7 @@ function Field({ id, label, error, hint, children }: { id: string; label: string
     <div>
       <label htmlFor={id} className="mb-1.5 block text-[0.88rem] font-medium text-ink">{label}</label>
       {children}
-      {hint && !error && <p id={`${id}-h`} className="mt-1.5 text-[0.8rem] text-slate-muted">{hint}</p>}
+      {hint && !error && <p id={`${id}-h`} className="mt-1.5 text-[0.8rem] text-muted">{hint}</p>}
       {error && <p id={`${id}-e`} role="alert" className="mt-1.5 text-[0.82rem] text-[#B42318]">{error}</p>}
     </div>
   )
@@ -560,7 +559,7 @@ function Row({ label, children, onEdit, disabled }: { label: string; children: R
       <dt className="pt-0.5 text-small text-muted">{label}</dt>
       <dd className="min-w-0 break-words text-ink">{children}</dd>
       <dd>
-        <button type="button" onClick={onEdit} disabled={disabled} className="inline-flex items-center gap-1 text-[0.82rem] text-slate-muted hover:text-tech disabled:cursor-not-allowed disabled:opacity-50" aria-label={`Editar ${label.toLowerCase()}`}>
+        <button type="button" onClick={onEdit} disabled={disabled} className="inline-flex items-center gap-1 text-[0.82rem] text-muted hover:text-tech disabled:cursor-not-allowed disabled:opacity-50" aria-label={`Editar ${label.toLowerCase()}`}>
           <Pencil aria-hidden className="h-3.5 w-3.5" /> Editar
         </button>
       </dd>

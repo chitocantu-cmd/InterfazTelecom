@@ -53,10 +53,6 @@
 }
 
 @layer components {
-  /* Rótulo de sección: discreto, en minúsculas tipográficas */
-  .overline { font-family: 'DM Sans', sans-serif; font-size: 0.875rem; font-weight: 500; letter-spacing: 0.01em; color: #176fb0; }
-  .kicker { font-family: 'DM Sans', sans-serif; font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.01em; }
-  .mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
   .field {
     width: 100%; border: 1px solid #d5dce3; background: #fff; padding: 0.85rem 1rem;
     border-radius: 2px; color: #0e1c2d; transition: border-color .2s, box-shadow .2s;
@@ -72,11 +68,9 @@
   .tabular { font-variant-numeric: tabular-nums; }
   /* Leyenda sobre fotografía: legible sobre zonas claras y oscuras */
   .img-caption { position: absolute; bottom: 1rem; right: 1.25rem; font-size: 0.72rem; color: rgb(255 255 255 / 0.85); text-shadow: 0 1px 3px rgb(0 0 0 / 0.65); }
-  /* compatibilidad con piezas anteriores */
-  .node { display: none; }
-  .port { font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; }
 }
 
+.topo-node:focus-visible { opacity: 1; }
 .topo-node:focus-visible rect:first-child { stroke: #176fb0; stroke-width: 3; }
 
 /* Teléfonos de 360 px o menos: el titular baja un punto para que "telecomunicaciones" quepa entera */

@@ -28,10 +28,14 @@ export default function Industries() {
 
   const select = (id: string) => setParams({ sector: id }, { replace: true })
   const onKey = (e: KeyboardEvent) => {
-    const dir = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
-    if (!dir) return
+    const last = INDUSTRIES.length - 1
+    const n = e.key === 'ArrowRight' ? (idx + 1) % INDUSTRIES.length
+      : e.key === 'ArrowLeft' ? (idx + last) % INDUSTRIES.length
+      : e.key === 'Home' ? 0
+      : e.key === 'End' ? last
+      : -1
+    if (n < 0) return
     e.preventDefault()
-    const n = (idx + dir + INDUSTRIES.length) % INDUSTRIES.length
     select(INDUSTRIES[n].id); tabs.current[n]?.focus()
   }
 
@@ -52,7 +56,7 @@ export default function Industries() {
                 aria-controls={`ind-panel-${it.id}`}
                 tabIndex={it.id === active ? 0 : -1}
                 onClick={() => select(it.id)}
-                className={cn('relative shrink-0 whitespace-nowrap py-4 pr-8 text-[1rem] transition-colors', it.id === active ? 'font-medium text-ink' : 'text-muted hover:text-ink')}
+                className={cn('relative shrink-0 whitespace-nowrap py-4 pr-8 text-[1rem] transition-colors focus-visible:outline-offset-[-3px]', it.id === active ? 'font-medium text-ink' : 'text-muted hover:text-ink')}
               >
                 {it.name}
                 {/* La línea que se desliza entre pestañas usa layoutId: motion completo (sólo en esta página). */}

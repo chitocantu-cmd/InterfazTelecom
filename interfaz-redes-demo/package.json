@@ -7,7 +7,8 @@
     "build": "tsc && tsc -p tsconfig.server.json && vite build && vite build --ssr src/entry-server.tsx --outDir dist-ssr && node scripts/prerender.mjs",
     "build:preview": "tsc && vite build --mode preview && node scripts/artifact.mjs",
     "preview": "vite preview",
-    "typecheck": "tsc && tsc -p tsconfig.server.json",
+    "typecheck": "tsc && tsc -p tsconfig.server.json && tsc -p tsconfig.node.json",
+    "lint": "eslint .",
     "test:e2e": "playwright test",
     "check:hydration": "node scripts/check-hydration.mjs"
   },
@@ -23,21 +24,26 @@
     "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@playwright/test": "^1.56.1",
     "@types/node": "^24.19.2",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.7.0",
     "autoprefixer": "^10.4.20",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^17.13.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.15",
     "typescript": "^5.6.3",
+    "typescript-eslint": "^8.71.2",
     "vite": "^6.4.4",
     "vite-plugin-singlefile": "^2.0.3"
   },
   "type": "module",
   "private": true,
   "engines": {
-    "node": ">=18"
+    "node": "24.x"
   }
 }

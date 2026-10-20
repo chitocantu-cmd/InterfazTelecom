@@ -6,12 +6,6 @@ import { Button } from '../ui'
 export function Hero() {
   return (
     <section aria-labelledby="hero-title" className="relative mx-auto flex max-w-frame flex-col overflow-hidden bg-white lg:block">
-      {/* Imagen a sangre a la derecha en escritorio */}
-      <div className="relative order-2 aspect-[4/3] w-full sm:aspect-[16/9] lg:absolute lg:inset-y-0 lg:right-0 lg:aspect-auto lg:w-1/2">
-        <img src={IMG.aisle.src} srcSet={IMG.aisle.srcSet} sizes="(min-width: 1024px) 50vw, 100vw" alt={IMG.aisle.alt} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: '66% 50%' }} {...{ fetchpriority: 'high' }} />
-        {IMG.aisle.ref && <p className="img-caption">Imagen de referencia</p>}
-      </div>
-
       <div className="container relative order-1">
         <div className="flex flex-col py-12 sm:py-16 lg:min-h-[min(760px,calc(100svh-124px))] lg:w-[46%] lg:justify-center lg:py-24">
           <h1 id="hero-title" className="text-display max-w-[11.5ch] !font-semibold">
@@ -30,6 +24,12 @@ export function Hero() {
             <div><dt className="text-muted">Base</dt><dd className="font-medium text-ink">Monterrey, N.L.</dd></div>
           </dl>
         </div>
+      </div>
+      {/* Imagen a sangre a la derecha en escritorio; va después del texto para que el lector de pantalla empiece
+          por el título (el orden en pantalla lo dan order-1 / order-2). */}
+      <div className="relative order-2 aspect-[4/3] w-full sm:aspect-[16/9] lg:absolute lg:inset-y-0 lg:right-0 lg:aspect-auto lg:w-1/2">
+        <img src={IMG.aisle.src} srcSet={IMG.aisle.srcSet} sizes="(min-width: 1024px) 50vw, 100vw" alt={IMG.aisle.alt} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: '66% 50%' }} {...{ fetchpriority: 'high' }} />
+        {IMG.aisle.ref && <p className="img-caption">Imagen de referencia</p>}
       </div>
     </section>
   )

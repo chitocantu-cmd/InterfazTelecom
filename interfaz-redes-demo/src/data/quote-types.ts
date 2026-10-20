@@ -10,3 +10,5 @@ export const QUOTE_TYPES: { id: QuoteType; label: string; hint: string }[] = [
   { id: 'infra', label: 'Infraestructura TI', hint: 'Site, racks, switching, WiFi' },
   { id: 'otro', label: 'Otro proyecto', hint: 'Ingeniería, mantenimiento o integral' },
 ]
+
+export const isQuoteType = (value: unknown): value is QuoteType => QUOTE_TYPES.some((q) => q.id === value)

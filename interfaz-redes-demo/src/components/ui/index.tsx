@@ -31,20 +31,12 @@ export function Button({ children, variant = 'primary', to, href, onClick, class
   return <button type={type} onClick={onClick} className={cls} aria-label={ariaLabel}>{children}</button>
 }
 
-/** Rótulo de sección. Se usa sólo cuando ubica al lector, no encima de cada título. */
-export function Overline({ children, className, dark }: { children: ReactNode; className?: string; dark?: boolean }) {
-  return <p className={cn('overline', dark && '!text-lumen', className)}>{children}</p>
-}
-export const Kicker = Overline
-
-export function SectionHead({ overline, kicker, title, lede, dark, className, aside, id }: {
-  overline?: string; kicker?: string; title: ReactNode; lede?: ReactNode; dark?: boolean; className?: string; aside?: ReactNode; id?: string
+export function SectionHead({ title, lede, dark, className, aside, id }: {
+  title: ReactNode; lede?: ReactNode; dark?: boolean; className?: string; aside?: ReactNode; id?: string
 }) {
-  const label = overline ?? kicker
   return (
     <div className={cn('grid gap-6 lg:grid-cols-12 lg:gap-10', className)}>
       <div className="lg:col-span-6">
-        {label && <Overline dark={dark} className="mb-4">{label}</Overline>}
         <h2 id={id} className={cn('text-h2', dark && '!text-white')}>{title}</h2>
       </div>
       {(lede || aside) && (
@@ -67,7 +59,7 @@ export function Reveal({ children, delay = 0, className, as = 'div' }: { childre
   )
 }
 
-export function Chip({ children, active, onClick, className, controls }: { children: ReactNode; active?: boolean; onClick?: () => void; className?: string; controls?: string; dark?: boolean }) {
+export function Chip({ children, active, onClick, className, controls }: { children: ReactNode; active?: boolean; onClick?: () => void; className?: string; controls?: string }) {
   return (
     <button
       type="button"
@@ -79,10 +71,6 @@ export function Chip({ children, active, onClick, className, controls }: { child
       {children}
     </button>
   )
-}
-
-export function DemoTag({ children = 'Caso demostrativo', className, dark }: { children?: ReactNode; className?: string; dark?: boolean }) {
-  return <span className={cn('text-label', dark ? 'text-white/60' : 'text-muted', className)}>{children}</span>
 }
 
 export function TextLink({ to, children, className, dark }: { to: string; children: ReactNode; className?: string; dark?: boolean }) {

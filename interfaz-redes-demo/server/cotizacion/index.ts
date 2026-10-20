@@ -1,6 +1,6 @@
 // Recepción de cotizaciones: valida, asigna folio, avisa a ventas por correo y WhatsApp,
 // manda acuse al cliente y registra el estado de cada canal en los logs de Vercel.
-import { QUOTE_TYPES, type QuoteType } from '../../src/data/quote-types.js'
+import { isQuoteType } from '../../src/data/quote-types.js'
 import { FILES, MAX_LENGTH, SITES, fileExtension, quoteNotice, singleLine, validateQuote, type QuoteRequest } from '../../src/lib/cotizacion.js'
 import { emailReady, getConfig, receptionReady, whatsappReady, type Config } from './config.js'
 import { ackEmail, salesEmail, sendEmail } from './correo.js'
@@ -222,7 +222,7 @@ export async function handlePost(request: Request): Promise<Response> {
   const tooLong = TEXT_FIELDS.find((k) => text(k).length > MAX_LENGTH[k])
   if (tooLong) return reject(413, 'invalida', 'Revise los datos de la solicitud.', { errores: { [tooLong]: `Use como máximo ${MAX_LENGTH[tooLong]} caracteres.` } })
 
-  const types = [...new Set(form.getAll('types'))].filter((t): t is QuoteType => typeof t === 'string' && QUOTE_TYPES.some((q) => q.id === t))
+  const types = [...new Set(form.getAll('types'))].filter(isQuoteType)
   const req: QuoteRequest = {
     types,
     site: SITES.includes(text('site')) ? text('site') : '',
