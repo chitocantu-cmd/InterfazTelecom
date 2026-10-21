@@ -8,7 +8,7 @@ import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { dirname, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-const { render, PAGES, fullTitle, MAX_DESCRIPTION, MIN_DESCRIPTION, structuredData, noscriptText } = await import(
+const { render, PAGES, fullTitle, MAX_DESCRIPTION, MIN_DESCRIPTION, structuredData, noscriptText, HERO_IMAGE } = await import(
   pathToFileURL(resolve('dist-ssr/entry-server.js')).href
 )
 
@@ -71,6 +71,11 @@ const fontPreloads = FONTS.map((re) => {
 }).join('')
 const withFonts = (html) => replace(html, /()(?=<link rel="icon")/, fontPreloads)
 
+// Imagen de la portada: en escritorio es el elemento más grande y se pide con prioridad alta; en el teléfono va
+// debajo del texto, así que no se precarga (el navegador le da prioridad al verla en pantalla).
+const heroPreload = `<link rel="preload" as="image" href="${HERO_IMAGE.src}"${HERO_IMAGE.srcSet ? ` imagesrcset="${esc(HERO_IMAGE.srcSet)}" imagesizes="${esc(HERO_IMAGE.sizes)}"` : ''} fetchpriority="high" media="(min-width: 1024px)" />
+`
+
 for (const page of PAGES) {
   const { path, seo } = page
   const title = esc(fullTitle(seo.title))
@@ -83,7 +88,7 @@ for (const page of PAGES) {
     [/(<meta property="og:description" content=")[^"]*/, description],
     [/(<meta property="og:url" content=")[^"]*/, absolute(path)],
     [/(<link rel="canonical" href=")[^"]*/, absolute(path)],
-    [/()(?=<\/head>)/, `${modulePreloads(path)}<script type="application/ld+json">\n${structuredData(site, page)}\n</script>\n`],
+    [/()(?=<\/head>)/, `${path === '/' ? heroPreload : ''}${modulePreloads(path)}<script type="application/ld+json">\n${structuredData(site, page)}\n</script>\n`],
   ]) html = replace(html, re, value)
   html = withFonts(withNoscript(await withBody(html, path)))
   const length = seo.description.length

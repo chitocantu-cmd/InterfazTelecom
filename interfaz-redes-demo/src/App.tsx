@@ -7,8 +7,8 @@ import { useContactClicks, usePageViews } from './lib/analytics'
 import { SEO } from './data/seo'
 import { useSeo } from './lib/seo'
 import { useScrollToTop } from './lib/utils'
-import { LazyMotion, MotionConfig } from 'motion/react'
-import { Component, lazy, Suspense, useEffect, type ReactNode } from 'react'
+import { LazyMotion, MotionConfig, type FeatureBundle } from 'motion/react'
+import { Component, lazy, startTransition, Suspense, useEffect, useState, type ReactNode } from 'react'
 import Home from './pages/Home'
 
 // Las páginas interiores se cargan bajo demanda para que el inicio sea más ligero.
@@ -64,7 +64,23 @@ function usePrefetchOnIntent() {
   }, [])
 }
 
-const motionFeatures = () => import('./lib/motion-features').then((m) => m.default)
+/** Mientras llegan las funciones de animación: una carga que nunca termina (LazyMotion espera sin animar). */
+const featuresPending = () => new Promise<FeatureBundle>(() => {})
+
+/**
+ * Las funciones de animación se descargan aparte y se activan como transición (startTransition). Si llegan
+ * mientras React todavía está tomando el HTML prerenderizado de una sección que se carga bajo demanda, React
+ * espera a terminar en lugar de descartar ese HTML y volver a dibujarla (error 421 con una red lenta).
+ */
+function MotionFeatures({ children }: { children: ReactNode }) {
+  const [features, setFeatures] = useState<FeatureBundle | null>(null)
+  useEffect(() => {
+    let live = true
+    import('./lib/motion-features').then((m) => { if (live) startTransition(() => setFeatures(m.default)) })
+    return () => { live = false }
+  }, [])
+  return <LazyMotion features={features ?? featuresPending}>{children}</LazyMotion>
+}
 
 function NotFound() {
   useSeo(SEO.notFound, { noindex: true })
@@ -110,7 +126,7 @@ export function Shell() {
   return (
     // Con «reducir movimiento» en el sistema, los desplazamientos y cambios de tamaño animados se omiten.
     <MotionConfig reducedMotion="user">
-    <LazyMotion features={motionFeatures}>
+    <MotionFeatures>
       <a href="#contenido" onClick={(e) => { e.preventDefault(); document.getElementById('contenido')?.focus() }} className="sr-only z-[60] bg-ink px-4 py-2 text-white focus:not-sr-only focus:fixed focus:left-4 focus:top-4">Saltar al contenido</a>
       <Header />
       <main id="contenido" tabIndex={-1} className="outline-none">
@@ -134,7 +150,7 @@ export function Shell() {
       </main>
       <Footer />
       <WhatsAppButton />
-    </LazyMotion>
+    </MotionFeatures>
     </MotionConfig>
   )
 }

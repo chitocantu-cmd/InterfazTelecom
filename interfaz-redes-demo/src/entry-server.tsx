@@ -9,6 +9,7 @@ import { Shell } from './App'
 
 export { PAGES, fullTitle, MAX_DESCRIPTION, MIN_DESCRIPTION } from './data/seo'
 export { structuredData, noscriptText } from './data/structured-data'
+export { HERO_IMAGE } from './components/home/Hero'
 
 /** HTML de la ruta, con las páginas que se cargan bajo demanda ya resueltas (espera a que todo esté listo). */
 export function render(url: string): Promise<string> {

@@ -3,6 +3,10 @@ import { IMG } from '../../data/media'
 import { scrollToId } from '../../lib/utils'
 import { Button } from '../ui'
 
+/** Imagen de la portada. En escritorio es lo más grande de la pantalla: prerender.mjs la precarga con prioridad
+ *  alta sólo ahí (en el teléfono queda debajo del texto y no debe competir con las fuentes ni el CSS). */
+export const HERO_IMAGE = { src: IMG.aisle.src, srcSet: IMG.aisle.srcSet, sizes: '(min-width: 1024px) 50vw, 100vw' }
+
 export function Hero() {
   return (
     <section aria-labelledby="hero-title" className="relative mx-auto flex max-w-frame flex-col overflow-hidden bg-white lg:block">
@@ -28,7 +32,7 @@ export function Hero() {
       {/* Imagen a sangre a la derecha en escritorio; va después del texto para que el lector de pantalla empiece
           por el título (el orden en pantalla lo dan order-1 / order-2). */}
       <div className="relative order-2 aspect-[4/3] w-full sm:aspect-[16/9] lg:absolute lg:inset-y-0 lg:right-0 lg:aspect-auto lg:w-1/2">
-        <img src={IMG.aisle.src} srcSet={IMG.aisle.srcSet} sizes="(min-width: 1024px) 50vw, 100vw" alt={IMG.aisle.alt} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: '66% 50%' }} {...{ fetchpriority: 'high' }} />
+        <img src={HERO_IMAGE.src} srcSet={HERO_IMAGE.srcSet} sizes={HERO_IMAGE.sizes} alt={IMG.aisle.alt} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: '66% 50%' }} />
         {IMG.aisle.ref && <p className="img-caption">Imagen de referencia</p>}
       </div>
     </section>

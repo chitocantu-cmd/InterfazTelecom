@@ -30,7 +30,7 @@ npm run build:preview  # un solo HTML autocontenido → dist-preview/index.html 
 npm run typecheck        # TypeScript: el sitio, la función del servidor, la configuración y las pruebas
 npm run lint             # ESLint (reglas de TypeScript y de los hooks de React)
 npm run test:e2e         # pruebas de navegador en escritorio y móvil (ver abajo)
-npm run check:hydration  # el HTML prerenderizado coincide con lo que dibuja React (correr tras cambiar componentes)
+npm run check:hydration  # el HTML prerenderizado coincide con lo que dibuja React, también con red lenta (tras cambiar componentes)
 ```
 
 **Antes de publicar:** `npm run typecheck`, `npm run lint`, `npm run build`, `npm run test:e2e` y, si se tocaron
@@ -40,7 +40,8 @@ componentes, `npm run check:hydration`. Si algo sale mal ya publicado, ver «Rev
 `vite build --ssr`) y React lo toma sin volver a dibujarlo (`hydrateRoot` en `src/main.tsx`). Por eso el primer
 render de cada componente debe ser igual en el servidor y en el navegador: lo que dependa del navegador (parámetros
 `?`, preferencias, almacenamiento) se lee con `useHydrated()` o en un efecto, no al dibujar. `check:hydration`
-avisa si algo no coincide.
+avisa si algo no coincide. Un estado global que cambia al cargar (como las animaciones de `MotionFeatures` en
+`src/App.tsx`) debe actualizarse con `startTransition`, o React descarta el HTML de las secciones que aún carga.
 
 Las pruebas (`e2e/sitio.spec.ts`) recorren todas las rutas, el header y el menú móvil, el cotizador (validación,
 envío en modo de prueba, errores del servidor), filtros y pestañas, accesibilidad con teclado y el HTML de cada

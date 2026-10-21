@@ -2,6 +2,8 @@
 // Sirve cada página prerenderizada con React en modo desarrollo (el que avisa de diferencias), la abre en Chrome
 // en escritorio y móvil, y reporta cualquier aviso o error de consola. Si React encuentra una diferencia, descarta
 // el HTML y vuelve a dibujar la página: se pierde lo ganado con el prerender y puede verse un salto.
+// Las partes que se cargan bajo demanda (páginas, cotizador, láminas) llegan con retraso, como en una red lenta:
+// así aparece también una actualización que alcanza una sección que React aún no termina de tomar (error 421).
 // Uso: npm run check:hydration [-- "/ruta?param=1,/otra#ancla"]   (REDUCE=1 simula «reducir movimiento»)
 import { readFileSync } from 'node:fs'
 import http from 'node:http'
@@ -43,6 +45,10 @@ const browser = await chromium.launch({ channel: process.env.PW_CHANNEL ?? 'chro
 let problems = 0
 for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
   const context = await browser.newContext({ viewport, reducedMotion: process.env.REDUCE ? 'reduce' : 'no-preference' })
+  await context.route(/\/src\/(pages\/[^/?]+|components\/quote\/QuoteWizard|components\/plates\/Plate)\.tsx/, async (route) => {
+    await new Promise((done) => setTimeout(done, 900))
+    await route.continue()
+  })
   for (const route of routes) {
     const page = await context.newPage()
     const messages = []
