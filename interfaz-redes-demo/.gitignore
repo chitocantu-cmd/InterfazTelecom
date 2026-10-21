@@ -11,3 +11,6 @@ tools/renders/out
 test-results
 playwright-report
 .cotizaciones-prueba
+
+# Reporte de auditoría interno (el repositorio es público)
+AUDITORIA_FINAL_INTERFAZ.md
