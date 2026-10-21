@@ -31,10 +31,15 @@ export default function Contact() {
 
   const rows = [
     {
-      icon: MessageCircle, k: 'WhatsApp / teléfono', v: <CopyValue dark value={COMPANY.whatsappDisplay} label="WhatsApp" />,
+      icon: MessageCircle, k: 'WhatsApp / teléfono',
+      v: <><CopyValue dark value={COMPANY.whatsappDisplay} label="WhatsApp" /><span className="mt-1 block text-small text-white/60">También: <a href={`tel:${COMPANY.phoneAlt.intl}`} className="hover:text-white">{COMPANY.phoneAlt.display}</a></span></>,
       links: [{ href: waLink('Hola, quiero cotizar un proyecto con Interfaz Redes.'), label: 'Abrir WhatsApp' }, { href: `tel:${COMPANY.phoneIntl}`, label: 'Llamar' }],
     },
-    { icon: Mail, k: 'Correo', v: <CopyValue dark value={COMPANY.email} label="correo" />, links: [{ href: `mailto:${COMPANY.email}`, label: 'Escribir correo' }] },
+    {
+      icon: Mail, k: 'Correo',
+      v: <><CopyValue dark value={COMPANY.email} label="correo" /><span className="mt-1 block text-small text-white/60">También: <a href={`mailto:${COMPANY.emailAlt}`} className="break-all hover:text-white">{COMPANY.emailAlt}</a></span></>,
+      links: [{ href: `mailto:${COMPANY.email}`, label: 'Escribir correo' }],
+    },
     { icon: MapPin, k: 'Oficina', v: COMPANY.address, links: [{ href: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(COMPANY.address)}`, label: 'Ver en mapa' }] },
     { icon: Clock, k: 'Horario', v: COMPANY.hours, links: [] },
   ]

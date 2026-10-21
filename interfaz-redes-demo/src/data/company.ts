@@ -3,11 +3,16 @@
 export const COMPANY = {
   name: 'Interfaz Redes y Telecomunicaciones',
   shortName: 'Interfaz Redes',
-  whatsappDisplay: '81 3402 1700',
-  whatsappIntl: '528134021700',
-  phoneIntl: '+528134021700',
-  phones: ['(81) 3402 1700', '(81) 1133 9500'],
-  email: 'ventas@interfaz.com.mx',
+  // Contacto principal: el que se muestra primero en todo el sitio, el de todos los botones de WhatsApp y el de los
+  // enlaces de correo y teléfono.
+  whatsappDisplay: '81 8087 1700',
+  whatsappIntl: '528180871700',
+  phoneIntl: '+528180871700',
+  email: 'ffacundo@interfaz.com.mx',
+  /** Contacto adicional: se muestra debajo del principal (footer, Contacto y acuse de la cotización). */
+  phoneAlt: { display: '81 3402 1700', intl: '+528134021700' },
+  emailAlt: 'ventas@interfaz.com.mx',
+  phones: ['(81) 8087 1700', '(81) 3402 1700', '(81) 1133 9500'],
   emailProjects: 'proyectos@interfazredes.com',
   site: 'https://interfaztelecom.com.mx/',
   address: 'Av. 8 Norte #1750, Col. Industrial, Monterrey, N.L.',

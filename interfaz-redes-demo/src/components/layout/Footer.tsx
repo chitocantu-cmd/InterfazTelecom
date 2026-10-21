@@ -36,8 +36,8 @@ export function Footer() {
               Ingeniería, instalación y mantenimiento de redes, telecomunicaciones y seguridad electrónica para empresas e industria.
             </p>
             <dl className="mt-8 space-y-4 text-small">
-              <div><dt className="text-muted">WhatsApp y teléfono</dt><dd className="mt-0.5 font-medium text-ink"><CopyValue value={COMPANY.whatsappDisplay} label="teléfono" href={`tel:${COMPANY.phoneIntl}`} /></dd></div>
-              <div><dt className="text-muted">Correo</dt><dd className="mt-0.5 break-all font-medium text-ink"><CopyValue value={COMPANY.email} label="correo" href={`mailto:${COMPANY.email}`} /></dd></div>
+              <div><dt className="text-muted">WhatsApp y teléfono</dt><dd className="mt-0.5 font-medium text-ink"><CopyValue value={COMPANY.whatsappDisplay} label="teléfono" href={`tel:${COMPANY.phoneIntl}`} /></dd><dd className="text-muted"><a href={`tel:${COMPANY.phoneAlt.intl}`} className="hover:text-corp">{COMPANY.phoneAlt.display}</a></dd></div>
+              <div><dt className="text-muted">Correo</dt><dd className="mt-0.5 break-all font-medium text-ink"><CopyValue value={COMPANY.email} label="correo" href={`mailto:${COMPANY.email}`} /></dd><dd className="break-all text-muted"><a href={`mailto:${COMPANY.emailAlt}`} className="hover:text-corp">{COMPANY.emailAlt}</a></dd></div>
               <div><dt className="text-muted">Oficina</dt><dd className="mt-0.5 text-ink">{COMPANY.address}</dd><dd className="text-muted">{COMPANY.hours}</dd></div>
             </dl>
           </div>

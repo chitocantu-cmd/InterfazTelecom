@@ -58,7 +58,7 @@ enviarían una cotización real.
 
 | Qué | Dónde |
 | --- | --- |
-| Teléfono, WhatsApp, correo, dirección, horario | `src/data/company.ts` (de ahí los toman el footer, Contacto, los datos estructurados y el aviso sin JavaScript). `COMPANY.email` es también el destinatario por omisión de las cotizaciones. |
+| Teléfono, WhatsApp, correo, dirección, horario | `src/data/company.ts` (de ahí los toman el footer, Contacto, los botones de WhatsApp, el acuse, los datos estructurados y el aviso sin JavaScript). Contacto principal: `whatsappDisplay`/`whatsappIntl`/`phoneIntl` y `email`; adicional: `phoneAlt` y `emailAlt` (se muestran debajo). |
 | Dominio del sitio | `COMPANY.site` en `src/data/company.ts`: canonical, sitemap, Open Graph y el origen que acepta el cotizador. Al cambiarlo, agregue el dominio en Vercel → Domains. |
 | Servicios (textos, especificaciones, preguntas frecuentes) | `src/data/solutions.ts` |
 | Opciones del cotizador | `QUOTE_TYPES` en `src/data/quote-types.ts` y su ícono en `ICONS` (`src/components/quote/QuoteWizard.tsx`) |
@@ -208,9 +208,9 @@ Después de cambiarlas hay que volver a publicar (Deployments → Redeploy) para
 | Variable | Para qué |
 | --- | --- |
 | `RESEND_API_KEY` | Clave de Resend. Con ella se activa el envío por correo. |
-| `COTIZACION_DESTINATARIOS` | Correos que reciben cada solicitud, separados por coma. Por omisión `ventas@interfaz.com.mx`. |
+| `COTIZACION_DESTINATARIOS` | Correos que reciben cada solicitud, separados por coma (cada uno recibe su propio correo). Por omisión, el correo principal y el adicional de `COMPANY` (`ffacundo@` y `ventas@interfaz.com.mx`). |
 | `COTIZACION_REMITENTE` | Remitente; su dominio debe estar verificado en Resend. Por omisión `Interfaz Redes <cotizaciones@interfaztelecom.com.mx>`. |
-| `COTIZACION_RESPONDER_A` | A dónde llega la respuesta del cliente al acuse. Por omisión `ventas@interfaz.com.mx`. |
+| `COTIZACION_RESPONDER_A` | A dónde llega la respuesta del cliente al acuse. Por omisión el correo principal (`COMPANY.email`, `ffacundo@interfaz.com.mx`). |
 | `COTIZACION_ACUSE` | `0` para no mandar acuse al cliente (el acuse sale por Resend: requiere `RESEND_API_KEY`). |
 | `COTIZACION_LIMITE_POR_IP` | Solicitudes válidas por IP cada 10 minutos (por omisión 5). |
 | `COTIZACION_PRUEBA` | `1` sólo en local: escribe los mensajes en `.cotizaciones-prueba/` en vez de enviarlos. En Vercel no tiene efecto. |

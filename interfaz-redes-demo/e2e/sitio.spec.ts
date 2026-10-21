@@ -231,13 +231,13 @@ test.describe('cotizador', () => {
 
     await expect(form.getByRole('heading', { name: 'Revise su solicitud' })).toBeVisible()
     const wa = new URL((await form.getByRole('link', { name: 'Enviar por WhatsApp' }).getAttribute('href'))!)
-    expect(wa.origin + wa.pathname).toBe('https://wa.me/528134021700')
+    expect(wa.origin + wa.pathname).toBe('https://wa.me/528180871700')
     const text = wa.searchParams.get('text')!
     for (const part of ['Cableado y redes, CCTV', 'Planta industrial', 'Apodaca, N.L.', '40 nodos', 'Ana López', 'Empresa de Prueba', 'ana@empresa.mx', '81 1234 5678']) {
       expect(text).toContain(part)
     }
     const mail = (await form.getByRole('link', { name: 'Enviar por correo' }).getAttribute('href'))!
-    expect(mail.startsWith('mailto:ventas@interfaz.com.mx?subject=')).toBe(true)
+    expect(mail.startsWith('mailto:ffacundo@interfaz.com.mx?subject=')).toBe(true)
 
     // Editar conserva lo capturado
     await form.getByRole('button', { name: 'Editar proyecto' }).click()
@@ -300,7 +300,7 @@ test.describe('WhatsApp flotante', () => {
     await page.goto('/')
     const wa = page.getByRole('link', { name: 'Hablar por WhatsApp con un especialista' })
     await expect(wa).toBeVisible()
-    await expect(wa).toHaveAttribute('href', /^https:\/\/wa\.me\/528134021700\?text=/)
+    await expect(wa).toHaveAttribute('href', /^https:\/\/wa\.me\/528180871700\?text=/)
     await page.goto('/soluciones/fibra-optica')
     await expect(wa).toBeVisible()
     await page.locator('[aria-label="Progreso de la solicitud"]').scrollIntoViewIfNeeded()
@@ -387,7 +387,7 @@ test.describe('recepción de cotizaciones', () => {
     await expect(form.getByText('Enviamos un acuse de recibo a ana@empresa.mx.')).toBeVisible()
 
     const ventas = readFileSync(`.cotizaciones-prueba/${folio}-ventas.txt`, 'utf8')
-    for (const part of ['Para: ventas@interfaz.com.mx', 'Responder a: ana@empresa.mx', 'Asunto: Nueva solicitud de cotización | Interfaz Redes | Fibra óptica', 'Adjuntos: plano nave.pdf', 'Nombre: Ana López Muñoz', 'Ubicación: Planta industrial · Apodaca, N.L.', 'Incluye 8 cámaras en andenes.']) {
+    for (const part of ['Para: ffacundo@interfaz.com.mx, ventas@interfaz.com.mx', 'Responder a: ana@empresa.mx', 'Asunto: Nueva solicitud de cotización | Interfaz Redes | Fibra óptica', 'Adjuntos: plano nave.pdf', 'Nombre: Ana López Muñoz', 'Ubicación: Planta industrial · Apodaca, N.L.', 'Incluye 8 cámaras en andenes.']) {
       expect(ventas).toContain(part)
     }
     expect(readFileSync(`.cotizaciones-prueba/${folio}-ventas.html`, 'utf8')).toContain('NUEVA SOLICITUD DE COTIZACIÓN')

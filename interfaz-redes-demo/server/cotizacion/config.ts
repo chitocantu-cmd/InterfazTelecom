@@ -39,7 +39,7 @@ export function getConfig(): Config {
     email: {
       apiKey: env('RESEND_API_KEY'),
       from: env('COTIZACION_REMITENTE') || 'Interfaz Redes <cotizaciones@interfaztelecom.com.mx>',
-      to: list(env('COTIZACION_DESTINATARIOS') || COMPANY.email),
+      to: list(env('COTIZACION_DESTINATARIOS') || `${COMPANY.email},${COMPANY.emailAlt}`),
       replyTo: env('COTIZACION_RESPONDER_A') || COMPANY.email,
       ack: env('COTIZACION_ACUSE') !== '0',
     },

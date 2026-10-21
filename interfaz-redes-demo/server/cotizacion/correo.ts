@@ -126,8 +126,8 @@ ${section('SU SOLICITUD', [
   r.site ? row('Tipo de inmueble', esc(r.site)) : '',
 ].join(''))}
 ${section('CONTACTO', [
-  row('WhatsApp / teléfono', esc(COMPANY.whatsappDisplay)),
-  row('Correo', `<a href="mailto:${COMPANY.email}" style="color:${C.corp};">${COMPANY.email}</a>`),
+  row('WhatsApp / teléfono', `${esc(COMPANY.whatsappDisplay)} · ${esc(COMPANY.phoneAlt.display)}`),
+  row('Correo', `<a href="mailto:${COMPANY.email}" style="color:${C.corp};">${COMPANY.email}</a> · <a href="mailto:${COMPANY.emailAlt}" style="color:${C.corp};">${COMPANY.emailAlt}</a>`),
   row('Oficina', esc(COMPANY.address)),
   row('Horario', esc(COMPANY.hours)),
   row('Sitio', `<a href="${cfg.site}/" style="color:${C.corp};">${esc(cfg.site.replace(/^https?:\/\//, ''))}</a>`),
@@ -145,8 +145,8 @@ ${section('CONTACTO', [
     `Servicio solicitado: ${service(q)}`,
     r.site ? `Tipo de inmueble: ${r.site}` : null,
     '',
-    `WhatsApp / teléfono: ${COMPANY.whatsappDisplay}`,
-    `Correo: ${COMPANY.email}`,
+    `WhatsApp / teléfono: ${COMPANY.whatsappDisplay} · ${COMPANY.phoneAlt.display}`,
+    `Correo: ${COMPANY.email} · ${COMPANY.emailAlt}`,
     `Oficina: ${COMPANY.address}`,
     `Horario: ${COMPANY.hours}`,
     `${cfg.site}/`,
