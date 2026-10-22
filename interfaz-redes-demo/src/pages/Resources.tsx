@@ -111,7 +111,7 @@ export function Article() {
       </section>
       <section className="border-t border-line py-16 md:py-20">
         <div className="container grid gap-14 lg:grid-cols-12">
-          <article className="lg:col-span-7">
+          <article className="min-w-0 lg:col-span-7">
             {meta.prefix && T.onlySpanish && <p className="mb-8 text-small text-muted">{T.onlySpanish}</p>}
             <Suspense fallback={<div className="min-h-[60svh]" aria-busy="true" />}><ArticleBody slug={r.slug} /></Suspense>
           </article>

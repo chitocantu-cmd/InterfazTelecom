@@ -35,7 +35,7 @@ const SLOT = /()<!-- scripts\/prerender\.mjs [^>]*-->/
 const withNoscript = (html, t) => replace(html, SLOT, `<noscript>${esc(noscriptText(t))}</noscript>`)
 
 /** Contenido de la página dentro de #root. */
-const withBody = async (html, path) => replace(html, /(<div id="root">)(?=<\/div>)/, await render(path))
+const withBody = async (html, path) => replace(html, /(<div id="root"[^>]*>)(?=<\/div>)/, await render(path))
 
 // Archivos JS de cada página (se cargan bajo demanda): se precargan junto con el principal para que React tome
 // el HTML sin esperar una segunda ida al servidor. Inicio va en el archivo principal; los textos de otro idioma también.
@@ -129,6 +129,7 @@ for (const page of PAGES) {
 let notFound = replace(base, /(<title>)[^<]*(?=<\/title>)/, esc(fullTitle(i18nFor('es').t.seo.notFound.title)))
 notFound = replace(notFound, /()<link rel="canonical"[^>]*>\n?/, '<meta name="robots" content="noindex" />\n')
 notFound = replace(notFound, /()<meta property="og:url"[^>]*>\n?/, '')
+notFound = replace(notFound, /(<div id="root")(?=>)/, ' data-pagina="404"')
 writeFileSync('dist/404.html', withFonts(withNoscript(await withBody(notFound, '/404'), i18nFor('es').t)))
 
 // Sitemap y robots: sólo las páginas indexables, con sus versiones en otros idiomas (xhtml:link) cuando las hay.

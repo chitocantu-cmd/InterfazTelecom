@@ -29,7 +29,7 @@ const server = http.createServer((req, res) => {
       const known = PAGES.some((p) => p.path === path)
       const lang = known ? LOCALE_META[splitLocale(path).locale].htmlLang : 'es-MX'
       const body = await render(known ? path : '/404')
-      const html = (await vite.transformIndexHtml(req.url, template)).replace('<html lang="es-MX">', `<html lang="${lang}">`).replace('<div id="root"></div>', () => `<div id="root">${body}</div>`)
+      const html = (await vite.transformIndexHtml(req.url, template)).replace('<html lang="es-MX">', `<html lang="${lang}">`).replace('<div id="root"></div>', () => `<div id="root"${known ? '' : ' data-pagina="404"'}>${body}</div>`)
       res.setHeader('content-type', 'text/html; charset=utf-8')
       res.end(html)
     } catch (e) {

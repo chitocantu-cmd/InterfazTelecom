@@ -1,7 +1,10 @@
 # Interfaz Redes · Sitio web
 
-Sitio de **Interfaz Redes y Telecomunicaciones** (Monterrey, N.L.).
+Sitio de **Interfaz Redes y Telecomunicaciones** (Monterrey, N.L.), en español, inglés, coreano y chino simplificado.
 React 18 + TypeScript + Vite + Tailwind CSS + Motion + React Router + Lucide.
+
+Documentos del proyecto: `ARQUITECTURA_INTERFAZ.md` (cómo está construido, idiomas, catálogo y su clasificación,
+eventos), `PROGRESO_INTERFAZ_2.0.md` (qué se hizo, qué falta y qué depende de la empresa) y `SEO_FASE_SIGUIENTE.md`.
 
 ## Iniciar el sitio
 
@@ -31,6 +34,7 @@ npm run typecheck        # TypeScript: el sitio, la función del servidor, la co
 npm run lint             # ESLint (reglas de TypeScript y de los hooks de React)
 npm run test:e2e         # pruebas de navegador en escritorio y móvil (ver abajo)
 npm run check:hydration  # el HTML prerenderizado coincide con lo que dibuja React, también con red lenta (tras cambiar componentes)
+                         # (todas las rutas en español y una muestra de cada idioma; ALL=1 recorre todas)
 ```
 
 **Antes de publicar:** `npm run typecheck`, `npm run lint`, `npm run build`, `npm run test:e2e` y, si se tocaron
@@ -60,12 +64,16 @@ enviarían una cotización real.
 | --- | --- |
 | Teléfono, WhatsApp, correo, dirección, horario | `src/data/company.ts` (de ahí los toman el footer, Contacto, los botones de WhatsApp, el acuse, los datos estructurados y el aviso sin JavaScript). Contacto principal: `whatsappDisplay`/`whatsappIntl`/`phoneIntl` y `email`; adicional: `phoneAlt` y `emailAlt` (se muestran debajo). |
 | Dominio del sitio | `COMPANY.site` en `src/data/company.ts`: canonical, sitemap, Open Graph y el origen que acepta el cotizador. Al cambiarlo, agregue el dominio en Vercel → Domains. |
-| Servicios (textos, especificaciones, preguntas frecuentes) | `src/data/solutions.ts` |
+| Servicios (textos, especificaciones, preguntas frecuentes) | `src/data/solutions.ts` (español) y `content.services` en `src/i18n/locales/*.ts` (otros idiomas). Un servicio nuevo sólo si está confirmado: ver «Catálogo de servicios» en `ARQUITECTURA_INTERFAZ.md` |
+| Textos de la interfaz (botones, títulos, mensajes, SEO) | `src/i18n/messages/es.ts` y `messages` en `src/i18n/locales/en.ts`, `ko.ts`, `zh-CN.ts` (deben tener las mismas claves; TypeScript avisa si falta una) |
+| Idiomas: cuáles hay y si ya se revisaron | `src/i18n/config.ts` (`LOCALE_META`; `reviewed: false` = sin indexar y con aviso de traducción en revisión) |
+| Explorador de soluciones (escenarios, preguntas, reglas) | `src/data/explorer.ts` y `content.explorer` en cada idioma |
+| Centro técnico (artículos) | `src/content/recursos/index.ts` (estado, categoría, fecha) y `src/content/recursos/<slug>.md` (texto) |
 | Opciones del cotizador | `QUOTE_TYPES` en `src/data/quote-types.ts` y su ícono en `ICONS` (`src/components/quote/QuoteWizard.tsx`) |
 | Quién recibe las cotizaciones (correos y números de WhatsApp) | variables de entorno en Vercel (ver "Recepción de cotizaciones") |
 | Campos, límites y textos de la solicitud | `src/lib/cotizacion.ts` (los comparten el cotizador y el servidor) |
 | Correos de la cotización (aviso a ventas y acuse al cliente) | `server/cotizacion/correo.ts` |
-| Industrias, proyectos, necesidades y proceso | `src/data/content.ts` |
+| Industrias, proyectos, necesidades y proceso | `src/data/content.ts` (español) y `content` en cada idioma. Proyectos: `status: 'autorizado'` sólo con autorización escrita del cliente; `gallery` y `beforeAfter` sólo con fotos reales |
 | Fotografías | archivos en `src/assets/img/` y su registro en `src/data/media.ts` |
 | Galería "Nuestro equipo en campo" | `src/pages/Home.tsx` y `src/pages/About.tsx` |
 | Razón social del aviso de privacidad | constante `RAZON_SOCIAL` en `src/pages/Privacy.tsx` |
@@ -82,14 +90,16 @@ enviarían una cotización real.
 | Fecha del aviso de privacidad | constante `ACTUALIZADO` en `src/pages/Privacy.tsx` |
 | Páginas | `src/pages/` · rutas en `src/App.tsx` (ver «Página nueva») |
 
-**Página nueva:** la ruta en `src/App.tsx` (y en `LOAD_BY_PATH` si se carga bajo demanda), su entrada en `PAGES`
-de `src/data/seo.ts` (sin ella, su dirección directa daría 404; de ahí salen también el sitemap y su HTML), el
-archivo de la página en `PAGE_MODULE` de `scripts/prerender.mjs` y, si va en el menú, `NAV` en
-`src/components/layout/Header.tsx`.
+**Página nueva:** la ruta en `localeRoutes` de `src/App.tsx` (y en `LOAD_BY_PATH`), su entrada en `pagesFor()` de
+`src/data/seo.ts` (sin ella, su dirección directa daría 404; de ahí salen también el sitemap y su HTML en los cuatro
+idiomas), el archivo de la página en `PAGE_MODULE` de `scripts/prerender.mjs`, sus textos en los cuatro diccionarios y,
+si va en el menú, `NAV` en `src/components/layout/Header.tsx`. Los enlaces internos se escriben con `Link` de
+`src/i18n/Link` (conserva el idioma), no con el de react-router-dom.
 
 **Enlaces que llenan el cotizador:** `/contacto?tipo=fibra` (también `cableado`, `cctv`, `acceso`, `infra`,
-`otro`), `?servicio=<slug del servicio>`, `?necesidad=<id de NEEDS>` y `?sector=<id de INDUSTRIES>`. Sirven para
-campañas o botones en otros sitios.
+`otro`), `?servicio=<slug del servicio>`, `?necesidad=<id de NEEDS>`, `?sector=<id de INDUSTRIES>` y los del explorador
+(`?escenario=…&inmueble=…&ubicacion=…&tamano=…&etapa=…&extras=…`). Funcionan en cualquier idioma
+(`/en/contacto?tipo=fibra`). Sirven para campañas o botones en otros sitios.
 
 Para cambiar una fotografía: la imagen **debe ser `.webp`** (`media.ts` sólo lee `.webp`; con otro formato el
 build falla al prerenderizar), de 1600 a 2400 px de ancho (las imágenes a sangre se muestran hasta 1600 px y en
@@ -114,9 +124,12 @@ src/
   assets/img/       visualizaciones 3D de referencia (sustituir por fotografía real)
   assets/img/campo/ fotografías reales del equipo en campo
   components/       layout (header, footer, encabezados), home, cotizador, láminas técnicas, ui
-  data/             empresa, soluciones, tipos de cotización, industrias, proyectos, SEO y datos estructurados
-  lib/              utilidades, SEO por página, cotización (compartido con el servidor), analítica
-  pages/            Inicio, Soluciones, Servicio, Industrias, Proyectos, Nosotros, Contacto, Aviso de privacidad
+  i18n/             idiomas: configuración, diccionarios (messages/es.ts y locales/*.ts), proveedor y Link
+  content/recursos/ centro técnico: índice y artículos en Markdown
+  data/             empresa, soluciones, tipos de cotización, industrias, proyectos, explorador, SEO y datos estructurados
+  lib/              utilidades, SEO por página, cotización (compartido con el servidor), analítica, Markdown
+  pages/            Inicio, Soluciones, Servicio, Industrias, Industria, Proyectos, Explorador, Recursos, Nosotros,
+                    Contacto, Aviso de privacidad
   entry-server.tsx  dibuja cada página para el prerender
   main.tsx          arranque en el navegador (toma el HTML prerenderizado)
 api/                funciones de Vercel (api/cotizacion.ts)
@@ -157,6 +170,8 @@ queda además en la etiqueta de git `respaldo-original`.
 Variables del sitio (**Settings → Environment Variables**, opcionales; las `VITE_*` se leen al compilar, así que
 requieren volver a publicar):
 - `VITE_GA_ID` — ID de Google Analytics 4 (`G-XXXXXXX`). Si se deja vacío, no se carga ningún script de medición.
+- `VITE_BORRADORES=1` — sólo en el entorno **Preview**: muestra los borradores del centro técnico en las vistas
+  previas (con aviso y `noindex`). Nunca en Production.
 - `VITE_SITE_URL` — sólo para sobrescribir la URL del sitio en un build; por omisión es `COMPANY.site`.
 - `VITE_ROUTER=hash` — lo usa `build:preview` (`.env.preview`): rutas con `#` para el archivo único.
 
@@ -312,8 +327,9 @@ envío de prueba). En modo de desarrollo de la app de Meta sólo se puede enviar
 
 `GET /api/cotizacion` → `{"recepcion": boolean, "whatsapp": boolean}` (si la recepción automática está activa).
 
-`POST /api/cotizacion` (`multipart/form-data`, desde el propio sitio): `types` (uno o varios de `QUOTE_TYPES`),
-`site`, `location`, `description`, `name`, `company`, `email`, `phone`, `context`, `files` (hasta 5), `key`
+`POST /api/cotizacion?lang=<es|en|ko|zh-CN>` (`multipart/form-data`, desde el propio sitio): `types` (uno o varios de
+`QUOTE_TYPES`), `site`, `location`, `description`, `name`, `company`, `role` (cargo, opcional), `email`, `phone`,
+`context`, `summary` (resumen del explorador, en español), `lang`, `files` (hasta 5), `key`
 (`AAMMDD-uuid`, la misma en un reintento), `elapsed` (ms desde que se abrió el cotizador) y `hp_ref` (campo
 trampa, vacío). Respuestas:
 
@@ -327,7 +343,9 @@ trampa, vacío). Respuestas:
 | 502 | `codigo: "entrega"` (no llegó por ningún canal), con `estados` |
 | 500 / 503 | `codigo: "servidor"` / `"no_configurado"` |
 
-El cotizador nunca muestra «Solicitud recibida» si no recibe un 200.
+El cotizador nunca muestra «Solicitud recibida» si no recibe un 200. Los mensajes de error y de validación salen en el
+idioma de `?lang=`; el acuse al cliente también. El correo a ventas siempre va en español e indica el idioma del
+cliente, su cargo y el resumen del explorador cuando los hay.
 
 ### Probar en local
 
@@ -342,10 +360,14 @@ automáticas usan este modo). Con `RESEND_API_KEY` en `.env.local` y sin `COTIZA
 
 ## Medición (GA4)
 
-Con `VITE_GA_ID` configurado se registran:
-- `page_view` en cada cambio de página.
-- `generate_lead` al enviar una cotización: `method` es `formulario` (recibida por el servidor), `whatsapp` o
-  `email` (envío manual), e incluye el tipo de necesidad.
+Con `VITE_GA_ID` configurado, los eventos van a GA4; sin él quedan en `window.dataLayer` (listos para Google Tag
+Manager) y no se descarga ningún script. Ningún evento lleva datos personales. Lista completa en
+`ARQUITECTURA_INTERFAZ.md` («Medición»); los principales:
+- `page_view` en cada cambio de página (con el idioma).
+- `quote_cta` en cada botón que lleva al cotizador (atributo `data-track-cta` con su ubicación).
+- `quote_start`, `quote_step`, `quote_error` y `generate_lead` (`method`: `formulario`, `whatsapp` o `email`; tipo,
+  idioma y si vino del explorador).
+- `service_view`, `project_view`, `explorer_step`, `explorer_complete` y `language_change`.
 - `contact_whatsapp`, `contact_email` y `contact_phone` en cualquier enlace de contacto del sitio.
 
 Marca `generate_lead` como evento clave (conversión) en GA4.
@@ -365,6 +387,9 @@ compilación (de Tailwind 3 y PostCSS) que no llegan al navegador y no tienen co
 
 - [x] Fotografía real del equipo en campo (portada, Nosotros y servicios de cableado, racks, certificación y mantenimiento).
 - [ ] Fotografía real para fibra óptica, CCTV, control de acceso, WiFi e industrias (hoy son visualizaciones 3D).
+- [ ] Revisión lingüística de inglés, coreano y chino; después, `reviewed: true` en `src/i18n/config.ts`.
+- [ ] Revisión técnica y publicación de los borradores del centro técnico.
+- [ ] Confirmar los servicios de la lista «B» de `ARQUITECTURA_INTERFAZ.md` (monitoreo, centros de datos, analítica de video, videoconferencia).
 - [ ] Reemplazar los casos demostrativos por proyectos autorizados (`src/data/content.ts`).
 - [ ] Logotipo en mayor resolución (SVG o PNG ≥ 800 px) en `src/assets/brand/`.
 - [ ] Confirmar WhatsApp, años de experiencia, vigencia del REPSE y marcas.

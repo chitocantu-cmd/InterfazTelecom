@@ -36,11 +36,11 @@ const app = (
 // volver a dibujarlo. En desarrollo y en la vista previa de un solo archivo, #root llega vacío.
 // Antes de tomarlo se descargan los textos del idioma de la página (el español ya viene en este archivo), para que
 // el primer render coincida con el HTML. Si la descarga falla, se dibuja igual (I18nProvider vuelve a pedirlos).
-// Se toma el HTML sólo si está en el idioma de la ruta: la página 404 es la misma para todos los idiomas (en
-// español), así que en /en/no-existe se dibuja de nuevo en lugar de tomarla.
+// Se toma el HTML sólo si corresponde a esta dirección y a su idioma. La página 404 (data-pagina="404") es una sola
+// para cualquier dirección inexistente y en español, así que se dibuja de nuevo en lugar de tomarla.
 const { locale } = splitLocale(window.location.pathname)
 const start = () => {
-  if (root.hasChildNodes() && document.documentElement.lang === LOCALE_META[locale].htmlLang) return hydrateRoot(root, app)
+  if (root.hasChildNodes() && root.dataset.pagina !== '404' && document.documentElement.lang === LOCALE_META[locale].htmlLang) return hydrateRoot(root, app)
   root.textContent = ''
   createRoot(root).render(app)
 }

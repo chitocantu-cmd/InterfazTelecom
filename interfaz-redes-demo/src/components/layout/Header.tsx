@@ -119,7 +119,7 @@ export function Header() {
     }
   }
   const solActive = base.startsWith('/soluciones')
-  const linkCls = (active: boolean) => cn('flex items-center gap-1 whitespace-nowrap px-2.5 py-2 text-[0.95rem] transition-colors xl:px-3.5', active ? 'font-medium text-corp' : 'text-body hover:text-ink')
+  const linkCls = (active: boolean) => cn('flex items-center gap-1 whitespace-nowrap px-2 py-2 text-[0.92rem] transition-colors xl:px-3 xl:text-[0.95rem]', active ? 'font-medium text-corp' : 'text-body hover:text-ink')
   const cat = c.categoryById(preview)
   const img = cat.img ? IMG[cat.img] : null
 
@@ -132,7 +132,7 @@ export function Header() {
         className={cn('enter-header fixed inset-x-0 z-50 bg-white transition-[height,box-shadow] duration-300 ease-out', compact ? 'h-[72px] md:h-[84px]' : 'h-[var(--hdr)]', scrolled || mega || mobile ? 'shadow-[0_1px_0_#E1E6EB]' : '')}
         style={{ top: 'env(safe-area-inset-top, 0px)' }}
       >
-        <div className="container flex h-full items-center justify-between gap-4 lg:gap-6">
+        <div className="container flex h-full items-center justify-between gap-4 xl:gap-6">
           <Link to="/" aria-label={t.nav.homeAria} className="shrink-0"><LogoLockup compact={compact} /></Link>
 
           <nav aria-label={t.nav.main} className="hidden lg:block">
@@ -165,8 +165,8 @@ export function Header() {
 
           <div className="flex items-center gap-1.5 sm:gap-3">
             <div className="hidden lg:block"><LanguageSelector /></div>
-            <Button to="/contacto" track="header" className="hidden !px-5 !py-[0.7rem] lg:inline-flex">{t.common.quoteProject}</Button>
-            <Button to="/contacto" track="header-movil" className="!px-4 !py-2.5 !text-[0.9rem] lg:hidden">{t.common.quoteShort}</Button>
+            <Button to="/contacto" track="header" className="hidden !px-5 !py-[0.7rem] xl:inline-flex">{t.common.quoteProject}</Button>
+            <Button to="/contacto" track="header-movil" className="!px-4 !py-2.5 !text-[0.9rem] xl:hidden">{t.common.quoteShort}</Button>
             <button
               ref={mobileBtn}
               type="button"

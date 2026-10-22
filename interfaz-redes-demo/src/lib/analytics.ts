@@ -29,7 +29,6 @@ export interface Events {
   /** Uso del explorador de soluciones. */
   explorer_step: { paso: number; escenario: string }
   explorer_complete: { escenario: string; servicios: number }
-  explorer_to_quote: { escenario: string }
   /** Cambio de idioma con el selector. */
   language_change: { de: string; a: string }
   /** Visita a la página de un proyecto. */

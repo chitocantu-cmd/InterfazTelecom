@@ -1,11 +1,14 @@
 import { readFileSync } from 'node:fs'
 import { expect, test, type Page } from '@playwright/test'
+import { fullTitle, pagesFor } from '../src/data/seo'
 import { PROJECTS } from '../src/data/content'
-import { SERVICES } from '../src/data/solutions'
-import { fullTitle, SEO_ROUTES } from '../src/data/seo'
+import { buildContent } from '../src/i18n/content'
+import es from '../src/i18n/messages/es'
 
-const PAGES = ['/', '/soluciones', '/industrias', '/proyectos', '/nosotros', '/contacto', '/aviso-de-privacidad']
-const ROUTES = [...PAGES, ...SERVICES.map((s) => `/soluciones/${s.slug}`), ...PROJECTS.map((p) => `/proyectos/${p.slug}`)]
+// En local (servidor de desarrollo) se ven los borradores del centro técnico; publicado, no.
+const ES_PAGES = pagesFor('es', es, buildContent(), { drafts: !process.env.BASE_URL })
+const ROUTES = [...ES_PAGES.map((p) => p.path), '/en', '/ko', '/zh-CN', '/en/soluciones/fibra-optica', '/ko/industrias/cedis', '/zh-CN/explorador']
+const MAIN = ['/', '/soluciones', '/industrias', '/industrias/cedis', '/proyectos', '/explorador', '/recursos', '/nosotros', '/contacto', '/aviso-de-privacidad', '/en', '/ko/soluciones/control-de-acceso', '/zh-CN/contacto']
 
 /** Registra errores de consola y de JavaScript durante la prueba. */
 function trackErrors(page: Page) {
@@ -37,6 +40,9 @@ function overflowing(page: Page) {
     return bad.slice(0, 5)
   })
 }
+
+/** El botón flotante de WhatsApp (sólo escritorio). */
+const fab = (page: Page) => page.locator('a.fixed[href^="https://wa.me/"]')
 
 test.describe('rutas', () => {
   for (const route of ROUTES) {
@@ -72,7 +78,7 @@ test.describe('acomodo en otros anchos', () => {
   for (const width of [320, 768, 1024, 1280, 1920, 2560]) {
     test(`sin elementos fuera de la pantalla a ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 })
-      for (const route of PAGES) {
+      for (const route of MAIN) {
         await page.goto(route)
         await expect(page.locator('h1').first()).toBeVisible()
         expect(await overflowing(page), `${route} a ${width}px`).toEqual([])
@@ -81,19 +87,22 @@ test.describe('acomodo en otros anchos', () => {
   }
 
   test('el header completo cabe en laptops', async ({ page }) => {
-    for (const width of [1024, 1180, 1280]) {
+    for (const width of [1024, 1180, 1280, 1366, 1440]) {
       await page.setViewportSize({ width, height: 800 })
-      await page.goto('/')
-      const cta = await page.locator('header').getByRole('link', { name: 'Cotizar proyecto' }).boundingBox()
-      expect(cta!.x + cta!.width, `botón Cotizar a ${width}px`).toBeLessThanOrEqual(width)
+      for (const route of ['/', '/en', '/ko', '/zh-CN']) {
+        await page.goto(route)
+        const right = await page.locator('header .container').evaluate((c) => Math.max(...[...c.querySelectorAll('*')].map((e) => e.getBoundingClientRect().right)))
+        expect(right, `header a ${width}px en ${route}`).toBeLessThanOrEqual(width)
+      }
     }
   })
 
   test('las imágenes a sangre no se estiran más allá de 1600px', async ({ page }) => {
     await page.setViewportSize({ width: 2560, height: 1200 })
     await page.goto('/soluciones')
-    const box = await page.locator('main section').first().locator('img').boundingBox()
-    expect(box!.width).toBeLessThanOrEqual(1600)
+    // Ancho de la caja (sin la escala de la animación de entrada).
+    const width = await page.locator('main section').first().locator('img').evaluate((i: HTMLImageElement) => i.offsetWidth)
+    expect(width).toBeLessThanOrEqual(1600)
   })
 
   test('la ruta de navegación no repite nombres', async ({ page }) => {
@@ -113,6 +122,17 @@ test.describe('logotipo', () => {
     await expect(page).toHaveURL('/')
     await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', '/favicon.ico')
   })
+
+  test('el header se compacta al desplazarse sin mover el contenido', async ({ page }) => {
+    await page.goto('/nosotros')
+    const header = page.locator('header')
+    const tall = (await header.boundingBox())!.height
+    const h1Top = await page.locator('h1').evaluate((el) => el.getBoundingClientRect().top + window.scrollY)
+    await page.mouse.wheel(0, 600)
+    await expect.poll(async () => (await header.boundingBox())!.height).toBeLessThan(tall)
+    const after = await page.locator('h1').evaluate((el) => el.getBoundingClientRect().top + window.scrollY)
+    expect(Math.abs(after - h1Top), 'el contenido no se mueve (salvo redondeo de subpíxeles)').toBeLessThan(2)
+  })
 })
 
 test.describe('header de escritorio', () => {
@@ -121,7 +141,7 @@ test.describe('header de escritorio', () => {
   test('enlaces principales', async ({ page }) => {
     await page.goto('/')
     const nav = page.getByRole('navigation', { name: 'Principal' })
-    for (const [name, path] of [['Industrias', '/industrias'], ['Proyectos', '/proyectos'], ['Nosotros', '/nosotros'], ['Contacto', '/contacto'], ['Inicio', '/']]) {
+    for (const [name, path] of [['Industrias', '/industrias'], ['Proyectos', '/proyectos'], ['Explorador', '/explorador'], ['Nosotros', '/nosotros'], ['Contacto', '/contacto']]) {
       await nav.getByRole('link', { name, exact: true }).click()
       await expect(page).toHaveURL(path)
       await expect(page.locator('h1').first()).toBeVisible()
@@ -141,6 +161,9 @@ test.describe('header de escritorio', () => {
     await expect(mega).toBeHidden()
     await btn.click()
     await expect(mega).toBeVisible()
+    // La vista previa cambia con el frente técnico que se apunta.
+    await mega.getByRole('link', { name: 'Seguridad electrónica', exact: true }).hover()
+    await expect(mega.locator('aside')).toContainText('Seguridad electrónica')
     await mega.locator('a[href="/soluciones/fibra-optica"]').click()
     await expect(page).toHaveURL('/soluciones/fibra-optica')
     await expect(page.getByRole('heading', { level: 1, name: 'Fibra óptica' })).toBeVisible()
@@ -197,6 +220,20 @@ test.describe('menú móvil', () => {
     await menu.getByRole('link', { name: 'Cotizar proyecto' }).click()
     await expect(page).toHaveURL('/contacto')
   })
+
+  test('el header móvil lleva a cotizar sin abrir el menú', async ({ page }) => {
+    await page.goto('/nosotros')
+    await page.locator('header').getByRole('link', { name: 'Cotizar', exact: true }).click()
+    await expect(page).toHaveURL('/contacto')
+  })
+
+  test('el selector de idioma está en el menú', async ({ page }) => {
+    await page.goto('/soluciones/fibra-optica')
+    await page.getByRole('button', { name: 'Abrir menú' }).click()
+    await page.locator('#menu-movil').getByRole('link', { name: 'English' }).click()
+    await expect(page).toHaveURL('/en/soluciones/fibra-optica')
+    await expect(page.getByRole('heading', { level: 1, name: 'Fiber optics' })).toBeVisible()
+  })
 })
 
 test.describe('cotizador', () => {
@@ -221,6 +258,7 @@ test.describe('cotizador', () => {
     const review = form.getByRole('button', { name: 'Revisar solicitud' })
     await form.getByRole('textbox', { name: 'Nombre' }).fill('Ana López')
     await form.getByRole('textbox', { name: 'Empresa' }).fill('Empresa de Prueba')
+    await form.getByRole('textbox', { name: /^Cargo/ }).fill('Gerente de mantenimiento')
     await form.getByRole('textbox', { name: 'Correo corporativo' }).fill('ana@')
     await form.getByRole('textbox', { name: 'WhatsApp' }).fill('81 12')
     await review.click()
@@ -233,7 +271,7 @@ test.describe('cotizador', () => {
     const wa = new URL((await form.getByRole('link', { name: 'Enviar por WhatsApp' }).getAttribute('href'))!)
     expect(wa.origin + wa.pathname).toBe('https://wa.me/528180871700')
     const text = wa.searchParams.get('text')!
-    for (const part of ['Cableado y redes, CCTV', 'Planta industrial', 'Apodaca, N.L.', '40 nodos', 'Ana López', 'Empresa de Prueba', 'ana@empresa.mx', '81 1234 5678']) {
+    for (const part of ['Cableado y redes, CCTV', 'Planta industrial', 'Apodaca, N.L.', '40 nodos', 'Ana López', '*Cargo:* Gerente de mantenimiento', 'Empresa de Prueba', 'ana@empresa.mx', '81 1234 5678']) {
       expect(text).toContain(part)
     }
     const mail = (await form.getByRole('link', { name: 'Enviar por correo' }).getAttribute('href'))!
@@ -257,60 +295,202 @@ test.describe('cotizador', () => {
     await expect(page.locator('main input[type=checkbox]:checked')).toHaveCount(1)
     await expect(page.getByText('Desde: Conectar edificios o naves')).toBeVisible()
   })
+
+  test('un borrador sobrevive a la recarga de la pestaña', async ({ page }) => {
+    await page.goto('/contacto')
+    const form = page.locator('main')
+    await form.getByText('Fibra óptica', { exact: true }).click()
+    await form.getByRole('button', { name: 'Continuar' }).click()
+    await form.getByRole('textbox', { name: 'Ciudad o ubicación general' }).fill('Santa Catarina, N.L.')
+    await page.waitForTimeout(700) // el borrador se guarda 400 ms después de escribir
+    await page.reload()
+    await expect(form.getByText('Recuperamos la solicitud que dejó a medias en esta pestaña.')).toBeVisible()
+    await expect(form.getByRole('textbox', { name: 'Ciudad o ubicación general' })).toHaveValue('Santa Catarina, N.L.')
+    await form.getByRole('button', { name: 'Empezar de cero' }).click()
+    await expect(form.getByText('¿Qué necesita implementar?')).toBeVisible()
+    await expect(form.locator('input[type=checkbox]:checked')).toHaveCount(0)
+  })
 })
 
-test.describe('pestañas y filtros', () => {
-  test('industrias cambian de pestaña', async ({ page }) => {
+test.describe('industrias', () => {
+  test('el índice lleva a cada sector y los enlaces anteriores (?sector=) siguen funcionando', async ({ page }) => {
     await page.goto('/industrias')
-    await page.getByRole('tab', { name: 'Centros de distribución' }).click()
-    await expect(page.getByRole('tab', { name: 'Centros de distribución' })).toHaveAttribute('aria-selected', 'true')
-    await expect(page).toHaveURL('/industrias?sector=cedis')
-    await expect(page.getByRole('tabpanel').getByRole('heading', { level: 2 })).toHaveText('Centros de distribución')
-  })
-
-  test('industrias: el enlace con ?sector= abre ese sector y los cinco están en el HTML', async ({ page }) => {
+    await page.getByRole('link', { name: /Centros de distribución y logística/ }).first().click()
+    await expect(page).toHaveURL('/industrias/cedis')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Centros de distribución y logística')
     await page.goto('/industrias?sector=educacion')
-    await expect(page.getByRole('tab', { name: 'Instituciones educativas' })).toHaveAttribute('aria-selected', 'true')
-    await expect(page.getByRole('tabpanel').getByRole('heading', { level: 2 })).toHaveText('Instituciones educativas')
-    // Los otros cuatro van ocultos (para buscadores), fuera del árbol de accesibilidad.
-    await expect(page.locator('[role=tabpanel]')).toHaveCount(5)
-    await expect(page.locator('[role=tabpanel][hidden]')).toHaveCount(4)
+    await expect(page).toHaveURL('/industrias/educacion')
   })
 
-  test('proyectos se filtran por categoría y sector', async ({ page }) => {
+  test('la página del sector explica y cotiza con el sector preseleccionado', async ({ page }) => {
+    await page.goto('/industrias/industria')
+    await expect(page.getByRole('heading', { name: 'Consideraciones técnicas' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Distancia y backbone' })).toBeVisible()
+    const form = page.locator('#asesoria')
+    await expect(form.getByText('Desde: Industria y manufactura')).toBeVisible()
+    await form.getByText('Fibra óptica', { exact: true }).click()
+    await form.getByRole('button', { name: 'Continuar' }).click()
+    await expect(form.getByRole('button', { name: 'Planta industrial' })).toHaveAttribute('aria-pressed', 'true')
+  })
+})
+
+test.describe('proyectos', () => {
+  test('se filtran por tipo de solución e industria', async ({ page }) => {
     await page.goto('/proyectos')
     const list = page.locator('#lista-proyectos')
-    await page.getByRole('button', { name: 'CCTV', exact: true }).click()
+    await page.getByRole('button', { name: /^CCTV/ }).click()
     await expect(list.locator('h2')).toHaveText(['Videovigilancia en centro de distribución'])
-    await page.locator('#f-sector').selectOption('Corporativo')
+    await page.locator('#f-industria').selectOption('corporativos')
     await expect(list.getByText('No hay casos con esa combinación de filtros.')).toBeVisible()
     await list.getByRole('button', { name: 'Quitar filtros' }).click()
     await expect(list.locator('h2')).toHaveCount(PROJECTS.length)
   })
 
-  test('explorador de necesidades del inicio', async ({ page }) => {
+  test('los casos demostrativos no se indexan', async ({ page }) => {
+    await page.goto(`/proyectos/${PROJECTS[0].slug}`)
+    await expect(page.getByText('Caso demostrativo').first()).toBeVisible()
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex')
+  })
+})
+
+test.describe('explorador de soluciones', () => {
+  test('la portada abre el explorador con el escenario elegido', async ({ page }) => {
     await page.goto('/')
-    await page.getByText('Conectar edificios o naves').click()
-    await expect(page.getByRole('link', { name: 'Cotizar con esta necesidad' })).toHaveAttribute('href', '/contacto?tipo=fibra&necesidad=edificios')
+    await page.getByRole('link', { name: /Conectividad entre edificios/ }).click()
+    await expect(page).toHaveURL('/explorador?escenario=edificios')
+    // Con el escenario ya elegido, el explorador pasa a la siguiente pregunta y lo muestra en el resumen.
+    await expect(page.getByText('¿Qué tipo de instalación es?')).toBeVisible()
+    await expect(page.locator('aside').getByRole('button', { name: 'Conectividad entre edificios' })).toBeVisible()
+  })
+
+  test('recorre las seis preguntas, sugiere servicios y lleva el resumen al cotizador', async ({ page }) => {
+    await page.goto('/explorador')
+    const main = page.locator('main')
+    const next = main.getByRole('button', { name: 'Continuar' })
+    await next.click()
+    await expect(main.getByRole('alert')).toHaveText('Elija una opción para continuar.')
+    await main.getByText('Nueva planta industrial', { exact: true }).click()
+    await next.click()
+    await main.getByText('Planta industrial', { exact: true }).click()
+    await next.click()
+    await main.getByText('Otro estado de México', { exact: true }).click()
+    await next.click()
+    await main.getByText('Más de 10,000 m² o varios edificios', { exact: true }).click()
+    await next.click()
+    await main.getByText('Obra en curso', { exact: true }).click()
+    await next.click()
+    await main.getByText('Control de asistencia', { exact: true }).click()
+    await main.getByRole('button', { name: 'Ver resultado' }).click()
+
+    await expect(main.getByRole('heading', { name: 'Con base en tu solicitud, estos servicios podrían ser relevantes para tu proyecto.' })).toBeVisible()
+    // Proyecto grande: la ingeniería va primero; además se sugiere lo marcado y la cobertura se confirma.
+    await expect(main.locator('a[href="/soluciones/diseno-e-ingenieria"]').first()).toBeVisible()
+    await expect(main.locator('a[href="/soluciones/control-de-asistencia"]')).toBeVisible()
+    await expect(main.getByText('Programa de obra y fechas de acceso al sitio')).toBeVisible()
+    await expect(main.getByText('La cobertura fuera del área metropolitana de Monterrey se confirma con el equipo comercial.')).toBeVisible()
+    await expect(page).toHaveURL(/escenario=nueva-planta.*extras=asistencia/)
+
+    await main.getByRole('link', { name: 'Solicitar asesoría con este resumen' }).click()
+    await expect(page).toHaveURL(/\/contacto\?escenario=nueva-planta/)
+    const form = page.locator('main')
+    await expect(form.getByText('Desde: Explorador: Nueva planta industrial')).toBeVisible()
+    expect(await form.locator('input[type=checkbox]:checked').count()).toBeGreaterThanOrEqual(3)
+    await form.getByRole('button', { name: 'Continuar' }).click()
+    await expect(form.getByText('Resumen del explorador')).toBeVisible()
+    await expect(form.getByText('Escenario: Nueva planta industrial')).toBeVisible()
+    await expect(form.getByRole('button', { name: 'Planta industrial' })).toHaveAttribute('aria-pressed', 'true')
+  })
+})
+
+test.describe('idiomas', () => {
+  test('cada idioma tiene su ruta, su lang y textos propios', async ({ page }) => {
+    for (const [path, lang, h1] of [['/en', 'en', 'We connect the infrastructure that runs your business.'], ['/ko', 'ko', '기업 운영을 움직이는 인프라를 연결합니다.'], ['/zh-CN', 'zh-CN', '连接驱动企业运营的基础设施。']]) {
+      await page.goto(path)
+      await expect(page.locator('html')).toHaveAttribute('lang', lang)
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(h1)
+      // Traducción sin revisión lingüística: no se indexa todavía.
+      await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex')
+    }
+  })
+
+  test('el selector conserva la página, recuerda la preferencia y los enlaces quedan en el idioma', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'el selector de escritorio; el móvil se prueba en «menú móvil»')
+    await page.goto('/soluciones/control-de-acceso')
+    await page.getByRole('button', { name: /Cambiar idioma/ }).click()
+    await page.locator('#selector-idioma').getByRole('link', { name: /한국어/ }).click()
+    await expect(page).toHaveURL('/ko/soluciones/control-de-acceso')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('출입 통제')
+    expect(await page.evaluate(() => localStorage.getItem('idioma'))).toBe('ko')
+    await page.getByRole('navigation', { name: '주 메뉴' }).getByRole('link', { name: '문의' }).click()
+    await expect(page).toHaveURL('/ko/contacto')
+    await expect(page.locator('main').getByText('어떤 작업이 필요하십니까?')).toBeVisible()
+    await page.goBack()
+    await expect(page).toHaveURL('/ko/soluciones/control-de-acceso')
+  })
+
+  test('formularios y validaciones en el idioma de la página', async ({ page }) => {
+    await page.goto('/zh-CN/contacto')
+    const form = page.locator('main')
+    await form.getByRole('button', { name: '继续' }).click()
+    await expect(form.getByRole('alert')).toHaveText('请至少选择一项。')
+    await page.goto('/en/contacto')
+    await page.locator('main').getByRole('button', { name: 'Continue' }).click()
+    await expect(page.locator('main').getByRole('alert')).toHaveText('Select at least one option.')
+  })
+
+  test('una ruta inexistente en otro idioma muestra la 404 en ese idioma', async ({ page }) => {
+    await page.goto('/en/does-not-exist')
+    await expect(page.getByRole('heading', { name: 'This page does not exist.' })).toBeVisible()
+  })
+
+  test('sugiere el idioma del navegador sin redirigir', async ({ browser }) => {
+    const ctx = await browser.newContext({ locale: 'ko-KR', viewport: { width: 1280, height: 800 } })
+    const page = await ctx.newPage()
+    await page.goto('/nosotros')
+    await expect(page).toHaveURL('/nosotros')
+    const hint = page.getByRole('link', { name: '이 페이지를 한국어로 보기' })
+    await expect(hint).toBeVisible()
+    await hint.click()
+    await expect(page).toHaveURL('/ko/nosotros')
+    await ctx.close()
+  })
+})
+
+test.describe('centro técnico', () => {
+  test('los borradores se ven en desarrollo, marcados y sin indexar', async ({ page }) => {
+    test.skip(!!process.env.BASE_URL, 'publicado no hay borradores')
+    await page.goto('/recursos')
+    await expect(page.getByRole('link', { name: /Cat6 vs Cat6A/ })).toBeVisible()
+    await page.getByRole('link', { name: /Cat6 vs Cat6A/ }).click()
+    await expect(page).toHaveURL('/recursos/cat6-vs-cat6a')
+    await expect(page.getByRole('note')).toContainText('Borrador pendiente de revisión técnica')
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex')
+    await expect(page.locator('article').getByRole('table').first()).toBeVisible()
   })
 })
 
 test.describe('WhatsApp flotante', () => {
-  test('aparece en las páginas y se oculta junto al cotizador', async ({ page }) => {
+  test('en escritorio aparece al pasar la portada y se oculta junto al cotizador y al explorador', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'en móvil no hay botón flotante')
     await page.goto('/')
-    const wa = page.getByRole('link', { name: 'Hablar por WhatsApp con un especialista' })
-    await expect(wa).toBeVisible()
-    await expect(wa).toHaveAttribute('href', /^https:\/\/wa\.me\/528180871700\?text=/)
+    await expect(fab(page)).toHaveCSS('visibility', 'hidden')
+    await page.mouse.wheel(0, 1400)
+    await expect(fab(page)).toBeVisible()
+    await expect(fab(page)).toHaveAttribute('href', /^https:\/\/wa\.me\/528180871700\?text=/)
     await page.goto('/soluciones/fibra-optica')
-    await expect(wa).toBeVisible()
     await page.locator('[aria-label="Progreso de la solicitud"]').scrollIntoViewIfNeeded()
     // Oculto también para el teclado y el lector de pantalla (visibility), no sólo transparente.
-    const fab = page.locator('a[aria-label="Hablar por WhatsApp con un especialista"]')
-    await expect(fab).toHaveCSS('opacity', '0')
-    await expect(fab).toHaveCSS('visibility', 'hidden')
-    await expect(wa).toHaveCount(0)
+    await expect(fab(page)).toHaveCSS('opacity', '0')
+    await expect(fab(page)).toHaveCSS('visibility', 'hidden')
     await page.goto('/contacto')
-    await expect(wa).toHaveCount(0)
+    await expect(fab(page)).toHaveCount(0)
+  })
+
+  test('en el teléfono no hay botón flotante', async ({ page, isMobile }) => {
+    test.skip(!isMobile, 'sólo móvil')
+    await page.goto('/nosotros')
+    await page.mouse.wheel(0, 1400)
+    await expect(fab(page)).toBeHidden()
   })
 })
 
@@ -318,11 +498,13 @@ test.describe('WhatsApp flotante', () => {
 test.describe('HTML de cada página (sitio publicado)', () => {
   test.skip(!process.env.BASE_URL, 'sólo contra el build publicado (BASE_URL)')
   test('título, descripción e imagen para compartir sin JavaScript', async ({ request }) => {
-    for (const [path, { title, description }] of SEO_ROUTES) {
+    for (const { path, seo: { title, description }, noindex, service } of ES_PAGES) {
       const html = await (await request.get(path)).text()
       const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
       expect(html, path).toContain(`<title>${esc(fullTitle(title))}</title>`)
       expect(html, path).toContain(`<meta name="description" content="${esc(description)}"`)
+      expect(html, path).toContain('<html lang="es-MX"')
+      if (noindex) expect(html, path).toContain('<meta name="robots" content="noindex"')
       const og = html.match(/<meta property="og:image" content="([^"]+)"/)?.[1]
       expect(og, `${path} og:image`).toMatch(/^https:\/\//)
       if (path === '/') expect((await request.get(og!)).status(), 'og:image responde').toBe(200)
@@ -331,15 +513,19 @@ test.describe('HTML de cada página (sitio publicado)', () => {
       const ld = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)![1])
       const types = ld['@graph'].map((n: { '@type': string }) => n['@type'])
       expect(types, path).toEqual(expect.arrayContaining(['LocalBusiness', 'WebSite']))
-      if (path.startsWith('/soluciones/')) expect(types, path).toContain('Service')
+      if (service) expect(types, path).toContain('Service')
       if (path !== '/') expect(types, path).toContain('BreadcrumbList')
     }
+    const en = await (await request.get('/en/soluciones/fibra-optica')).text()
+    expect(en).toContain('<html lang="en"')
+    expect(en).toContain('<meta name="robots" content="noindex"')
   })
 
-  test('sitemap, robots, íconos y redirección del slug anterior', async ({ request }) => {
+  test('sitemap, robots, íconos y redirecciones', async ({ request }) => {
     const sitemap = await (await request.get('/sitemap.xml')).text()
-    expect(sitemap.match(/<loc>/g)).toHaveLength(SEO_ROUTES.length)
+    expect(sitemap.match(/<loc>/g)).toHaveLength(ES_PAGES.filter((p) => !p.noindex).length)
     expect(sitemap).toContain('/soluciones/redes-empresariales</loc>')
+    expect(sitemap).not.toContain('/en/')
     const robots = await (await request.get('/robots.txt')).text()
     expect(robots).toContain('Disallow: /api/')
     expect(robots).toMatch(/Sitemap: https:\/\/\S+\/sitemap\.xml/)
@@ -348,9 +534,11 @@ test.describe('HTML de cada página (sitio publicado)', () => {
       expect(res.status(), icon).toBe(200)
       expect(res.headers()['cache-control'], icon).toContain('max-age=86400')
     }
-    const old = await request.get('/soluciones/switching-routing', { maxRedirects: 0 })
-    expect(old.status()).toBe(308)
-    expect(old.headers().location).toMatch(/\/soluciones\/redes-empresariales$/)
+    for (const [from, to] of [['/soluciones/switching-routing', /\/soluciones\/redes-empresariales$/], ['/es/contacto', /\/contacto$/], ['/zh-cn', /\/zh-CN$/]] as const) {
+      const old = await request.get(from, { maxRedirects: 0 })
+      expect(old.status(), from).toBe(308)
+      expect(old.headers().location, from).toMatch(to)
+    }
   })
 })
 
@@ -370,6 +558,7 @@ test.describe('recepción de cotizaciones', () => {
     await form.getByRole('button', { name: 'Continuar' }).click()
     await form.getByRole('textbox', { name: 'Nombre' }).fill('Ana López Muñoz')
     await form.getByRole('textbox', { name: 'Empresa' }).fill('Empresa de Prueba')
+    await form.getByRole('textbox', { name: /^Cargo/ }).fill('Jefa de TI')
     await form.getByRole('textbox', { name: 'Correo corporativo' }).fill('ana@empresa.mx')
     await form.getByRole('textbox', { name: 'WhatsApp' }).fill('81 1234 5678')
     await form.getByRole('button', { name: 'Revisar solicitud' }).click()
@@ -387,9 +576,10 @@ test.describe('recepción de cotizaciones', () => {
     await expect(form.getByText('Enviamos un acuse de recibo a ana@empresa.mx.')).toBeVisible()
 
     const ventas = readFileSync(`.cotizaciones-prueba/${folio}-ventas.txt`, 'utf8')
-    for (const part of ['Para: ffacundo@interfaz.com.mx, ventas@interfaz.com.mx', 'Responder a: ana@empresa.mx', 'Asunto: Nueva solicitud de cotización | Interfaz Redes | Fibra óptica', 'Adjuntos: plano nave.pdf', 'Nombre: Ana López Muñoz', 'Ubicación: Planta industrial · Apodaca, N.L.', 'Incluye 8 cámaras en andenes.']) {
+    for (const part of ['Para: ffacundo@interfaz.com.mx, ventas@interfaz.com.mx', 'Responder a: ana@empresa.mx', 'Asunto: Nueva solicitud de cotización | Interfaz Redes | Fibra óptica', 'Adjuntos: plano nave.pdf', 'Nombre: Ana López Muñoz', 'Cargo: Jefa de TI', 'Ubicación: Planta industrial · Apodaca, N.L.', 'Incluye 8 cámaras en andenes.']) {
       expect(ventas).toContain(part)
     }
+    expect(ventas).not.toContain('Idioma del cliente')
     expect(readFileSync(`.cotizaciones-prueba/${folio}-ventas.html`, 'utf8')).toContain('NUEVA SOLICITUD DE COTIZACIÓN')
     expect(readFileSync(`.cotizaciones-prueba/${folio}-acuse.txt`, 'utf8')).toContain(`Folio: ${folio}`)
     expect(ventas).toContain('los envió una persona externa')
@@ -398,27 +588,91 @@ test.describe('recepción de cotizaciones', () => {
     expect(acuse).toContain('Hola, Ana:')
     expect(acuse).toContain('Tipo de inmueble: Planta industrial')
     expect(acuse).not.toContain('Apodaca')
+    expect(acuse).not.toContain('Jefa de TI')
     const aviso = readFileSync(`.cotizaciones-prueba/${folio}-whatsapp.txt`, 'utf8')
     expect(aviso).toContain('*NUEVA COTIZACIÓN — INTERFAZ REDES*')
     expect(aviso).toContain(`Folio: ${folio}`)
     expect(aviso).toContain('{{9}} Enlace de fibra entre dos naves a 180 m. · Incluye 8 cámaras en andenes.')
   })
 
+  test('en inglés: la confirmación y el acuse salen en inglés y ventas lo recibe en español', async ({ page }) => {
+    test.skip(!!process.env.BASE_URL, 'sólo en local')
+    await page.goto('/en/contacto')
+    const form = page.locator('main')
+    await form.getByText('Fiber optics', { exact: true }).click()
+    await form.getByRole('button', { name: 'Continue' }).click()
+    await form.getByRole('button', { name: 'Industrial plant' }).click()
+    await form.getByRole('textbox', { name: 'City or general location' }).fill('Apodaca, N.L.')
+    await form.getByRole('textbox', { name: 'Describe your need' }).fill('Fiber link between two plant buildings, 180 m.')
+    await form.getByRole('button', { name: 'Continue' }).click()
+    await form.getByRole('textbox', { name: 'Name' }).fill('John Smith')
+    await form.getByRole('textbox', { name: 'Company' }).fill('Test Company')
+    await form.getByRole('textbox', { name: 'Business email' }).fill('john@company.com')
+    await form.getByRole('textbox', { name: 'WhatsApp' }).fill('+1 512 555 0100')
+    await form.getByRole('button', { name: 'Review request' }).click()
+    await page.waitForTimeout(3000)
+    await form.getByRole('button', { name: 'Send request' }).click()
+    await expect(form.getByRole('heading', { name: 'Request received' })).toBeVisible()
+    const folio = (await form.getByText(/^Reference COT-/).textContent())!.replace('Reference ', '').trim()
+    const acuse = readFileSync(`.cotizaciones-prueba/${folio}-acuse.txt`, 'utf8')
+    expect(acuse).toContain('Hello John,')
+    expect(acuse).toContain('Requested service: Fiber optics')
+    expect(acuse).toContain('Facility type: Industrial plant')
+    const ventas = readFileSync(`.cotizaciones-prueba/${folio}-ventas.txt`, 'utf8')
+    expect(ventas).toContain('Idioma del cliente: Inglés')
+    expect(ventas).toContain('Servicio solicitado: Fibra óptica')
+    expect(ventas).toContain('Ubicación: Planta industrial · Apodaca, N.L.')
+  })
+
+  test('el resumen del explorador llega a ventas en español', async ({ page }) => {
+    test.skip(!!process.env.BASE_URL, 'sólo en local')
+    await page.goto('/ko/contacto?escenario=fibra&inmueble=planta&ubicacion=mty&tamano=s&etapa=obra')
+    const form = page.locator('main')
+    await expect(form.locator('input[type=checkbox]:checked')).toHaveCount(1)
+    await form.getByRole('button', { name: '다음' }).click()
+    await expect(form.getByText('솔루션 탐색기 요약')).toBeVisible()
+    await form.getByRole('textbox', { name: '도시 또는 대략적인 위치' }).fill('Monterrey, N.L.')
+    await form.getByRole('textbox', { name: '필요한 내용 설명' }).fill('Fiber backbone for a new plant building.')
+    await form.getByRole('button', { name: '다음' }).click()
+    await form.getByRole('textbox', { name: '이름' }).fill('Kim Minsu')
+    await form.getByRole('textbox', { name: '회사명' }).fill('Test Korea')
+    await form.getByRole('textbox', { name: '회사 이메일' }).fill('kim@test.kr')
+    await form.getByRole('textbox', { name: 'WhatsApp' }).fill('+52 81 1234 5678')
+    await form.getByRole('button', { name: '요청 내용 확인' }).click()
+    await page.waitForTimeout(3000)
+    await form.getByRole('button', { name: '요청 보내기' }).click()
+    await expect(form.getByRole('heading', { name: '요청이 접수되었습니다' })).toBeVisible()
+    const folio = (await form.getByText(/^접수 번호 COT-/).first().textContent())!.replace('접수 번호 ', '').trim()
+    const ventas = readFileSync(`.cotizaciones-prueba/${folio}-ventas.txt`, 'utf8')
+    expect(ventas).toContain('Idioma del cliente: Coreano')
+    expect(ventas).toContain('Referencia: Explorador: Instalación de fibra óptica')
+    expect(ventas).toContain('Explorador de soluciones:\nEscenario: Instalación de fibra óptica')
+    expect(ventas).toContain('Etapa: Obra en curso')
+    expect(readFileSync(`.cotizaciones-prueba/${folio}-acuse.txt`, 'utf8')).toContain('견적 요청을 접수했습니다')
+  })
+
   test('el servidor valida y rechaza envíos no permitidos', async ({ request, baseURL }) => {
     test.skip(!!process.env.BASE_URL, 'sólo en local')
     const ok = { types: 'fibra', location: 'Apodaca', description: 'Enlace de fibra entre dos naves.', name: 'Ana López', company: 'Empresa', email: 'ana@empresa.mx', phone: '8112345678', elapsed: '9000' }
-    const post = (multipart: Record<string, string | { name: string; mimeType: string; buffer: Buffer }>, origin: string | null = baseURL!) =>
-      request.post('/api/cotizacion', { multipart, headers: origin ? { Origin: origin } : {} })
+    const post = (multipart: Record<string, string | { name: string; mimeType: string; buffer: Buffer }>, origin: string | null = baseURL!, lang = '') =>
+      request.post(`/api/cotizacion${lang ? `?lang=${lang}` : ''}`, { multipart, headers: origin ? { Origin: origin } : {} })
 
     expect((await post(ok, null)).status(), 'sin origen').toBe(403)
     expect((await post(ok, 'https://otro-sitio.com')).status(), 'otro origen').toBe(403)
     const invalid = await post({ ...ok, email: 'ana@', phone: '81' })
     expect(invalid.status()).toBe(400)
     expect(Object.keys((await invalid.json()).errores)).toEqual(['email', 'phone'])
+    // Los mensajes salen en el idioma de la solicitud.
+    const invalidEn = await (await post({ ...ok, email: 'ana@' }, baseURL!, 'en')).json()
+    expect(invalidEn.mensaje).toBe('Please check the request details.')
+    expect(invalidEn.errores.email).toBe('Check the email format, for example name@company.com.')
     expect((await (await post({ ...ok, hp_ref: 'https://spam.example' })).json()).codigo, 'campo trampa').toBe('rechazada')
     expect((await (await post({ ...ok, elapsed: '500' })).json()).codigo, 'demasiado rápido').toBe('rechazada')
     const fake = await post({ ...ok, files: { name: 'plano.pdf', mimeType: 'application/pdf', buffer: Buffer.from('no es un pdf') } })
     expect((await fake.json()).codigo, 'archivo falso').toBe('archivos')
+    const longRole = await post({ ...ok, role: 'R'.repeat(200) })
+    expect(longRole.status()).toBe(413)
+    expect(Object.keys((await longRole.json()).errores)).toEqual(['role'])
   })
 
   test('sin recepción automática el cotizador sigue con WhatsApp y correo', async ({ page }) => {
@@ -430,7 +684,7 @@ test.describe('recepción de cotizaciones', () => {
   })
 
   test('si el servidor falla no muestra éxito', async ({ page }) => {
-    await page.route('**/api/cotizacion', (r) =>
+    await page.route('**/api/cotizacion*', (r) =>
       r.request().method() === 'GET'
         ? r.fulfill({ json: { recepcion: true, whatsapp: false } })
         : r.fulfill({ status: 502, json: { ok: false, codigo: 'entrega', mensaje: 'No pudimos entregar su solicitud al equipo comercial.' } }),
@@ -438,9 +692,21 @@ test.describe('recepción de cotizaciones', () => {
     const form = await fillQuote(page)
     await form.getByRole('button', { name: 'Enviar solicitud' }).click()
     await expect(form.getByRole('alert')).toContainText('No se pudo enviar la solicitud.')
+    await expect(form.getByText('No se envió. Sus datos siguen aquí.')).toBeVisible()
     await expect(form.getByRole('heading', { name: 'Solicitud recibida' })).toHaveCount(0)
     await expect(form.getByRole('button', { name: 'Intentar de nuevo' })).toBeVisible()
     await expect(form.getByRole('link', { name: 'Enviar por WhatsApp' })).toBeVisible()
+  })
+
+  test('sin conexión no intenta enviar y conserva los datos', async ({ page, context }) => {
+    await page.route('**/api/cotizacion*', (r) => r.fulfill({ json: { recepcion: true, whatsapp: false } }))
+    const form = await fillQuote(page)
+    await context.setOffline(true)
+    await form.getByRole('button', { name: 'Enviar solicitud' }).click()
+    await expect(form.getByRole('alert')).toContainText('Su dispositivo no tiene conexión a internet.')
+    await context.setOffline(false)
+    await form.getByRole('button', { name: 'Editar contacto' }).click()
+    await expect(form.getByRole('textbox', { name: 'Correo corporativo' })).toHaveValue('ana@empresa.mx')
   })
 })
 
@@ -554,7 +820,7 @@ test.describe('correcciones P2 (recepción)', () => {
     return form
   }
   const mockPost = (page: Page, reply: (route: import('@playwright/test').Route) => Promise<void>) =>
-    page.route('**/api/cotizacion', (r) => (r.request().method() === 'GET' ? r.fulfill({ json: { recepcion: true, whatsapp: true } }) : reply(r)))
+    page.route('**/api/cotizacion*', (r) => (r.request().method() === 'GET' ? r.fulfill({ json: { recepcion: true, whatsapp: true } }) : reply(r)))
 
   test('si sólo llegó el WhatsApp, la confirmación lo dice y ofrece mandar los archivos', async ({ page }) => {
     await mockPost(page, (r) => r.fulfill({ json: { ok: true, folio: 'COT-261017-ABCDEF', fecha: '17 de octubre de 2026', estados: { correo: 'error', whatsapp: 'enviado', acuse: 'omitido' } } }))

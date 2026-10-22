@@ -15,7 +15,9 @@ function useSwitchLocale() {
   const { pathname, search, hash } = useLocation()
   const navigate = useNavigate()
   const { path } = splitLocale(pathname)
-  const hrefFor = (l: Locale) => localize(path, l) + search + hash
+  // La consulta y el ancla se agregan al terminar de hidratar: el HTML prerenderizado no las conoce.
+  const hydrated = useHydrated()
+  const hrefFor = (l: Locale) => localize(path, l) + (hydrated ? search + hash : '')
   const go = (l: Locale, e?: MouseEvent) => {
     if (e && (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0)) return // abrir en otra pestaña: lo hace el navegador
     e?.preventDefault()

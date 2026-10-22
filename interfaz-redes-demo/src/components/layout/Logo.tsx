@@ -28,9 +28,10 @@ export function LogoLockup({ compact = false }: { compact?: boolean }) {
   return (
     <span className="flex items-center gap-3.5">
       <Logo className={cn('origin-left transition-[height] duration-300 ease-out', compact && '!h-[52px] md:!h-[60px]')} />
-      {/* Entre 520 y 1023 px y desde 1280 px hay espacio para el nombre; en teléfonos lo ocupa el botón «Cotizar». */}
-      <span aria-hidden className="hidden h-9 w-px bg-line min-[520px]:block lg:hidden xl:block" />
-      <span aria-hidden className="hidden flex-col leading-[1.15] min-[520px]:flex lg:hidden xl:flex">
+      {/* Entre 520 y 1023 px y desde 1440 px hay espacio para el nombre; en teléfonos lo ocupa el botón «Cotizar» y
+          entre 1024 y 1439 px, el menú completo con el selector de idioma. */}
+      <span aria-hidden className="hidden h-9 w-px bg-line min-[520px]:block lg:hidden min-[1440px]:block" />
+      <span aria-hidden className="hidden flex-col leading-[1.15] min-[520px]:flex lg:hidden min-[1440px]:flex">
         <span className="font-display text-[1.02rem] font-semibold tracking-[-0.01em] text-ink">Interfaz Redes</span>
         {/* El espacio no se ve (flex), pero hace que el texto se lea "Interfaz Redes y Telecomunicaciones". */}
         {' '}
