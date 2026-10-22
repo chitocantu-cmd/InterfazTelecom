@@ -1,7 +1,8 @@
 // Recepción de cotizaciones: valida, asigna folio, avisa a ventas por correo y WhatsApp,
 // manda acuse al cliente y registra el estado de cada canal en los logs de Vercel.
 import { isQuoteType } from '../../src/data/quote-types.js'
-import { FILES, MAX_LENGTH, SITES, fileExtension, quoteNotice, singleLine, validateQuote, type QuoteRequest } from '../../src/lib/cotizacion.js'
+import { isLocale, type Locale } from '../../src/i18n/config.js'
+import { FILES, MAX_LENGTH, SITES, fileExtension, quoteNotice, singleLine, validateQuote, validationText, type QuoteRequest } from '../../src/lib/cotizacion.js'
 import { emailReady, getConfig, receptionReady, whatsappReady, type Config } from './config.js'
 import { ackEmail, salesEmail, sendEmail } from './correo.js'
 import type { Delivery, Quote, QuoteFile } from './tipos.js'
@@ -14,6 +15,74 @@ const json = (status: number, body: unknown, headers: Record<string, string> = {
 
 const reject = (status: number, codigo: string, mensaje: string, extra: Record<string, unknown> = {}, headers: Record<string, string> = {}) =>
   json(status, { ok: false, codigo, mensaje, ...extra }, headers)
+
+/** Mensajes al cliente en su idioma (traducciones pendientes de revisión lingüística). */
+const MSG: Record<Locale, Record<'noConfig' | 'origin' | 'format' | 'spam' | 'invalid' | 'filesMax' | 'filesSize' | 'fileType' | 'limit' | 'delivery' | 'server', string>> = {
+  es: {
+    noConfig: 'La recepción automática no está activa. Envíe su solicitud por WhatsApp o correo.',
+    origin: 'Solicitud no permitida.',
+    format: 'No pudimos leer la solicitud.',
+    spam: 'No pudimos procesar la solicitud. Inténtelo de nuevo o envíela por WhatsApp.',
+    invalid: 'Revise los datos de la solicitud.',
+    filesMax: `Adjunte como máximo ${FILES.max} archivos.`,
+    filesSize: `Los archivos superan ${FILES.totalBytes / 1048576} MB en total.`,
+    fileType: 'El archivo «{name}» no es de un tipo permitido o está dañado.',
+    limit: 'Recibimos varias solicitudes desde su conexión. Espere unos minutos o envíela por WhatsApp.',
+    delivery: 'No pudimos entregar su solicitud al equipo comercial. Inténtelo de nuevo o envíela por WhatsApp o correo.',
+    server: 'Ocurrió un error al procesar la solicitud. Inténtelo de nuevo o envíela por WhatsApp o correo.',
+  },
+  en: {
+    noConfig: 'Automatic reception is not active. Please send your request by WhatsApp or email.',
+    origin: 'Request not allowed.',
+    format: 'We could not read the request.',
+    spam: 'We could not process the request. Please try again or send it by WhatsApp.',
+    invalid: 'Please check the request details.',
+    filesMax: `Attach ${FILES.max} files at most.`,
+    filesSize: `The files exceed ${FILES.totalBytes / 1048576} MB in total.`,
+    fileType: 'The file “{name}” is not an allowed type or is damaged.',
+    limit: 'We received several requests from your connection. Please wait a few minutes or send it by WhatsApp.',
+    delivery: 'We could not deliver your request to the sales team. Please try again or send it by WhatsApp or email.',
+    server: 'An error occurred while processing the request. Please try again or send it by WhatsApp or email.',
+  },
+  ko: {
+    noConfig: '자동 접수가 활성화되어 있지 않습니다. WhatsApp 또는 이메일로 요청을 보내 주세요.',
+    origin: '허용되지 않은 요청입니다.',
+    format: '요청을 읽을 수 없습니다.',
+    spam: '요청을 처리할 수 없습니다. 다시 시도하시거나 WhatsApp으로 보내 주세요.',
+    invalid: '요청 내용을 확인해 주세요.',
+    filesMax: `파일은 최대 ${FILES.max}개까지 첨부할 수 있습니다.`,
+    filesSize: `파일 합계가 ${FILES.totalBytes / 1048576}MB를 초과합니다.`,
+    fileType: '“{name}” 파일은 허용되지 않는 형식이거나 손상되었습니다.',
+    limit: '같은 연결에서 여러 요청이 접수되었습니다. 몇 분 후 다시 시도하시거나 WhatsApp으로 보내 주세요.',
+    delivery: '영업팀에 요청을 전달하지 못했습니다. 다시 시도하시거나 WhatsApp 또는 이메일로 보내 주세요.',
+    server: '요청을 처리하는 중 오류가 발생했습니다. 다시 시도하시거나 WhatsApp 또는 이메일로 보내 주세요.',
+  },
+  'zh-CN': {
+    noConfig: '自动接收功能尚未启用。请通过 WhatsApp 或电子邮件发送您的需求。',
+    origin: '不允许的请求。',
+    format: '无法读取该请求。',
+    spam: '无法处理该请求。请重试，或通过 WhatsApp 发送。',
+    invalid: '请检查填写的信息。',
+    filesMax: `最多可附加 ${FILES.max} 个文件。`,
+    filesSize: `文件总大小超过 ${FILES.totalBytes / 1048576} MB。`,
+    fileType: '文件“{name}”类型不允许或已损坏。',
+    limit: '我们从您的网络连接收到了多次请求。请稍等几分钟，或通过 WhatsApp 发送。',
+    delivery: '未能将您的需求送达销售团队。请重试，或通过 WhatsApp 或电子邮件发送。',
+    server: '处理请求时出错。请重试，或通过 WhatsApp 或电子邮件发送。',
+  },
+}
+
+const LOCALE_DATE: Record<Locale, string> = { es: 'es-MX', en: 'en-US', ko: 'ko-KR', 'zh-CN': 'zh-CN' }
+
+/** Idioma de la solicitud (?lang= en la URL del envío; español si no viene o no es válido). */
+function langOf(request: Request): Locale {
+  try {
+    const l = new URL(request.url).searchParams.get('lang')
+    return isLocale(l) ? l : 'es'
+  } catch {
+    return 'es'
+  }
+}
 
 const log = (data: Record<string, unknown>) => console.info(JSON.stringify({ evento: 'cotizacion', ...data }))
 const logError = (data: Record<string, unknown>) => console.error(JSON.stringify({ evento: 'cotizacion_error', ...data }))
@@ -197,21 +266,23 @@ async function writeTestOutput(q: Quote, cfg: Config): Promise<Outcome> {
 
 // --- POST -------------------------------------------------------------------------------------
 
-const TEXT_FIELDS = ['site', 'location', 'description', 'name', 'company', 'email', 'phone', 'context'] as const
+const TEXT_FIELDS = ['site', 'location', 'description', 'name', 'company', 'role', 'email', 'phone', 'context', 'summary'] as const
 /** Campos de una sola línea: un salto de línea no debe poder inyectar renglones en el correo de texto. */
-const SINGLE_LINE = new Set(['site', 'location', 'name', 'company', 'email', 'phone', 'context'])
+const SINGLE_LINE = new Set(['site', 'location', 'name', 'company', 'role', 'email', 'phone', 'context'])
 
 export async function handlePost(request: Request): Promise<Response> {
   const cfg = getConfig()
-  if (!receptionReady(cfg)) return reject(503, 'no_configurado', 'La recepción automática no está activa. Envíe su solicitud por WhatsApp o correo.')
-  if (!allowedOrigin(request.headers.get('origin'), cfg)) return reject(403, 'origen', 'Solicitud no permitida.')
-  if (!(request.headers.get('content-type') ?? '').toLowerCase().startsWith('multipart/form-data')) return reject(400, 'formato', 'No pudimos leer la solicitud.')
+  const lang = langOf(request)
+  const m = MSG[lang]
+  if (!receptionReady(cfg)) return reject(503, 'no_configurado', m.noConfig)
+  if (!allowedOrigin(request.headers.get('origin'), cfg)) return reject(403, 'origen', m.origin)
+  if (!(request.headers.get('content-type') ?? '').toLowerCase().startsWith('multipart/form-data')) return reject(400, 'formato', m.format)
 
   let form: FormData
   try {
     form = await request.formData()
   } catch {
-    return reject(400, 'formato', 'No pudimos leer la solicitud.')
+    return reject(400, 'formato', m.format)
   }
   // FormData convierte cada salto de línea en CRLF: se normaliza para medir igual que el navegador.
   const text = (k: string) => {
@@ -235,12 +306,12 @@ export async function handlePost(request: Request): Promise<Response> {
   // Campo trampa (los bots lo llenan; las personas no lo ven) y tiempo mínimo de captura.
   if (text('hp_ref') || !(Number(text('elapsed')) >= 3000)) {
     log({ resultado: 'descartada_spam' })
-    return reject(400, 'rechazada', 'No pudimos procesar la solicitud. Inténtelo de nuevo o envíela por WhatsApp.')
+    return reject(400, 'rechazada', m.spam)
   }
 
   // Textos fuera de medida se rechazan antes de evaluar formatos.
   const tooLong = TEXT_FIELDS.find((k) => text(k).length > MAX_LENGTH[k])
-  if (tooLong) return reject(413, 'invalida', 'Revise los datos de la solicitud.', { errores: { [tooLong]: `Use como máximo ${MAX_LENGTH[tooLong]} caracteres.` } })
+  if (tooLong) return reject(413, 'invalida', m.invalid, { errores: { [tooLong]: validationText(lang).max(MAX_LENGTH[tooLong]) } })
 
   const types = [...new Set(form.getAll('types'))].filter(isQuoteType)
   const req: QuoteRequest = {
@@ -250,21 +321,24 @@ export async function handlePost(request: Request): Promise<Response> {
     description: text('description'),
     name: text('name'),
     company: text('company'),
+    role: text('role').trim() || undefined,
     email: text('email'),
     phone: text('phone'),
     context: text('context').trim() || undefined,
+    summary: text('summary').trim() || undefined,
+    lang,
   }
   const errors = validateQuote(req)
-  if (Object.keys(errors).length) return reject(400, 'invalida', 'Revise los datos de la solicitud.', { errores: errors })
+  if (Object.keys(errors).length) return reject(400, 'invalida', m.invalid, { errores: errors })
 
   const uploads = form.getAll('files').filter((f): f is File => typeof f !== 'string')
-  if (uploads.length > FILES.max) return reject(400, 'archivos', `Adjunte como máximo ${FILES.max} archivos.`)
-  if (uploads.reduce((s, f) => s + f.size, 0) > FILES.totalBytes) return reject(413, 'archivos', `Los archivos superan ${FILES.totalBytes / 1048576} MB en total.`)
+  if (uploads.length > FILES.max) return reject(400, 'archivos', m.filesMax)
+  if (uploads.reduce((s, f) => s + f.size, 0) > FILES.totalBytes) return reject(413, 'archivos', m.filesSize)
   const files: QuoteFile[] = []
   for (const f of uploads) {
     const ext = fileExtension(f.name)
     const bytes = new Uint8Array(await f.arrayBuffer())
-    if (!FILES.extensions.includes(ext) || !matchesType(ext, bytes)) return reject(400, 'archivos', `El archivo «${safeName(f.name).slice(0, 80)}» no es de un tipo permitido o está dañado.`)
+    if (!FILES.extensions.includes(ext) || !matchesType(ext, bytes)) return reject(400, 'archivos', m.fileType.replace('{name}', safeName(f.name).slice(0, 80)))
     files.push({ name: safeName(f.name), size: f.size, content: Buffer.from(bytes).toString('base64') })
   }
 
@@ -273,7 +347,7 @@ export async function handlePost(request: Request): Promise<Response> {
   const wait = retryAfter(ip, cfg.rateLimit)
   if (wait) {
     log({ resultado: 'limite' })
-    return reject(429, 'limite', 'Recibimos varias solicitudes desde su conexión. Espere unos minutos o envíela por WhatsApp.', {}, { 'Retry-After': String(wait) })
+    return reject(429, 'limite', m.limit, {}, { 'Retry-After': String(wait) })
   }
   countHit(ip)
 
@@ -282,11 +356,12 @@ export async function handlePost(request: Request): Promise<Response> {
     const quote: Quote = {
       folio: await folioFor(key, now),
       date: new Intl.DateTimeFormat('es-MX', { timeZone: 'America/Monterrey', dateStyle: 'long', timeStyle: 'short' }).format(now),
+      localDate: new Intl.DateTimeFormat(LOCALE_DATE[lang], { timeZone: 'America/Monterrey', dateStyle: 'long', timeStyle: 'short' }).format(now),
       request: req,
       files,
     }
     const out = await deliver(quote, cfg)
-    log({ folio: quote.folio, recibida: out.received, correo: out.email.status, whatsapp: out.whatsapp.status, acuse: out.ack.status, archivos: files.length, tipos: req.types })
+    log({ folio: quote.folio, recibida: out.received, correo: out.email.status, whatsapp: out.whatsapp.status, acuse: out.ack.status, archivos: files.length, tipos: req.types, idioma: lang, explorador: Boolean(req.summary) })
     for (const [canal, d] of Object.entries({ correo: out.email, whatsapp: out.whatsapp, acuse: out.ack })) {
       if (d.status === 'error' || d.status === 'parcial') {
         // Sin datos personales; con lo necesario para saber qué se perdió si sólo llegó el WhatsApp.
@@ -296,9 +371,9 @@ export async function handlePost(request: Request): Promise<Response> {
     const estados = { correo: out.email.status, whatsapp: out.whatsapp.status, acuse: out.ack.status }
     if (!out.received) {
       recent.delete(key) // permite reintentar
-      return reject(502, 'entrega', 'No pudimos entregar su solicitud al equipo comercial. Inténtelo de nuevo o envíela por WhatsApp o correo.', { estados })
+      return reject(502, 'entrega', m.delivery, { estados })
     }
-    return json(200, { ok: true, folio: quote.folio, fecha: quote.date, estados })
+    return json(200, { ok: true, folio: quote.folio, fecha: quote.localDate, estados })
   })()
   recent.set(key, { at: Date.now(), result })
   if (recent.size > 500) recent.delete(recent.keys().next().value!)
@@ -307,6 +382,6 @@ export async function handlePost(request: Request): Promise<Response> {
   } catch (e) {
     recent.delete(key)
     logError({ canal: 'servidor', clave: await shortHash(key), detalle: e instanceof Error ? e.message : String(e) })
-    return reject(500, 'servidor', 'Ocurrió un error al procesar la solicitud. Inténtelo de nuevo o envíela por WhatsApp o correo.')
+    return reject(500, 'servidor', m.server)
   }
 }

@@ -6,10 +6,30 @@ import { renderToPipeableStream } from 'react-dom/server'
 import { StaticRouter } from 'react-router-dom'
 import { Writable } from 'node:stream'
 import { Shell } from './App'
+import { pagesFor } from './data/seo'
+import { i18nFor, loadLocale, translationFor } from './i18n'
+import { LOCALE_META, LOCALES } from './i18n/config'
+import { missingContent } from './i18n/content'
 
-export { PAGES, fullTitle, MAX_DESCRIPTION, MIN_DESCRIPTION } from './data/seo'
+export { fullTitle, MAX_DESCRIPTION, MIN_DESCRIPTION } from './data/seo'
 export { structuredData, noscriptText } from './data/structured-data'
 export { HERO_IMAGE } from './components/home/Hero'
+export { alternates } from './lib/seo'
+export { LOCALES, LOCALE_META, i18nFor }
+
+/**
+ * Carga los cuatro idiomas y devuelve todas las páginas. `drafts`: incluir borradores del centro técnico.
+ * Falla si a una traducción le falta algún servicio, industria, proyecto o escenario del catálogo.
+ */
+export async function setup({ drafts = false }: { drafts?: boolean } = {}) {
+  await Promise.all(LOCALES.map((l) => loadLocale(l)))
+  for (const l of LOCALES) {
+    const tr = translationFor(l)
+    const missing = tr ? missingContent(tr) : []
+    if (missing.length) throw new Error(`Traducción ${l} incompleta: ${missing.join(', ')}`)
+  }
+  return LOCALES.flatMap((l) => pagesFor(l, i18nFor(l).t, i18nFor(l).c, { drafts }))
+}
 
 /** HTML de la ruta, con las páginas que se cargan bajo demanda ya resueltas (espera a que todo esté listo). */
 export function render(url: string): Promise<string> {

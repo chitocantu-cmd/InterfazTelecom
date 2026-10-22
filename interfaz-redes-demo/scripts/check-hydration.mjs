@@ -23,8 +23,13 @@ const server = http.createServer((req, res) => {
   vite.middlewares(req, res, async () => {
     try {
       const { render } = await vite.ssrLoadModule('/src/entry-server.tsx')
-      const body = await render(req.url.split(/[?#]/)[0])
-      const html = (await vite.transformIndexHtml(req.url, template)).replace('<div id="root"></div>', () => `<div id="root">${body}</div>`)
+      const path = req.url.split(/[?#]/)[0]
+      const { splitLocale, LOCALE_META } = await vite.ssrLoadModule('/src/i18n/config.ts')
+      // Como el prerender: la 404 se escribe en español; las demás páginas, en el idioma de su ruta.
+      const known = PAGES.some((p) => p.path === path)
+      const lang = known ? LOCALE_META[splitLocale(path).locale].htmlLang : 'es-MX'
+      const body = await render(known ? path : '/404')
+      const html = (await vite.transformIndexHtml(req.url, template)).replace('<html lang="es-MX">', `<html lang="${lang}">`).replace('<div id="root"></div>', () => `<div id="root">${body}</div>`)
       res.setHeader('content-type', 'text/html; charset=utf-8')
       res.end(html)
     } catch (e) {
@@ -36,16 +41,25 @@ const server = http.createServer((req, res) => {
 })
 await new Promise((ok) => server.listen(PORT, ok))
 
-const { PAGES } = await vite.ssrLoadModule('/src/data/seo.ts')
+// Todas las rutas en español (con borradores del centro técnico) y una muestra de cada otro idioma; ALL=1 recorre
+// también todas las rutas de los demás idiomas.
+const { setup } = await vite.ssrLoadModule('/src/entry-server.tsx')
+const PAGES = await setup({ drafts: true })
+const SAMPLE = ['/', '/soluciones/fibra-optica', '/industrias/cedis', '/explorador', '/contacto']
 const extra = (process.argv[2] ?? '').split(',').filter(Boolean)
-const routes = [...PAGES.map((p) => p.path), '/no-existe', '/industrias?sector=cedis', '/contacto?tipo=fibra', '/proyectos?categoria=CCTV', '/soluciones#fibra', ...extra]
+const routes = [
+  ...PAGES.filter((p) => p.locale === 'es' || process.env.ALL || SAMPLE.includes(p.base)).map((p) => p.path),
+  '/no-existe', '/en/no-existe', '/industrias?sector=cedis', '/contacto?tipo=fibra', '/proyectos?tipo=cctv',
+  '/soluciones#fibra', '/explorador?escenario=nueva-planta&inmueble=planta&ubicacion=mty&tamano=m&etapa=idea',
+  '/contacto?escenario=fibra&inmueble=planta&ubicacion=mty&tamano=s&etapa=obra', ...extra,
+]
 const IGNORE = ['Download the React DevTools', '[vite]', 'Reduced Motion enabled', '/api/cotizacion']
 
 const browser = await chromium.launch({ channel: process.env.PW_CHANNEL ?? 'chrome' })
 let problems = 0
 for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
   const context = await browser.newContext({ viewport, reducedMotion: process.env.REDUCE ? 'reduce' : 'no-preference' })
-  await context.route(/\/src\/(pages\/[^/?]+|components\/quote\/QuoteWizard|components\/plates\/Plate)\.tsx/, async (route) => {
+  await context.route(/\/src\/(pages\/[^/?]+|components\/quote\/QuoteWizard|components\/plates\/Plate)\.tsx|\/src\/content\/recursos\/[^/?]+\.md/, async (route) => {
     await new Promise((done) => setTimeout(done, 900))
     await route.continue()
   })

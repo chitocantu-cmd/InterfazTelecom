@@ -1,13 +1,15 @@
 import type { ReactNode } from 'react'
-import { Link } from 'react-router-dom'
 import { IMG, type ImgKey } from '../../data/media'
+import { useT } from '../../i18n'
+import { Link } from '../../i18n/Link'
 import { cn } from '../../lib/utils'
 
 export function Breadcrumbs({ items, dark }: { items: { to?: string; label: string }[]; dark?: boolean }) {
+  const t = useT()
   return (
-    <nav aria-label="Ruta de navegación">
+    <nav aria-label={t.common.breadcrumbs}>
       <ol className={cn('flex flex-wrap items-center gap-2 text-label', dark ? 'text-white/60' : 'text-muted')}>
-        <li><Link to="/" className={dark ? 'hover:text-white' : 'hover:text-ink'}>Inicio</Link></li>
+        <li><Link to="/" className={dark ? 'hover:text-white' : 'hover:text-ink'}>{t.common.home}</Link></li>
         {items.map((it, i) => (
           <li key={i} className="flex items-center gap-2">
             <span aria-hidden>/</span>
@@ -29,6 +31,7 @@ export function PageHero({ crumbs, title, lede, img, pos, children, aside }: {
   children?: ReactNode
   aside?: ReactNode
 }) {
+  const t = useT()
   return (
     <section className="bg-white">
       <div className="container pb-14 pt-10 md:pb-16 md:pt-12">
@@ -46,8 +49,8 @@ export function PageHero({ crumbs, title, lede, img, pos, children, aside }: {
       </div>
       {img && (
         <div className="relative mx-auto h-[300px] max-w-frame overflow-hidden md:h-[440px] lg:h-[520px]">
-          <img src={IMG[img].src} srcSet={IMG[img].srcSet} sizes="(min-width: 1600px) 1600px, 100vw" alt={IMG[img].alt} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: pos ?? IMG[img].pos }} {...{ fetchpriority: 'high' }} />
-          {IMG[img].ref && <p className="img-caption">Imagen de referencia</p>}
+          <img src={IMG[img].src} srcSet={IMG[img].srcSet} sizes="(min-width: 1600px) 1600px, 100vw" alt={IMG[img].alt} className="enter-reveal absolute inset-0 h-full w-full object-cover" style={{ objectPosition: pos ?? IMG[img].pos }} {...{ fetchpriority: 'high' }} />
+          {IMG[img].ref && <p className="img-caption">{t.common.referenceImage}</p>}
         </div>
       )}
     </section>

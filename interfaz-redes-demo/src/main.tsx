@@ -1,6 +1,8 @@
 import { StrictMode } from 'react'
 import { createRoot, hydrateRoot } from 'react-dom/client'
 import App from './App'
+import { loadLocale } from './i18n'
+import { LOCALE_META, splitLocale } from './i18n/config'
 import '@fontsource/archivo/latin-500.css'
 import '@fontsource/archivo/latin-600.css'
 import '@fontsource/archivo/latin-700.css'
@@ -32,5 +34,14 @@ const app = (
 )
 // En producción cada página llega prerenderizada (scripts/prerender.mjs): React toma ese HTML en lugar de
 // volver a dibujarlo. En desarrollo y en la vista previa de un solo archivo, #root llega vacío.
-if (root.hasChildNodes()) hydrateRoot(root, app)
-else createRoot(root).render(app)
+// Antes de tomarlo se descargan los textos del idioma de la página (el español ya viene en este archivo), para que
+// el primer render coincida con el HTML. Si la descarga falla, se dibuja igual (I18nProvider vuelve a pedirlos).
+// Se toma el HTML sólo si está en el idioma de la ruta: la página 404 es la misma para todos los idiomas (en
+// español), así que en /en/no-existe se dibuja de nuevo en lugar de tomarla.
+const { locale } = splitLocale(window.location.pathname)
+const start = () => {
+  if (root.hasChildNodes() && document.documentElement.lang === LOCALE_META[locale].htmlLang) return hydrateRoot(root, app)
+  root.textContent = ''
+  createRoot(root).render(app)
+}
+loadLocale(locale).then(start, start)

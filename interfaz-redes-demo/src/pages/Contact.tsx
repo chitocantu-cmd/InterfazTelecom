@@ -1,4 +1,4 @@
-import { Clock, Mail, MapPin, MessageCircle } from 'lucide-react'
+import { Clock, Globe, Mail, MapPin, MessageCircle } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { CopyValue } from '../components/layout/Footer'
 import { Logo } from '../components/layout/Logo'
@@ -6,58 +6,78 @@ import { PageHero } from '../components/layout/PageHero'
 import { QuoteWizard } from '../components/quote/QuoteWizard'
 import { COMPANY } from '../data/company'
 import { NEEDS } from '../data/content'
+import { PLACES, readExplorer, recommend } from '../data/explorer'
 import { isQuoteType } from '../data/quote-types'
-import { serviceBySlug } from '../data/solutions'
-import { SITES } from '../lib/cotizacion'
+import { serviceBySlug as baseService } from '../data/solutions'
+import { i18nFor, useI18n } from '../i18n'
+import { summaryLines } from '../lib/explorer'
 import { useHydrated, waLink } from '../lib/utils'
 import { useSeo } from '../lib/seo'
-import { SEO } from '../data/seo'
-
-const SECTOR_TO_SITE: Record<string, string> = { industria: SITES[0], corporativos: SITES[1], cedis: SITES[2], educacion: SITES[3], comercio: SITES[4] }
 
 const NO_PARAMS = new URLSearchParams()
 
 export default function Contact() {
-  useSeo(SEO.contact)
+  const i18n = useI18n()
+  const { t, c } = i18n
+  const T = t.contact
+  useSeo(t.seo.contact)
   const [urlParams] = useSearchParams()
-  // Lo que llega en la URL (?tipo=, ?servicio=…) se aplica al terminar de hidratar: el HTML prerenderizado no lo
-  // conoce. Al aplicarse cambia la `key` del cotizador, que arranca de nuevo con esos datos.
+  // Lo que llega en la URL (?tipo=, ?servicio=, ?escenario=…) se aplica al terminar de hidratar: el HTML
+  // prerenderizado no lo conoce. Al aplicarse cambia la `key` del cotizador, que arranca de nuevo con esos datos.
   const params = useHydrated() ? urlParams : NO_PARAMS
   const tipoParam = params.get('tipo')
   const tipo = isQuoteType(tipoParam) ? tipoParam : undefined
-  const service = serviceBySlug(params.get('servicio') ?? undefined)
-  const need = NEEDS.find((n) => n.id === params.get('necesidad'))
-  const site = SECTOR_TO_SITE[params.get('sector') ?? '']
+  const service = c.serviceBySlug(params.get('servicio') ?? undefined)
+  const needBase = NEEDS.find((n) => n.id === params.get('necesidad'))
+  const need = needBase && c.needs.find((n) => n.id === needBase.id)
+  const industry = c.industryById(params.get('sector') ?? undefined)
+  // Explorador de soluciones: el resumen se muestra en el idioma de la página y viaja en español.
+  const explorer = readExplorer(params)
+  const rec = recommend(explorer, { scenarios: c.explorer.scenarios, rules: c.explorer.rules })
+  const lines = rec ? summaryLines(explorer, i18n) : null
+  const summary = rec && lines ? { lines, value: summaryLines(explorer, i18nFor('es'))!.join('\n') } : undefined
+  const scenario = c.explorer.scenarios.find((s) => s.id === explorer.scenario)
+
+  const initialTypes = rec?.quoteTypes ?? (tipo ? [tipo] : service ? [service.quoteType] : need ? [need.quoteType] : undefined)
+  const initialSite = PLACES.find((p) => p.id === explorer.place)?.site ?? industry?.site
+  const context = scenario ? `${t.nav.explorer}: ${scenario.label}` : service?.name ?? need?.label ?? industry?.name
+  const contextValue = scenario
+    ? `Explorador: ${i18nFor('es').c.explorer.scenarios.find((s) => s.id === scenario.id)!.label}`
+    : service ? baseService(service.slug)?.name : need ? needBase?.label : industry ? i18nFor('es').c.industryById(industry.id)?.name : undefined
 
   const rows = [
     {
-      icon: MessageCircle, k: 'WhatsApp / teléfono',
-      v: <><CopyValue dark value={COMPANY.whatsappDisplay} label="WhatsApp" /><span className="mt-1 block text-small text-white/60">También: <a href={`tel:${COMPANY.phoneAlt.intl}`} className="hover:text-white">{COMPANY.phoneAlt.display}</a></span></>,
-      links: [{ href: waLink('Hola, quiero cotizar un proyecto con Interfaz Redes.'), label: 'Abrir WhatsApp' }, { href: `tel:${COMPANY.phoneIntl}`, label: 'Llamar' }],
+      icon: MessageCircle, k: T.phone,
+      v: <><CopyValue dark value={COMPANY.whatsappDisplay} label={T.phone} /><span className="mt-1 block text-small text-white/60">{T.also} <a href={`tel:${COMPANY.phoneAlt.intl}`} className="hover:text-white">{COMPANY.phoneAlt.display}</a></span></>,
+      links: [{ href: waLink(t.wa.quote), label: T.openWhatsapp }, { href: `tel:${COMPANY.phoneIntl}`, label: T.call }],
     },
     {
-      icon: Mail, k: 'Correo',
-      v: <><CopyValue dark value={COMPANY.email} label="correo" /><span className="mt-1 block text-small text-white/60">También: <a href={`mailto:${COMPANY.emailAlt}`} className="break-all hover:text-white">{COMPANY.emailAlt}</a></span></>,
-      links: [{ href: `mailto:${COMPANY.email}`, label: 'Escribir correo' }],
+      icon: Mail, k: T.email,
+      v: <><CopyValue dark value={COMPANY.email} label={T.email} /><span className="mt-1 block text-small text-white/60">{T.also} <a href={`mailto:${COMPANY.emailAlt}`} className="break-all hover:text-white">{COMPANY.emailAlt}</a></span></>,
+      links: [{ href: `mailto:${COMPANY.email}`, label: T.writeEmail }],
     },
-    { icon: MapPin, k: 'Oficina', v: COMPANY.address, links: [{ href: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(COMPANY.address)}`, label: 'Ver en mapa' }] },
-    { icon: Clock, k: 'Horario', v: COMPANY.hours, links: [] },
+    { icon: MapPin, k: T.office, v: COMPANY.address, links: [{ href: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(COMPANY.address)}`, label: T.map }] },
+    { icon: Clock, k: T.hours, v: t.company.hours, links: [] },
+    { icon: Globe, k: T.coverage, v: t.company.areaServed, links: [] },
   ]
 
   return (
     <>
-      <PageHero crumbs={[{ label: 'Contacto' }]} title="Cotice su proyecto" lede="Cuatro pasos cortos. Al final revisa la solicitud y la envía; también puede mandarla por WhatsApp o correo." />
+      <PageHero crumbs={[{ label: t.nav.contact }]} title={T.title} lede={T.lede} />
       <section className="bg-mist py-16 md:py-24">
         <div className="container grid gap-10 lg:grid-cols-12">
           <div className="lg:col-span-8">
             {/* Entre el título de la página y los pasos del cotizador (h3) no se salta un nivel. */}
-            <h2 className="sr-only">Solicitud de cotización</h2>
+            <h2 className="sr-only">{T.formHeading}</h2>
             <QuoteWizard
-              key={`${tipo}-${service?.slug}-${need?.id}-${site}`}
-              initialType={tipo ?? service?.quoteType ?? need?.quoteType}
-              context={service?.name ?? need?.label}
+              key={`${tipo}-${service?.slug}-${need?.id}-${industry?.id}-${params.toString()}`}
+              initialTypes={initialTypes}
+              context={context}
+              contextValue={contextValue}
               initialDescription={need ? `${need.label}. ` : undefined}
-              initialSite={site}
+              initialSite={initialSite}
+              summary={summary}
+              origin={summary ? 'explorador' : 'contacto'}
             />
           </div>
           <aside className="lg:col-span-4">
@@ -65,8 +85,8 @@ export default function Contact() {
               <div className="flex items-center gap-4 border-b border-white/10 p-6">
                 <Logo variant="tile" size="sm" className="!h-14" />
                 <div>
-                <p className="text-small text-white/60">Contacto directo</p>
-                <p className="mt-1 font-display text-[1.1rem] font-medium leading-snug">{COMPANY.name}</p>
+                  <p className="text-small text-white/60">{T.direct}</p>
+                  <p className="mt-1 font-display text-[1.1rem] font-medium leading-snug">{COMPANY.name}</p>
                 </div>
               </div>
               <ul className="divide-y divide-white/10 text-[0.94rem]">
@@ -90,9 +110,15 @@ export default function Contact() {
               </ul>
             </div>
             <div className="mt-6 bg-white p-6 text-small text-body">
-              <p className="font-medium text-ink">Qué sigue después de enviar</p>
-              <p className="mt-1.5">Un especialista revisa la solicitud, confirma el alcance y agenda la visita técnica de levantamiento.</p>
+              <p className="font-medium text-ink">{T.nextTitle}</p>
+              <p className="mt-1.5">{T.nextText}</p>
             </div>
+            {T.languagesText && (
+              <div className="mt-6 bg-white p-6 text-small text-body">
+                <p className="font-medium text-ink">{T.languagesTitle}</p>
+                <p className="mt-1.5">{T.languagesText}</p>
+              </div>
+            )}
           </aside>
         </div>
       </section>

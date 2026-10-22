@@ -14,7 +14,13 @@
     { "source": "/inicio", "destination": "/", "permanent": true },
     { "source": "/cotizar", "destination": "/contacto", "permanent": true },
     { "source": "/privacidad", "destination": "/aviso-de-privacidad", "permanent": true },
-    { "source": "/soluciones/switching-routing", "destination": "/soluciones/redes-empresariales", "permanent": true }
+    { "source": "/soluciones/switching-routing", "destination": "/soluciones/redes-empresariales", "permanent": true },
+    { "source": "/es", "destination": "/", "permanent": true },
+    { "source": "/es/:path*", "destination": "/:path*", "permanent": true },
+    { "source": "/zh", "destination": "/zh-CN", "permanent": true },
+    { "source": "/zh/:path*", "destination": "/zh-CN/:path*", "permanent": true },
+    { "source": "/zh-cn", "destination": "/zh-CN", "permanent": true },
+    { "source": "/zh-cn/:path*", "destination": "/zh-CN/:path*", "permanent": true }
   ],
   "headers": [
     {

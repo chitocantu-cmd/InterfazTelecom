@@ -1,29 +1,32 @@
-import { Minus, Plus } from 'lucide-react'
-import { lazy, Suspense } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { ArrowRight, Minus, Plus } from 'lucide-react'
+import { lazy, Suspense, useEffect } from 'react'
+import { useParams } from 'react-router-dom'
 import { Breadcrumbs } from '../components/layout/PageHero'
 import { Media } from '../components/plates'
-import { Button, Reveal } from '../components/ui'
-import { BRANDS_NETWORK, BRANDS_SECURITY } from '../data/company'
-import { PROCESS } from '../data/content'
+import { Button, Reveal, Tag } from '../components/ui'
 import { IMG } from '../data/media'
-import { categoryById, serviceBySlug } from '../data/solutions'
-import { cn, lowerFirst, scrollToId, waLink } from '../lib/utils'
+import { serviceSeo } from '../data/seo'
+import { serviceBySlug as baseService } from '../data/solutions'
+import { useI18n } from '../i18n'
+import { Link, Navigate } from '../i18n/Link'
+import { track } from '../lib/analytics'
+import { cn, scrollToId, waLink } from '../lib/utils'
 import { useSeo } from '../lib/seo'
-import { serviceSeo, SEO } from '../data/seo'
 
 // El cotizador está al final de la página: se descarga aparte para que el resto se muestre e hidrate antes.
 const QuoteWizard = lazy(() => import('../components/quote/QuoteWizard').then((m) => ({ default: m.QuoteWizard })))
 
 export default function ServiceDetail() {
   const { slug } = useParams()
-  const s = serviceBySlug(slug)
-  useSeo(s ? serviceSeo(s) : SEO.solutions)
+  const { t, c } = useI18n()
+  const s = c.serviceBySlug(slug)
+  useSeo(s ? serviceSeo(s, t) : t.seo.solutions)
+  useEffect(() => { if (s) track('service_view', { servicio: s.slug }) }, [s])
   if (!s) return <><Navigate to="/soluciones" replace /><div className="min-h-[100svh]" /></>
-  const cat = categoryById(s.category)
+  const T = t.service
+  const cat = c.categoryById(s.category)
   const sameName = cat.name === s.name
-  const steps = s.process ?? PROCESS.slice(0, 4).map((p) => ({ title: p.title, text: p.short }))
-  const brands = s.category === 'seguridad' ? BRANDS_SECURITY : ['infraestructura', 'fibra', 'conectividad'].includes(s.category) ? BRANDS_NETWORK : null
+  const industries = s.industries.map((id) => c.industryById(id)).filter((x): x is NonNullable<typeof x> => Boolean(x))
 
   return (
     <>
@@ -32,14 +35,14 @@ export default function ServiceDetail() {
         <div className="container relative order-1">
           <div className="flex flex-col pb-14 pt-10 lg:min-h-[620px] lg:w-[46%] lg:pb-20">
             {/* Si el servicio se llama igual que su categoría (Fibra óptica), no se repite el nombre. */}
-            <Breadcrumbs items={[{ to: '/soluciones', label: 'Soluciones' }, ...(sameName ? [] : [{ to: `/soluciones#${cat.id}`, label: cat.name }]), { label: s.name }]} />
+            <Breadcrumbs items={[{ to: '/soluciones', label: t.nav.solutions }, ...(sameName ? [] : [{ to: `/soluciones#${cat.id}`, label: cat.name }]), { label: s.name }]} />
             <div className="mt-14 lg:my-auto lg:pt-10">
               {!sameName && <p className="mb-3 text-small font-medium text-corp">{cat.name}</p>}
               <h1 className="text-h1">{s.name}</h1>
               <p className="mt-6 max-w-measure text-lead text-body">{s.intro}</p>
               <div className="mt-9 flex flex-wrap gap-3">
-                <Button onClick={() => scrollToId('cotizar')}>Cotizar este servicio</Button>
-                <Button href={waLink(`Hola, me interesa ${s.name} con Interfaz Redes. ¿Podemos agendar un levantamiento?`)} variant="secondary">Escribir por WhatsApp</Button>
+                <Button onClick={() => scrollToId('cotizar')} track={`servicio-${s.slug}`}>{T.quoteThis}</Button>
+                <Button href={waLink(t.wa.service(s.name))} variant="secondary">{t.common.writeWhatsapp}</Button>
               </div>
             </div>
             <dl className="mt-12 grid grid-cols-3 gap-6 border-t border-line pt-6">
@@ -53,11 +56,11 @@ export default function ServiceDetail() {
           </div>
         </div>
         {/* Después del texto en el HTML (el lector de pantalla empieza por el título); en pantalla, a la derecha. */}
-        <div className="relative order-2 aspect-[4/3] w-full sm:aspect-[16/9] lg:absolute lg:inset-y-0 lg:right-0 lg:aspect-auto lg:w-[48%]">
+        <div className="relative order-2 aspect-[4/3] w-full overflow-hidden sm:aspect-[16/9] lg:absolute lg:inset-y-0 lg:right-0 lg:aspect-auto lg:w-[48%]">
           {s.img ? (
             <>
-              <img src={IMG[s.img].src} srcSet={IMG[s.img].srcSet} sizes="(min-width: 1024px) 48vw, 100vw" alt={IMG[s.img].alt} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: IMG[s.img].pos }} {...{ fetchpriority: 'high' }} />
-              {IMG[s.img].ref && <p className="img-caption">Imagen de referencia</p>}
+              <img src={IMG[s.img].src} srcSet={IMG[s.img].srcSet} sizes="(min-width: 1024px) 48vw, 100vw" alt={IMG[s.img].alt} className="enter-reveal absolute inset-0 h-full w-full object-cover" style={{ objectPosition: IMG[s.img].pos }} {...{ fetchpriority: 'high' }} />
+              {IMG[s.img].ref && <p className="img-caption">{t.common.referenceImage}</p>}
             </>
           ) : (
             <div className="absolute inset-0"><Media plate={s.plate} ratio="h-full w-full" /></div>
@@ -65,28 +68,66 @@ export default function ServiceDetail() {
         </div>
       </section>
 
+      {/* qué resuelve */}
+      <section className="border-t border-line py-24 md:py-28" aria-labelledby="resuelve">
+        <div className="container grid gap-12 lg:grid-cols-12">
+          <div className="lg:col-span-4">
+            <Tag>{s.code}</Tag>
+            <h2 id="resuelve" className="mt-2 text-h2">{T.problems}</h2>
+          </div>
+          <ol className="grid gap-x-10 sm:grid-cols-2 lg:col-span-8">
+            {s.problems.map((p, i) => (
+              <li key={p} className="flex gap-5 border-t border-line py-6">
+                <span className="font-display text-[1.05rem] font-medium text-corp tabular">{String(i + 1).padStart(2, '0')}</span>
+                <span className="text-body text-ink">{p}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
       {/* aplicaciones y alcance */}
       <section className="bg-mist py-24 md:py-28">
         <div className="container grid gap-16 lg:grid-cols-12">
           <div className="lg:col-span-5">
-            <h2 className="text-h2">Cuándo se necesita</h2>
+            <h2 className="text-h2">{T.when}</h2>
             <ul className="mt-8 space-y-4">
               {s.applications.map((a) => <li key={a} className="flex gap-4 text-body"><span aria-hidden className="mt-[0.8em] h-px w-4 shrink-0 bg-corp" />{a}</li>)}
             </ul>
           </div>
           <div className="lg:col-span-6 lg:col-start-7">
-            <h2 className="text-h2">Qué incluye</h2>
+            <h2 className="text-h2">{T.includes}</h2>
             <ul className="mt-8 border-t border-ink/80">
               {s.scope.map((x) => <li key={x} className="border-b border-line py-4 text-body text-ink">{x}</li>)}
             </ul>
-            <p className="mt-8 text-small text-body"><span className="font-medium text-ink">Entregables: </span>{s.deliverables.join(', ')}.</p>
+            <p className="mt-8 text-small text-body"><span className="font-medium text-ink">{T.deliverables}: </span>{s.deliverables.join(', ')}.</p>
           </div>
         </div>
       </section>
 
+      {/* opciones técnicas */}
+      {s.options && (
+        <section className="py-24 md:py-28" aria-labelledby="opciones">
+          <div className="container">
+            <div className="grid gap-6 lg:grid-cols-12">
+              <h2 id="opciones" className="text-h2 lg:col-span-6">{T.options}</h2>
+              <p className="max-w-measure text-body lg:col-span-5 lg:col-start-8 lg:self-end">{T.optionsLede}</p>
+            </div>
+            <ul className={cn('mt-12 grid gap-x-10 gap-y-10 sm:grid-cols-2', s.options.length > 2 && 'lg:grid-cols-3', s.options.length === 4 && 'lg:grid-cols-4')}>
+              {s.options.map((o) => (
+                <li key={o.title} className="border-t-2 border-ink pt-5">
+                  <h3 className="text-h4">{o.title}</h3>
+                  <p className="mt-2 text-small text-body">{o.text}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
+
       {/* referencia técnica */}
       {s.specTable && (
-        <section className="py-24 md:py-28">
+        <section className={cn('py-24 md:py-28', s.options && 'border-t border-line')}>
           <div className="container grid gap-12 lg:grid-cols-12">
             <div className="lg:col-span-4">
               <h2 className="text-h2">{s.specTable.title}</h2>
@@ -96,7 +137,7 @@ export default function ServiceDetail() {
               <table className="w-full min-w-[560px] border-collapse text-left">
                 <thead>
                   <tr className="border-b border-ink/80">
-                    {s.specTable.columns.map((c) => <th key={c} scope="col" className="pb-3 pr-6 text-small font-medium text-muted">{c}</th>)}
+                    {s.specTable.columns.map((col) => <th key={col} scope="col" className="pb-3 pr-6 text-small font-medium text-muted">{col}</th>)}
                   </tr>
                 </thead>
                 <tbody>
@@ -115,11 +156,11 @@ export default function ServiceDetail() {
       )}
 
       {/* proceso */}
-      <section className={cn('py-24 md:py-28', s.specTable && 'border-t border-line')}>
+      <section className="border-t border-line py-24 md:py-28">
         <div className="container">
-          <h2 className="text-h2">Cómo se ejecuta</h2>
+          <h2 className="text-h2">{T.how}</h2>
           <ol className="mt-14 grid gap-x-10 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
-            {steps.map((p, i) => (
+            {s.process.map((p, i) => (
               <Reveal as="li" key={p.title} delay={i * 0.05} className="border-t border-ink/80 pt-6">
                 <span className="font-display font-medium text-corp tabular">{String(i + 1).padStart(2, '0')}</span>
                 <h3 className="mt-3 text-h4">{p.title}</h3>
@@ -130,56 +171,81 @@ export default function ServiceDetail() {
         </div>
       </section>
 
-      {/* preguntas + marcas */}
-      {(s.faq || brands) && (
-        <section className="border-t border-line py-24 md:py-28">
-          <div className="container grid gap-16 lg:grid-cols-12">
-            {s.faq && (
-              <div className="lg:col-span-7">
-                <h2 className="text-h2">Preguntas frecuentes</h2>
-                <div className="mt-10 border-t border-ink/80">
-                  {s.faq.map((f) => (
-                    <details key={f.q} className="group border-b border-line">
-                      <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-6 font-display text-[1.15rem] font-medium text-ink hover:text-corp [&::-webkit-details-marker]:hidden">
-                        {f.q}
-                        <Plus aria-hidden className="h-5 w-5 shrink-0 text-corp group-open:hidden" strokeWidth={1.5} />
-                        <Minus aria-hidden className="hidden h-5 w-5 shrink-0 text-corp group-open:block" strokeWidth={1.5} />
-                      </summary>
-                      <p className="max-w-measure pb-7 text-body">{f.a}</p>
-                    </details>
-                  ))}
-                </div>
-              </div>
-            )}
-            {brands && (
-              <div className={s.faq ? 'lg:col-span-4 lg:col-start-9' : 'lg:col-span-12'}>
-                <h2 className="text-h3">Marcas que integramos</h2>
-                <p className="mt-6 font-display text-[1.25rem] font-medium leading-relaxed text-ink">{brands.join(' · ')}</p>
-                <p className="mt-5 text-label text-muted">Marcas de equipo que se integran en proyectos. No representa alianza, certificación ni distribución oficial.</p>
-              </div>
-            )}
+      {/* industrias */}
+      {industries.length > 0 && (
+        <section className="bg-navy py-24 text-white md:py-28" aria-labelledby="industrias-servicio">
+          <div className="container">
+            <div className="grid gap-6 lg:grid-cols-12">
+              <h2 id="industrias-servicio" className="text-h2 !text-white lg:col-span-6">{T.industries}</h2>
+              <p className="max-w-measure text-white/70 lg:col-span-5 lg:col-start-8 lg:self-end">{T.industriesLede}</p>
+            </div>
+            <ul className="mt-12 grid gap-px border border-white/10 bg-white/10 sm:grid-cols-2 lg:grid-cols-5">
+              {industries.map((ind) => (
+                <li key={ind.id} className="bg-navy">
+                  <Link to={`/industrias/${ind.id}`} className="group flex h-full flex-col p-5 transition-colors hover:bg-white/[0.04]">
+                    <div className="aspect-[4/3] overflow-hidden"><Media img={ind.img} plate={ind.plate} ratio="h-full w-full" zoom sizes="(min-width: 1024px) 20vw, 50vw" /></div>
+                    <span className="mt-4 flex items-start justify-between gap-3 font-display text-[1.05rem] font-medium leading-snug text-white">
+                      {ind.name}
+                      <ArrowRight aria-hidden className="arrow-nudge mt-1 h-4 w-4 shrink-0 text-white/40 group-hover:text-lumen" strokeWidth={1.75} />
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
       )}
+
+      {/* preguntas + marcas */}
+      <section className="py-24 md:py-28">
+        <div className="container grid gap-16 lg:grid-cols-12">
+          <div className="lg:col-span-7">
+            <h2 className="text-h2">{T.faq}</h2>
+            <div className="mt-10 border-t border-ink/80">
+              {s.faq.map((f) => (
+                <details key={f.q} className="group border-b border-line">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-6 font-display text-[1.15rem] font-medium text-ink hover:text-corp [&::-webkit-details-marker]:hidden">
+                    {f.q}
+                    <Plus aria-hidden className="h-5 w-5 shrink-0 text-corp group-open:hidden" strokeWidth={1.5} />
+                    <Minus aria-hidden className="hidden h-5 w-5 shrink-0 text-corp group-open:block" strokeWidth={1.5} />
+                  </summary>
+                  <p className="max-w-measure pb-7 text-body">{f.a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+          {s.brands && (
+            <div className="lg:col-span-4 lg:col-start-9">
+              <h2 className="text-h3">{T.brands}</h2>
+              <p className="mt-6 font-display text-[1.25rem] font-medium leading-relaxed text-ink">{s.brands.join(' · ')}</p>
+              <p className="mt-5 text-label text-muted">{T.brandsNote}</p>
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* cotización contextual */}
       <section id="cotizar" className="bg-mist py-24 md:py-28">
         <div className="container grid gap-12 lg:grid-cols-12">
           <div className="lg:col-span-4">
-            <h2 className="text-h2">Solicite una propuesta</h2>
-            <p className="mt-5 text-body">La solicitud ya incluye {lowerFirst(s.name)}. Agregue la ubicación, el alcance aproximado y sus datos de contacto.</p>
+            <h2 className="text-h2">{T.proposal}</h2>
+            <p className="mt-5 text-body">{T.proposalLede(s.name)}</p>
           </div>
-          <div className="lg:col-span-8"><Suspense fallback={<div className="min-h-[640px]" aria-busy="true" />}><QuoteWizard key={s.slug} initialType={s.quoteType} context={s.name} /></Suspense></div>
+          <div className="lg:col-span-8">
+            <Suspense fallback={<div className="min-h-[640px]" aria-busy="true" />}>
+              <QuoteWizard key={s.slug} initialTypes={[s.quoteType]} context={s.name} contextValue={baseService(s.slug)?.name} origin={`servicio:${s.slug}`} />
+            </Suspense>
+          </div>
         </div>
       </section>
 
-      {/* relacionados */}
+      {/* complementarios */}
       <section className="py-24">
         <div className="container">
-          <h2 className="text-h3">Servicios relacionados</h2>
+          <h2 className="text-h3">{T.related}</h2>
           <ul className="mt-10 grid gap-10 md:grid-cols-3">
             {s.related.map((r) => {
-              const rs = serviceBySlug(r)
+              const rs = c.serviceBySlug(r)
               if (!rs) return null
               return (
                 <li key={r}>

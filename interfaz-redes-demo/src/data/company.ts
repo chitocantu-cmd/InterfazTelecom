@@ -26,7 +26,7 @@ export const COMPANY = {
   facebook: 'https://www.facebook.com/interfazredes',
 } as const
 
-// Marcas mencionadas en interfaz.com.mx como "marcas que manejamos".
-// Se presentan sin implicar alianza, certificación ni distribución oficial.
-export const BRANDS_NETWORK = ['Panduit', 'CommScope', 'Cisco', 'Ubiquiti', 'Aruba', 'APC', 'Tripp Lite']
-export const BRANDS_SECURITY = ['Hikvision', 'Hanwha Vision', 'Dahua', 'EZVIZ']
+// Marcas mencionadas en interfaz.com.mx como "marcas que manejamos" (páginas de cableado, fibra, WiFi, CCTV y
+// control de acceso). Se presentan sin implicar alianza, certificación ni distribución oficial.
+export const BRANDS_NETWORK = ['Panduit', 'CommScope', 'Corning', 'Cisco', 'Ubiquiti', 'Aruba', 'TP-Link Omada', 'APC', 'Tripp Lite']
+export const BRANDS_SECURITY = ['Hikvision', 'Hanwha Vision', 'Dahua', 'EZVIZ', 'ZKTeco', 'Suprema']

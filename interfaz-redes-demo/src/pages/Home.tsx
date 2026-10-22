@@ -1,28 +1,23 @@
 import { Explorer } from '../components/home/Explorer'
+import { FlowDiagram } from '../components/home/FlowDiagram'
 import { Hero } from '../components/home/Hero'
-import { FeaturedProjects, FieldGallery, FinalCTA, IndustriesIndex, Intro, NeedsExplorer, ProcessLine } from '../components/home/Sections'
+import { ExplorerTeaser, FeaturedProjects, FieldGallery, FinalCTA, IndustriesIndex, Intro, ProcessLine } from '../components/home/Sections'
+import { useT } from '../i18n'
 import { useSeo } from '../lib/seo'
-import { SEO } from '../data/seo'
 
 export default function Home() {
-  useSeo(SEO.home)
+  const t = useT()
+  useSeo(t.seo.home)
   return (
     <>
       <Hero />
       <Intro />
-      <FieldGallery
-        lede="Instalaciones del equipo técnico de Interfaz: tendido de cable, organización de racks y trabajo en cuartos de telecomunicaciones."
-        items={[
-          { img: 'rackTecnico', caption: 'Trabajo en rack de comunicaciones' },
-          { img: 'plafon', caption: 'Tendido de cable por plafón' },
-          { img: 'patchPanel', caption: 'Organización de cableado en rack' },
-          { img: 'pasillo', caption: 'Tendido de cable UTP en oficinas' },
-        ]}
-      />
+      <FieldGallery lede={t.field.homeLede} items={['rackTecnico', 'plafon', 'patchPanel', 'pasillo']} />
       <Explorer />
-      <FeaturedProjects />
-      <NeedsExplorer />
+      <FlowDiagram />
+      <ExplorerTeaser />
       <IndustriesIndex />
+      <FeaturedProjects />
       <ProcessLine />
       <FinalCTA />
     </>

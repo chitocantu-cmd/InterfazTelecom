@@ -22,15 +22,15 @@ export function Logo({ className, size = 'md', variant = 'color' }: { className?
   )
 }
 
-/** Emblema + nombre comercial. El emblema conserva su área de protección; el nombre
- *  acompaña a tamaños pequeños, donde el texto interno del emblema no es legible. */
-export function LogoLockup() {
+/** Emblema + nombre comercial. El emblema conserva su área de protección; el nombre acompaña donde hay espacio.
+ *  `compact`: header compacto al desplazarse (el emblema se reduce con una transición). */
+export function LogoLockup({ compact = false }: { compact?: boolean }) {
   return (
     <span className="flex items-center gap-3.5">
-      <Logo />
-      {/* Debajo de 360 px y entre 1024 y 1279 px no hay espacio para el nombre; ahí basta el emblema. */}
-      <span aria-hidden className="hidden h-9 w-px bg-line min-[360px]:block lg:hidden xl:block" />
-      <span aria-hidden className="hidden flex-col leading-[1.15] min-[360px]:flex lg:hidden xl:flex">
+      <Logo className={cn('origin-left transition-[height] duration-300 ease-out', compact && '!h-[52px] md:!h-[60px]')} />
+      {/* Entre 520 y 1023 px y desde 1280 px hay espacio para el nombre; en teléfonos lo ocupa el botón «Cotizar». */}
+      <span aria-hidden className="hidden h-9 w-px bg-line min-[520px]:block lg:hidden xl:block" />
+      <span aria-hidden className="hidden flex-col leading-[1.15] min-[520px]:flex lg:hidden xl:flex">
         <span className="font-display text-[1.02rem] font-semibold tracking-[-0.01em] text-ink">Interfaz Redes</span>
         {/* El espacio no se ve (flex), pero hace que el texto se lea "Interfaz Redes y Telecomunicaciones". */}
         {' '}

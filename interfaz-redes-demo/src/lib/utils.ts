@@ -1,18 +1,15 @@
 import { useReducedMotion as useMotionPreference } from 'motion/react'
-import { useEffect, useRef, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore, type RefObject } from 'react'
 import { useLocation } from 'react-router-dom'
 import { COMPANY } from '../data/company'
+
+export { lowerFirst } from './text'
 
 export const cn = (...c: (string | number | false | null | undefined)[]) => c.filter((x) => typeof x === 'string' && x).join(' ')
 
 export const waLink = (text: string) => `https://wa.me/${COMPANY.whatsappIntl}?text=${encodeURIComponent(text)}`
 export const mailLink = (subject: string, body: string) =>
   `mailto:${COMPANY.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
-
-export const WA_GENERAL = waLink('Hola, quiero hablar con un especialista de Interfaz Redes sobre un proyecto de infraestructura.')
-
-/** Nombre a mitad de frase: baja sólo la inicial y respeta siglas («CCTV y videovigilancia», «WiFi empresarial»). */
-export const lowerFirst = (name: string) => (/[A-Z].*[A-Z]/.test(name.split(' ')[0]) ? name : name.charAt(0).toLowerCase() + name.slice(1))
 
 const subscribeNever = () => () => {}
 /**
@@ -35,8 +32,42 @@ export function useReducedMotion() {
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /**
+ * ¿El elemento está en pantalla? Para encender animaciones continuas sólo mientras se ven (no gastan batería ni
+ * CPU fuera de pantalla). `false` en el prerender y al hidratar.
+ */
+export function useInView<T extends Element>(margin = '0px'): [RefObject<T>, boolean] {
+  const ref = useRef<T>(null)
+  const [inView, setInView] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const io = new IntersectionObserver(([e]) => setInView(e.isIntersecting), { rootMargin: margin })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [margin])
+  return [ref, inView]
+}
+
+/**
+ * Mientras el elemento está en pantalla, marca <html data-cotizador>: el botón flotante de WhatsApp se oculta para no
+ * tapar formularios ni resúmenes (cotizador y explorador de soluciones).
+ */
+export function useHideFloating<T extends Element>(): RefObject<T> {
+  const ref = useRef<T>(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const io = new IntersectionObserver(([e]) => document.documentElement.toggleAttribute('data-cotizador', e.isIntersecting))
+    io.observe(el)
+    return () => { io.disconnect(); document.documentElement.removeAttribute('data-cotizador') }
+  }, [])
+  return ref
+}
+
+/**
  * Lleva la vista arriba al cambiar de ruta (o a la sección indicada por #id; también por ?s=id, el formato de los
- * enlaces anteriores) y pasa ahí el foco del teclado.
+ * enlaces anteriores) y pasa ahí el foco del teclado. Desde la primera navegación marca <html data-nav>, que activa
+ * la transición de entrada de las páginas (index.css).
  */
 export function useScrollToTop() {
   const { pathname, search, hash, key } = useLocation()
@@ -47,6 +78,7 @@ export function useScrollToTop() {
   useEffect(() => {
     const initial = firstRender.current
     firstRender.current = false
+    if (!initial) document.documentElement.setAttribute('data-nav', '')
     if (target) {
       // La página puede seguir descargándose (se carga bajo demanda): se espera hasta 3 s a que exista la sección.
       let tries = 0

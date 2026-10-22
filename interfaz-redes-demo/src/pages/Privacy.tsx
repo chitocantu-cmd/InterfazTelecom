@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react'
 import { PageHero } from '../components/layout/PageHero'
 import { COMPANY } from '../data/company'
+import { useI18n } from '../i18n'
 import { useSeo } from '../lib/seo'
-import { SEO } from '../data/seo'
 
-// Aviso de privacidad integral. Conviene que lo revise un asesor legal.
+// Aviso de privacidad integral, en español (es la versión vigente; en los otros idiomas se muestra un aviso en ese
+// idioma y este mismo texto). Conviene que lo revise un asesor legal.
 // Por ahora el responsable se identifica con el nombre comercial; al escribir la razón social
 // aquí, el texto pasa a decir "<razón social>, que opera comercialmente como Interfaz Redes…".
 const RAZON_SOCIAL = ''
@@ -20,21 +21,25 @@ function Block({ title, children }: { title: string; children: ReactNode }) {
 }
 
 export default function Privacy() {
-  useSeo(SEO.privacy)
+  const { t, locale } = useI18n()
+  useSeo(t.seo.privacy)
+  const foreign = locale !== 'es'
   return (
     <>
-      <PageHero crumbs={[{ label: 'Aviso de privacidad' }]} title="Aviso de privacidad" lede={`Última actualización: ${ACTUALIZADO}.`} />
+      <PageHero crumbs={[{ label: t.privacy.title }]} title={t.privacy.title} lede={foreign ? t.privacy.notice : t.privacy.updated(ACTUALIZADO)} />
       <section className="pb-28">
         <div className="container grid gap-12 lg:grid-cols-12">
-          <aside className="lg:col-span-3">
+          <aside className="lg:col-span-3" lang="es-MX">
             <p className="bg-mist p-5 text-small text-body">Para ejercer sus derechos o resolver dudas sobre este aviso, escriba a <a href={`mailto:${COMPANY.email}`} className="break-all font-medium text-ink link-line">{COMPANY.email}</a>.</p>
           </aside>
-          <div className="lg:col-span-8 lg:col-start-5">
+          <div className="lg:col-span-8 lg:col-start-5" lang="es-MX">
+            {foreign && <p className="mb-10 text-small text-muted">Última actualización: {ACTUALIZADO}.</p>}
             <Block title="Responsable">
               <p>{RAZON_SOCIAL ? `${RAZON_SOCIAL}, que opera comercialmente como ${COMPANY.name}` : COMPANY.name}, con domicilio en {COMPANY.address}, es responsable del uso y protección de sus datos personales conforme a la legislación mexicana en materia de protección de datos personales en posesión de los particulares.</p>
             </Block>
             <Block title="Datos que recabamos">
-              <p>A través del formulario de cotización y de los medios de contacto de este sitio podemos recabar: nombre, empresa, correo electrónico, número de teléfono o WhatsApp, ciudad o ubicación del proyecto, la descripción de su necesidad y los archivos que decida adjuntar (planos, fotografías o documentos).</p>
+              <p>A través del formulario de cotización, del explorador de soluciones y de los medios de contacto de este sitio podemos recabar: nombre, empresa, cargo (opcional), correo electrónico, número de teléfono o WhatsApp, ciudad o ubicación del proyecto, la descripción de su necesidad, las respuestas del explorador de soluciones que decida enviar con su solicitud, el idioma en que navega el sitio y los archivos que decida adjuntar (planos, fotografías o documentos).</p>
+              <p>Mientras llena el formulario, el navegador guarda temporalmente un borrador en esta misma pestaña (sin archivos) para que no se pierda si la página se recarga; se borra al enviar la solicitud o al cerrar la pestaña, y no se transmite a ningún servidor.</p>
               <p>No solicitamos datos personales sensibles ni datos financieros a través de este sitio.</p>
             </Block>
             <Block title="Finalidades">

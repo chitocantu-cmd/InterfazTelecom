@@ -1,8 +1,9 @@
 /*
-  Interfaz Redes · v3
+  Interfaz Redes · v4
   Base clara y luminosa; azul marino sólo como acento estratégico.
   Archivo (titulares, 500–700) · DM Sans (texto, navegación, botones)
   IBM Plex Mono únicamente para datos técnicos reales.
+  Coreano y chino: las fuentes latinas se completan con las del sistema de cada idioma (:lang, más abajo).
 */
 @tailwind base;
 @tailwind components;
@@ -19,17 +20,31 @@
 @font-face { font-family: 'DM Sans Fallback'; src: local('Arial Bold'), local('Arial-BoldMT'); font-weight: 551 1000; size-adjust: 101.04%; ascent-override: 98.18%; descent-override: 30.68%; line-gap-override: 0%; }
 
 @layer base {
-  :root { color-scheme: light; --gutter: 1.25rem; }
+  :root {
+    color-scheme: light;
+    --gutter: 1.25rem;
+    /* Alto del header en reposo (al desplazarse se compacta sin mover el contenido: ver Header.tsx). */
+    --hdr: 106px;
+    /* Fuentes del sistema para escrituras que Archivo y DM Sans no cubren (se definen por idioma). */
+    --cjk: Arial;
+    /* Movimiento: duraciones y curvas del sitio (Motion las repite en src/lib/motion.ts). */
+    --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --ease-emph: cubic-bezier(0.16, 1, 0.3, 1);
+    --dur-fast: 160ms;
+    --dur-base: 240ms;
+    --dur-slow: 700ms;
+  }
   @media (min-width: 640px) { :root { --gutter: 1.75rem; } }
+  @media (min-width: 768px) { :root { --hdr: 124px; } }
   @media (min-width: 1024px) { :root { --gutter: 2.5rem; } }
   @media (min-width: 1280px) { :root { --gutter: 3.5rem; } }
-  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: 7rem; }
-  /* Alto del header fijo (106 px; 124 px desde md): lo enfocado o el destino de un salto no queda debajo. */
-  @media (min-width: 768px) { html { scroll-padding-top: 8.25rem; } }
+  html:lang(ko) { --cjk: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', 'Noto Sans CJK KR'; }
+  html:lang(zh-CN) { --cjk: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', 'Noto Sans CJK SC'; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: calc(var(--hdr) + 1rem); }
   body {
     background: #ffffff;
     color: #3a4656;
-    font-family: 'DM Sans', 'DM Sans Fallback', 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'DM Sans', 'DM Sans Fallback', var(--cjk), 'Helvetica Neue', Arial, sans-serif;
     font-size: 1.0625rem;
     line-height: 1.65;
     font-feature-settings: 'ss01' on;
@@ -37,7 +52,7 @@
     overflow-x: hidden;
   }
   h1, h2, h3, h4 {
-    font-family: Archivo, 'Archivo Fallback', 'Helvetica Neue', Arial, sans-serif;
+    font-family: Archivo, 'Archivo Fallback', var(--cjk), 'Helvetica Neue', Arial, sans-serif;
     font-weight: 600;
     color: #0e1c2d;
     text-wrap: balance;
@@ -46,10 +61,16 @@
   }
   p { text-wrap: pretty; hyphens: manual; }
   /* En teléfonos muy angostos una palabra larga ("telecomunicaciones") no cabe en un titular */
-  @media (max-width: 420px) { h1, h2 { hyphens: auto; overflow-wrap: anywhere; } }
+  @media (max-width: 420px) { html:lang(es-MX) :is(h1, h2), html:lang(en) :is(h1, h2) { hyphens: auto; overflow-wrap: anywhere; } }
   ::selection { background: #0e4c92; color: #fff; }
   :focus-visible { outline: 2px solid #176fb0; outline-offset: 3px; }
   input, textarea, select, button { font: inherit; }
+
+  /* Coreano: no cortar palabras a la mitad; titulares con interlineado y tracking propios de la escritura. */
+  html:lang(ko) body { word-break: keep-all; overflow-wrap: anywhere; }
+  html:lang(ko) :is(h1, h2, h3, h4, .text-display, .text-h1, .text-h2, .text-h3) { letter-spacing: -0.01em; line-height: 1.22; }
+  html:lang(zh-CN) :is(h1, h2, h3, h4, .text-display, .text-h1, .text-h2, .text-h3) { letter-spacing: 0; line-height: 1.24; }
+  html:lang(zh-CN) body { line-break: strict; }
 }
 
 @layer components {
@@ -61,13 +82,18 @@
   .field:hover { border-color: #b7c2cd; }
   .field:focus { outline: none; border-color: #0e4c92; box-shadow: 0 0 0 3px rgba(14,76,146,.12); }
   .field[aria-invalid='true'] { border-color: #b42318; }
-  .link-line { background-image: linear-gradient(currentColor, currentColor); background-size: 100% 1px; background-position: 0 100%; background-repeat: no-repeat; transition: background-size .35s cubic-bezier(.2,.7,.2,1); padding-bottom: 1px; }
+  .link-line { background-image: linear-gradient(currentColor, currentColor); background-size: 100% 1px; background-position: 0 100%; background-repeat: no-repeat; transition: background-size .35s var(--ease-out); padding-bottom: 1px; }
   .link-line:hover, .link-line:focus-visible { background-size: 0% 1px; background-position: 100% 100%; }
-  .img-zoom { transition: transform 1.2s cubic-bezier(.2,.7,.2,1); }
-  .group:hover .img-zoom { transform: scale(1.03); }
+  .img-zoom { transition: transform 1.2s var(--ease-out); }
+  .group:hover .img-zoom, .group:focus-visible .img-zoom { transform: scale(1.03); }
   .tabular { font-variant-numeric: tabular-nums; }
+  /* Etiqueta técnica en IBM Plex Mono (códigos, capas, etapas). */
+  .mono-tag { font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-size: 0.72rem; letter-spacing: 0.08em; }
   /* Leyenda sobre fotografía: legible sobre zonas claras y oscuras */
   .img-caption { position: absolute; bottom: 1rem; right: 1.25rem; font-size: 0.72rem; color: rgb(255 255 255 / 0.85); text-shadow: 0 1px 3px rgb(0 0 0 / 0.65); }
+  /* Flecha que avanza al pasar el cursor por el enlace o botón que la contiene. */
+  .arrow-nudge { transition: transform var(--dur-base) var(--ease-out); }
+  :is(a, button):hover > .arrow-nudge, :is(a, button):focus-visible > .arrow-nudge, .group:hover .arrow-nudge { transform: translateX(3px); }
 }
 
 .topo-node:focus-visible { opacity: 1; }
@@ -76,7 +102,44 @@
 /* Teléfonos de 360 px o menos: el titular baja un punto para que "telecomunicaciones" quepa entera */
 @media (max-width: 360px) { .text-h1 { font-size: 1.875rem; } }
 
+/* ------------------------------------------------------------------------------------------------
+   Movimiento. Todo lo que se anima aquí respeta «reducir movimiento» (bloque final) y no bloquea la
+   interacción: el contenido está en el HTML desde el inicio y sólo cambia su opacidad o posición.
+   ------------------------------------------------------------------------------------------------ */
+
+/* Entrada de la portada: header → titular → texto → fotografía → botones (retardo con --d). Corre con el HTML
+   prerenderizado, antes de que cargue el JavaScript. */
+@keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@keyframes fade-down { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+@keyframes reveal { from { clip-path: inset(0 0 0 24%); transform: scale(1.06); } to { clip-path: inset(0); transform: none; } }
+@keyframes page-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes packet-x { from { transform: translateX(-100%); } to { transform: translateX(340%); } }
+@keyframes packet-y { from { transform: translateY(-100%); } to { transform: translateY(340%); } }
+@keyframes dash { to { stroke-dashoffset: -32; } }
+
+.enter-header { animation: fade-down 0.5s var(--ease-out) both; }
+.enter-rise { animation: rise 0.8s var(--ease-emph) both; animation-delay: var(--d, 0ms); }
+.enter-reveal { animation: reveal 1.15s var(--ease-emph) both; animation-delay: var(--d, 0ms); }
+
+/* Transición entre páginas: sólo después de la primera navegación dentro del sitio (html[data-nav]), no al abrirlo. */
+html[data-nav] .page-enter { animation: page-in 0.38s var(--ease-out) both; }
+
+/* Diagrama de flujo de la portada: un pulso recorre cada enlace mientras el diagrama está en pantalla.
+   En el teléfono los enlaces son verticales (a la izquierda de cada etapa); desde 1024 px, horizontales. */
+.flow-seg { position: absolute; overflow: hidden; background: #e1e6eb; left: 5px; top: 1.25rem; bottom: 0; width: 2px; }
+.flow-packet { position: absolute; inset: 0 0 auto 0; height: 30%; transform: translateY(-100%); background: linear-gradient(180deg, transparent, #26a5dc, transparent); }
+.flow-live .flow-packet { animation: packet-y 2.6s var(--ease-out) infinite; animation-delay: var(--d, 0ms); }
+@media (min-width: 1024px) {
+  .flow-seg { left: 1.25rem; right: 0; top: 5px; bottom: auto; width: auto; height: 2px; }
+  .flow-packet { inset: 0 auto 0 0; height: auto; width: 30%; transform: translateX(-100%); background: linear-gradient(90deg, transparent, #26a5dc, transparent); }
+  .flow-live .flow-packet { animation-name: packet-x; }
+}
+
+/* Topología: la fibra «transmite» mientras el diagrama está en pantalla. */
+.topo-live .topo-fiber { stroke-dasharray: 10 6; animation: dash 1.4s linear infinite; }
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+  .flow-packet { display: none; }
 }

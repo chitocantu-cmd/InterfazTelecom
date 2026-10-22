@@ -1,5 +1,5 @@
 /** @type {import('tailwindcss').Config} */
-// v3 · Dirección de arte: corporativa, luminosa y editorial.
+// v4 · Dirección de arte: corporativa, luminosa y editorial.
 // Azules de Interfaz como jerarquía, neutros claros como base.
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
@@ -22,8 +22,9 @@ export default {
         ice: '#EAF1F7',
       },
       fontFamily: {
-        display: ['Archivo', '"Archivo Fallback"', 'Helvetica Neue', 'Arial', 'sans-serif'],
-        sans: ['"DM Sans"', '"DM Sans Fallback"', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        // var(--cjk): fuentes del sistema para coreano y chino (index.css, por idioma); en español es Arial.
+        display: ['Archivo', '"Archivo Fallback"', 'var(--cjk)', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        sans: ['"DM Sans"', '"DM Sans Fallback"', 'var(--cjk)', 'Helvetica Neue', 'Arial', 'sans-serif'],
         mono: ['"IBM Plex Mono"', 'ui-monospace', 'Menlo', 'monospace'],
       },
       fontSize: {

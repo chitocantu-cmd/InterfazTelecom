@@ -1,54 +1,41 @@
-import { AnimatePresence, m } from 'motion/react'
+import { ArrowRight } from 'lucide-react'
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { COMPANY } from '../../data/company'
-import { INDUSTRIES, NEEDS, PROCESS, PROJECTS, type Project } from '../../data/content'
+import { familiesOf, type Project } from '../../data/content'
+import { explorerQuery } from '../../data/explorer'
 import { IMG, type ImgKey } from '../../data/media'
-import { serviceBySlug } from '../../data/solutions'
-import { cn, waLink, useReducedMotion } from '../../lib/utils'
+import { useI18n } from '../../i18n'
+import { Link } from '../../i18n/Link'
+import { cn, waLink } from '../../lib/utils'
 import { Media } from '../plates'
-import { Button, Reveal, SectionHead, TextLink } from '../ui'
+import { Button, Reveal, SectionHead, Tag, TextLink } from '../ui'
 
 /* ---------- Capacidad + razones ---------- */
-const REASONS = [
-  ['Ingeniería y ejecución', 'El mismo equipo que diseña responde por la instalación.'],
-  ['Personal técnico en sitio', 'Ingenieros, arquitectos y técnicos que levantan, instalan y certifican.'],
-  ['Proyectos a la medida', 'Cada red se diseña para su operación, su ambiente y su crecimiento.'],
-  ['Mantenimiento y soporte', 'Preventivo y correctivo para que la infraestructura siga disponible.'],
-]
-
 export function Intro() {
+  const { t } = useI18n()
   return (
     <section className="py-24 md:py-32" aria-labelledby="intro-title">
       <div className="container grid gap-16 lg:grid-cols-12">
         <div className="lg:col-span-7">
-          <h2 id="intro-title" className="font-display text-[clamp(1.7rem,1.2rem+1.9vw,2.6rem)] font-medium leading-[1.18] tracking-[-0.02em] text-ink">
-            Diseñamos, instalamos, configuramos y mantenemos la infraestructura tecnológica de plantas industriales, corporativos y centros de distribución.
-          </h2>
-          <p className="mt-8 max-w-measure text-body">
-            Desde la canalización y el cableado hasta el equipo activo, la videovigilancia y el soporte posterior. Un solo responsable técnico, de la visita de levantamiento a la entrega documentada.
-          </p>
-          <TextLink to="/nosotros" className="mt-8">Conozca a Interfaz Redes</TextLink>
+          <h2 id="intro-title" className="font-display text-[clamp(1.7rem,1.2rem+1.9vw,2.6rem)] font-medium leading-[1.18] tracking-[-0.02em] text-ink">{t.intro.title}</h2>
+          <p className="mt-8 max-w-measure text-body">{t.intro.text}</p>
+          <TextLink to="/nosotros" className="mt-8">{t.intro.link}</TextLink>
         </div>
         <dl className="lg:col-span-4 lg:col-start-9">
-          {REASONS.map(([k, v]) => (
-            <div key={k} className="border-t border-line py-5 first:border-t-0 first:pt-0 lg:first:pt-2">
-              <dt className="font-display text-h4 font-semibold text-ink">{k}</dt>
-              <dd className="mt-1 text-small text-body">{v}</dd>
+          {t.intro.reasons.map((r) => (
+            <div key={r.title} className="border-t border-line py-5 first:border-t-0 first:pt-0 lg:first:pt-2">
+              <dt className="font-display text-h4 font-semibold text-ink">{r.title}</dt>
+              <dd className="mt-1 text-small text-body">{r.text}</dd>
             </div>
           ))}
         </dl>
       </div>
       <div className="container mt-20">
         <dl className="grid gap-y-8 border-t border-ink/80 pt-8 sm:grid-cols-3">
-          {[
-            [COMPANY.years, 'años desarrollando proyectos de redes y telecomunicaciones'],
-            ['REPSE', 'registro ante la STPS para servicios especializados'],
-            ['Monterrey', 'base de operaciones en la Col. Industrial'],
-          ].map(([v, d]) => (
-            <div key={v} className="sm:pr-10">
-              <dt className="font-display text-[2.6rem] font-medium leading-none tracking-[-0.03em] text-corp">{v}</dt>
-              <dd className="mt-3 max-w-[16rem] text-small text-body">{d}</dd>
+          {t.intro.stats.map((s) => (
+            <div key={s.value} className="sm:pr-10">
+              <dt className="font-display text-[2.6rem] font-medium leading-none tracking-[-0.03em] text-corp">{s.value}</dt>
+              <dd className="mt-3 max-w-[16rem] text-small text-body">{s.label}</dd>
             </div>
           ))}
         </dl>
@@ -58,19 +45,21 @@ export function Intro() {
 }
 
 /* ---------- Equipo en campo (fotografía real) ---------- */
-export function FieldGallery({ items, lede, className }: { items: { img: ImgKey; caption: string }[]; lede: string; className?: string }) {
+export function FieldGallery({ items, lede, className }: { items: ImgKey[]; lede: string; className?: string }) {
+  const { t } = useI18n()
+  const captions = t.field.captions as Record<string, string>
   return (
     <section className={cn('pb-24 md:pb-32', className)} aria-labelledby="campo-title">
       <div className="container">
-        <SectionHead id="campo-title" title="Nuestro equipo en campo" lede={lede} />
+        <SectionHead id="campo-title" title={t.field.title} lede={lede} />
         <ul className="mt-12 grid grid-cols-2 gap-x-4 gap-y-8 md:gap-x-6 lg:grid-cols-4">
-          {items.map(({ img, caption }, i) => (
+          {items.map((img, i) => (
             <li key={img} className={cn(i % 2 === 1 && 'lg:mt-14')}>
-              <figure>
+              <figure className="group">
                 <div className="aspect-[3/4] overflow-hidden bg-mist">
-                  <img src={IMG[img].src} srcSet={IMG[img].srcSet} sizes="(min-width: 1024px) 25vw, 50vw" alt={IMG[img].alt} loading="lazy" decoding="async" className="h-full w-full object-cover" style={{ objectPosition: IMG[img].pos }} />
+                  <img src={IMG[img].src} srcSet={IMG[img].srcSet} sizes="(min-width: 1024px) 25vw, 50vw" alt={IMG[img].alt} loading="lazy" decoding="async" className="img-zoom h-full w-full object-cover" style={{ objectPosition: IMG[img].pos }} />
                 </div>
-                <figcaption className="mt-3 text-small text-body">{caption}</figcaption>
+                <figcaption className="mt-3 text-small text-body">{captions[img]}</figcaption>
               </figure>
             </li>
           ))}
@@ -82,19 +71,18 @@ export function FieldGallery({ items, lede, className }: { items: { img: ImgKey;
 
 /* ---------- Proyectos ---------- */
 export function ProjectMeta({ p, className }: { p: Project; className?: string }) {
-  return <p className={cn('text-label text-muted', className)}>{p.sector} · {p.category} · Caso demostrativo</p>
+  const { t, c } = useI18n()
+  const fam = familiesOf(p).slice(0, 2).map((f) => t.projects.families[f])
+  return <p className={cn('text-label text-muted', className)}>{[c.industryById(p.industry)?.name, ...fam, p.status === 'demostrativo' ? t.common.demoCase : null].filter(Boolean).join(' · ')}</p>
 }
 
 export function FeaturedProjects() {
-  const [a, b, c] = [PROJECTS[0], PROJECTS[2], PROJECTS[3]]
+  const { t, c } = useI18n()
+  const [a, b, d] = [c.projects[0], c.projects[2], c.projects[3]]
   return (
     <section className="py-24 md:py-32" aria-labelledby="proyectos-title">
       <div className="container">
-        <SectionHead
-          id="proyectos-title"
-          title="Tipos de proyecto que ejecutamos"
-          lede="Casos demostrativos con el alcance técnico de cada tipo de intervención; no corresponden a proyectos de clientes específicos."
-        />
+        <SectionHead id="proyectos-title" title={t.featured.title} lede={t.featured.lede} />
         <Reveal className="mt-14">
           <Link to={`/proyectos/${a.slug}`} className="group grid gap-8 lg:grid-cols-12 lg:items-end lg:gap-12">
             <div className="overflow-hidden lg:col-span-8"><Media img={a.img} plate={a.plate} ratio="aspect-[16/10]" zoom pos="74% 50%" sizes="(min-width: 1024px) 66vw, 100vw" /></div>
@@ -102,12 +90,12 @@ export function FeaturedProjects() {
               <ProjectMeta p={a} />
               <h3 className="mt-3 text-h2 transition-colors group-hover:text-corp">{a.title}</h3>
               <p className="mt-4 text-body">{a.summary}</p>
-              <span className="mt-6 inline-block text-small font-medium text-corp link-line">Ver el caso</span>
+              <span className="mt-6 inline-flex items-center gap-2 text-small font-medium text-corp"><span className="link-line">{t.common.viewCase}</span><ArrowRight aria-hidden className="arrow-nudge h-4 w-4" strokeWidth={1.75} /></span>
             </div>
           </Link>
         </Reveal>
         <div className="mt-20 grid gap-16 md:grid-cols-2 md:gap-10">
-          {[b, c].map((p, i) => (
+          {[b, d].map((p, i) => (
             <Reveal key={p.slug} delay={i * 0.06} className={i === 1 ? 'md:mt-24' : ''}>
               <Link to={`/proyectos/${p.slug}`} className="group block">
                 <div className="overflow-hidden"><Media img={p.img} plate={p.plate} ratio="aspect-[4/3]" zoom sizes="(min-width: 768px) 50vw, 100vw" /></div>
@@ -118,104 +106,36 @@ export function FeaturedProjects() {
             </Reveal>
           ))}
         </div>
-        <div className="mt-16"><TextLink to="/proyectos">Ver todos los proyectos</TextLink></div>
+        <div className="mt-16"><TextLink to="/proyectos">{t.featured.all}</TextLink></div>
       </div>
     </section>
   )
 }
 
-/* ---------- Necesidades (sección azul marino) ---------- */
-export function NeedsExplorer() {
-  const [id, setId] = useState(NEEDS[0].id)
-  const reduce = useReducedMotion()
-  const need = NEEDS.find((n) => n.id === id)!
-
-  const Result = ({ inline }: { inline?: boolean }) => (
-    <div className={cn('bg-white text-body', inline ? 'mt-2 p-6' : 'p-9')}>
-      <p className="text-lead text-ink">{need.answer}</p>
-      <div className="mt-8 grid gap-8 sm:grid-cols-2">
-        <div>
-          <p className="text-small font-medium text-ink">Servicios que intervienen</p>
-          <ul className="mt-3 space-y-2">
-            {need.services.map((slug) => {
-              const sv = serviceBySlug(slug)!
-              return <li key={slug}><Link to={`/soluciones/${slug}`} className="text-small text-corp link-line">{sv.name}</Link></li>
-            })}
-          </ul>
-        </div>
-        <div>
-          <p className="text-small font-medium text-ink">Para cotizar, tenga a la mano</p>
-          <ul className="mt-3 space-y-2 text-small">
-            {need.prepare.map((x) => <li key={x} className="flex gap-2.5"><span aria-hidden className="mt-[0.7em] h-px w-3 shrink-0 bg-corp" />{x}</li>)}
-          </ul>
-        </div>
-      </div>
-      <div className="mt-9 border-t border-line pt-6"><Button to={`/contacto?tipo=${need.quoteType}&necesidad=${need.id}`}>Cotizar con esta necesidad</Button></div>
-    </div>
-  )
-
+/* ---------- Explorador de soluciones (acceso desde la portada, sección azul marino) ---------- */
+export function ExplorerTeaser() {
+  const { t, c } = useI18n()
   return (
-    <section className="bg-navy py-24 text-white md:py-32" aria-labelledby="necesidades-title">
+    <section className="bg-navy py-24 text-white md:py-32" aria-labelledby="explorador-title">
       <div className="container">
-        <SectionHead dark id="necesidades-title" title="¿Qué necesita tu infraestructura?" lede="Elija la situación más parecida a su proyecto. Le mostramos qué servicios suelen intervenir y qué información conviene reunir antes de cotizar." />
-        <div className="mt-14 grid gap-10 lg:grid-cols-12">
-          <fieldset className="lg:col-span-5">
-            <legend className="sr-only">Necesidad del proyecto</legend>
-            <div className="border-t border-white/15">
-              {NEEDS.map((n) => {
-                const on = n.id === id
-                return (
-                  <div key={n.id} className="border-b border-white/15">
-                    <label className="group flex cursor-pointer items-start gap-4 py-5">
-                      <input type="radio" name="necesidad" value={n.id} checked={on} onChange={() => setId(n.id)} className="peer sr-only" />
-                      <span aria-hidden className={cn('mt-[0.45rem] grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full border transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-lumen peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-navy', on ? 'border-white' : 'border-white/35')}>
-                        <span className={cn('h-2 w-2 rounded-full', on ? 'bg-white' : 'bg-transparent')} />
-                      </span>
-                      <span>
-                        <span className={cn('block font-display text-[1.2rem] font-medium leading-snug transition-colors', on ? 'text-white' : 'text-white/60 group-hover:text-white/85')}>{n.label}</span>
-                        <span className={cn('mt-0.5 block text-small', on ? 'text-white/70' : 'text-white/55')}>{n.context}</span>
-                      </span>
-                    </label>
-                    {on && <div className="pb-6 lg:hidden"><Result inline /></div>}
-                  </div>
-                )
-              })}
-            </div>
-          </fieldset>
-          <div className="hidden lg:col-span-6 lg:col-start-7 lg:block" aria-live="polite">
-            <AnimatePresence mode="wait" initial={false}>
-              <m.div key={need.id} initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-                <Result />
-              </m.div>
-            </AnimatePresence>
+        <div className="grid gap-10 lg:grid-cols-12">
+          <div className="lg:col-span-5">
+            <Tag dark>{t.nav.explorer}</Tag>
+            <h2 id="explorador-title" className="mt-4 text-h2 !text-white">{t.explorerTeaser.title}</h2>
+            <p className="mt-6 max-w-measure text-white/70">{t.explorerTeaser.lede}</p>
+            <div className="mt-9"><Button to="/explorador" variant="light" arrow>{t.explorerTeaser.cta}</Button></div>
+            <p className="mt-4 text-small text-white/55">{t.explorerTeaser.note}</p>
           </div>
-        </div>
-      </div>
-    </section>
-  )
-}
-
-/* ---------- Industrias ---------- */
-export function IndustriesIndex() {
-  const [hover, setHover] = useState(INDUSTRIES[0].id)
-  const ind = INDUSTRIES.find((i) => i.id === hover)!
-  return (
-    <section className="py-24 md:py-32" aria-labelledby="industrias-title">
-      <div className="container grid gap-14 lg:grid-cols-12">
-        <div className="hidden lg:col-span-5 lg:block">
-          <div className="sticky top-36">
-            <Media img={ind.img} plate={ind.plate} ratio="aspect-[4/5] max-h-[620px] w-full" sizes="40vw" />
-          </div>
-        </div>
-        <div className="lg:col-span-6 lg:col-start-7">
-          <h2 id="industrias-title" className="text-h2">Industrias</h2>
-          <p className="mt-4 max-w-measure text-body">Una nave, un corporativo y un centro de distribución no se conectan ni se protegen igual.</p>
-          <ul className="mt-10 border-t border-line">
-            {INDUSTRIES.map((it) => (
-              <li key={it.id} className="border-b border-line">
-                <Link to={`/industrias?sector=${it.id}`} onMouseEnter={() => setHover(it.id)} onFocus={() => setHover(it.id)} className="group block py-6">
-                  <span className={cn('block font-display text-[1.55rem] font-medium tracking-[-0.015em] transition-colors', hover === it.id ? 'text-corp' : 'text-ink')}>{it.name}</span>
-                  <span className="mt-1.5 block text-small text-muted">{it.lede}</span>
+          <ul className="grid gap-px self-start border border-white/10 bg-white/10 sm:grid-cols-2 lg:col-span-7 lg:col-start-6 lg:grid-cols-3">
+            {c.explorer.scenarios.map((s, i) => (
+              <li key={s.id} className="bg-navy">
+                <Link to={`/explorador?${explorerQuery({ scenario: s.id, extras: [] })}`} className="group flex h-full flex-col p-5 transition-colors hover:bg-white/[0.04] focus-visible:bg-white/[0.04]">
+                  <span className="mono-tag text-white/40">{String(i + 1).padStart(2, '0')}</span>
+                  <span className="mt-2 flex items-start justify-between gap-3 font-display text-[1.05rem] font-medium leading-snug text-white">
+                    {s.label}
+                    <ArrowRight aria-hidden className="arrow-nudge mt-1 h-4 w-4 shrink-0 text-white/40 group-hover:text-lumen" strokeWidth={1.75} />
+                  </span>
+                  <span className="mt-1 text-small text-white/55">{s.hint}</span>
                 </Link>
               </li>
             ))}
@@ -226,19 +146,56 @@ export function IndustriesIndex() {
   )
 }
 
+/* ---------- Industrias ---------- */
+export function IndustriesIndex() {
+  const { t, c } = useI18n()
+  const [hover, setHover] = useState(c.industries[0].id)
+  const ind = c.industryById(hover) ?? c.industries[0]
+  return (
+    <section className="py-24 md:py-32" aria-labelledby="industrias-title">
+      <div className="container grid gap-14 lg:grid-cols-12">
+        <div className="hidden lg:col-span-5 lg:block">
+          <div className="sticky top-36">
+            <Media img={ind.img} plate={ind.plate} ratio="aspect-[4/5] max-h-[620px] w-full" sizes="40vw" />
+          </div>
+        </div>
+        <div className="lg:col-span-6 lg:col-start-7">
+          <h2 id="industrias-title" className="text-h2">{t.industriesIndex.title}</h2>
+          <p className="mt-4 max-w-measure text-body">{t.industriesIndex.lede}</p>
+          <ul className="mt-10 border-t border-line">
+            {c.industries.map((it) => (
+              <li key={it.id} className="border-b border-line">
+                <Link to={`/industrias/${it.id}`} onMouseEnter={() => setHover(it.id)} onFocus={() => setHover(it.id)} className="group flex items-start justify-between gap-6 py-6">
+                  <span>
+                    <span className={cn('block font-display text-[1.55rem] font-medium tracking-[-0.015em] transition-colors', hover === it.id ? 'text-corp' : 'text-ink')}>{it.name}</span>
+                    <span className="mt-1.5 block text-small text-muted">{it.lede}</span>
+                  </span>
+                  <ArrowRight aria-hidden className={cn('arrow-nudge mt-2 h-5 w-5 shrink-0 transition-colors', hover === it.id ? 'text-corp' : 'text-faint')} strokeWidth={1.5} />
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <TextLink to="/industrias" className="mt-8">{t.industriesIndex.all}</TextLink>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 /* ---------- Proceso ---------- */
 export function ProcessLine({ tone = 'mist' }: { tone?: 'mist' | 'white' }) {
+  const { t, c } = useI18n()
   return (
     <section className={cn('py-24 md:py-32', tone === 'mist' ? 'bg-mist' : 'bg-white')} aria-labelledby="proceso-title">
       <div className="container">
-        <SectionHead id="proceso-title" title="Cómo trabajamos" lede="Seis etapas, cada una con un entregable concreto. Nada se cotiza antes de estar diseñado." />
+        <SectionHead id="proceso-title" title={t.process.title} lede={t.process.lede} />
         <ol className="mt-16 grid gap-x-12 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
-          {PROCESS.map((p) => (
+          {c.process.map((p) => (
             <li key={p.n} className="border-t border-ink/80 pt-6">
               <span className="font-display text-[1.05rem] font-medium text-corp tabular">{p.n}</span>
               <h3 className="mt-3 text-h4">{p.title}</h3>
               <p className="mt-2 text-small text-body">{p.detail}</p>
-              <p className="mt-4 text-label text-muted">Entregable: {p.output.split(' · ').map((x, i) => (i === 0 ? x.charAt(0).toLowerCase() + x.slice(1) : x.charAt(0).toLowerCase() + x.slice(1))).join(', ').replace('otdr', 'OTDR')}</p>
+              <p className="mt-4 text-label text-muted">{t.process.deliverable}: {p.output.join(', ')}</p>
             </li>
           ))}
         </ol>
@@ -249,6 +206,7 @@ export function ProcessLine({ tone = 'mist' }: { tone?: 'mist' | 'white' }) {
 
 /* ---------- Llamado final ---------- */
 export function FinalCTA() {
+  const { t } = useI18n()
   return (
     <section className="relative bg-white" aria-labelledby="cta-title">
       <div className="relative mx-auto h-[420px] max-w-frame overflow-hidden md:h-[560px]">
@@ -256,11 +214,11 @@ export function FinalCTA() {
       </div>
       <div className="container relative -mt-40 pb-24 md:-mt-48 md:pb-32">
         <div className="max-w-3xl bg-white px-0 pt-10 md:px-14 md:pt-14">
-          <h2 id="cta-title" className="text-h1">Solicite un levantamiento técnico.</h2>
-          <p className="mt-6 max-w-measure text-lead text-body">Cuéntenos qué necesita. Un especialista revisa la información, confirma el alcance y agenda la visita en sitio.</p>
+          <h2 id="cta-title" className="text-h1">{t.finalCta.title}</h2>
+          <p className="mt-6 max-w-measure text-lead text-body">{t.finalCta.lede}</p>
           <div className="mt-10 flex flex-wrap gap-3">
-            <Button to="/contacto">Solicitar cotización</Button>
-            <Button href={waLink('Hola, quiero solicitar un levantamiento técnico con Interfaz Redes.')} variant="secondary">WhatsApp {COMPANY.whatsappDisplay}</Button>
+            <Button to="/contacto" track="cta-final" arrow>{t.common.requestQuote}</Button>
+            <Button href={waLink(t.wa.survey)} variant="secondary">WhatsApp {COMPANY.whatsappDisplay}</Button>
           </div>
         </div>
       </div>
