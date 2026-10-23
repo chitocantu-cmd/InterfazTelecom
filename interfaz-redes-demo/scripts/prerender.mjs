@@ -84,10 +84,12 @@ const fontPreloads = FONTS.map((re) => {
 }).join('')
 const withFonts = (html) => replace(html, /()(?=<link rel="icon")/, fontPreloads)
 
-// Imagen de la portada: en escritorio es el elemento más grande y se pide con prioridad alta; en el teléfono va
-// debajo del texto, así que no se precarga (el navegador le da prioridad al verla en pantalla).
+// Imagen de la portada: es el elemento más grande de la primera pantalla (también en el teléfono, donde asoma debajo
+// del texto) y se pide con prioridad alta. Cada precarga repite el srcset/sizes de la <source> o el <img> que la usa,
+// para que el navegador elija el mismo archivo y no lo descargue dos veces.
 const heroPreload = `<link rel="preload" as="image" href="${HERO_IMAGE.src}"${HERO_IMAGE.srcSet ? ` imagesrcset="${esc(HERO_IMAGE.srcSet)}" imagesizes="${esc(HERO_IMAGE.sizes)}"` : ''} fetchpriority="high" media="(min-width: 1024px)" />
-`
+${HERO_IMAGE.mobileSrcSet ? `<link rel="preload" as="image" imagesrcset="${esc(HERO_IMAGE.mobileSrcSet)}" imagesizes="100vw" fetchpriority="high" media="${HERO_IMAGE.mobileMedia}" />
+` : ''}`
 
 /** <head> de una página: canonical y hreflang sólo si se indexa; robots noindex si no. */
 function headFor(page) {

@@ -5,12 +5,16 @@ import { Link } from '../../i18n/Link'
 import { scrollToId } from '../../lib/utils'
 import { Button } from '../ui'
 
-/** Imagen de la portada. En escritorio es lo más grande de la pantalla: prerender.mjs la precarga con prioridad
- *  alta sólo ahí (en el teléfono queda debajo del texto y no debe competir con las fuentes ni el CSS). */
-export const HERO_IMAGE = { src: IMG.aisle.src, srcSet: IMG.aisle.srcSet, sizes: '(min-width: 1024px) 50vw, 100vw' }
-/** En el teléfono, como máximo la versión de 1024 px: con pantallas de densidad 2.6–3× el navegador pediría la
- *  original (casi el doble de peso) para una foto que ahí ocupa 400 px de ancho y es la que marca el LCP. */
-const HERO_MOBILE_SET = IMG.aisle.srcSet?.split(', ').filter((c) => parseInt(c.split(' ')[1]) <= 1024).join(', ')
+/** Imagen de la portada: es lo más grande de la primera pantalla (marca el LCP) y prerender.mjs la precarga con
+ *  prioridad alta. En el teléfono (mobileSrcSet), como máximo la versión de 1024 px: con pantallas de densidad
+ *  2.6–3× el navegador pediría la original, casi el doble de peso, para una foto que ahí ocupa unos 400 px. */
+export const HERO_IMAGE = {
+  src: IMG.aisle.src,
+  srcSet: IMG.aisle.srcSet,
+  sizes: '(min-width: 1024px) 50vw, 100vw',
+  mobileSrcSet: IMG.aisle.srcSet?.split(', ').filter((c) => parseInt(c.split(' ')[1]) <= 1024).join(', '),
+  mobileMedia: '(max-width: 1023.98px)',
+}
 
 /** Retardo de la coreografía de entrada (index.css: .enter-rise / .enter-reveal). */
 const d = (ms: number) => ({ '--d': `${ms}ms` }) as CSSProperties
@@ -53,7 +57,7 @@ export function Hero() {
         <div className="relative aspect-[4/3] w-full sm:aspect-[16/9] lg:absolute lg:inset-y-0 lg:right-0 lg:aspect-auto lg:w-1/2">
           <div className="absolute inset-0 overflow-hidden">
             <picture>
-              {HERO_MOBILE_SET && <source media="(max-width: 1023.98px)" srcSet={HERO_MOBILE_SET} sizes="100vw" />}
+              {HERO_IMAGE.mobileSrcSet && <source media={HERO_IMAGE.mobileMedia} srcSet={HERO_IMAGE.mobileSrcSet} sizes="100vw" />}
               <img src={HERO_IMAGE.src} srcSet={HERO_IMAGE.srcSet} sizes={HERO_IMAGE.sizes} alt={IMG.aisle.alt} className="enter-reveal absolute inset-0 h-full w-full object-cover" style={{ ...d(180), objectPosition: '66% 50%' }} />
             </picture>
           </div>

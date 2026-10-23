@@ -14,12 +14,13 @@ export function CopyValue({ value, label, dark, href }: { value: string; label: 
   const [ok, setOk] = useState(false)
   return (
     <span className="inline-flex items-center gap-2">
-      {href ? <a href={href} className={dark ? 'hover:text-white' : 'hover:text-corp'}>{value}</a> : <span className="select-all">{value}</span>}
+      {/* Blancos táctiles de al menos 24 × 24 px (WCAG 2.2, 2.5.8): enlace y botón quedan uno junto al otro. */}
+      {href ? <a href={href} className={`inline-flex min-h-[24px] items-center ${dark ? 'hover:text-white' : 'hover:text-corp'}`}>{value}</a> : <span className="select-all">{value}</span>}
       <button
         type="button"
         aria-label={t.common.copy(label)}
         onClick={async () => { if (await copyText(value)) { setOk(true); window.setTimeout(() => setOk(false), 1600) } }}
-        className={dark ? 'text-white/40 hover:text-white' : 'text-faint hover:text-corp'}
+        className={`-my-1 grid h-6 w-6 shrink-0 place-items-center ${dark ? 'text-white/40 hover:text-white' : 'text-faint hover:text-corp'}`}
       >
         {ok ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
       </button>
@@ -40,8 +41,8 @@ export function Footer() {
             <p className="mt-4 font-display text-[1.05rem] font-semibold text-ink">{COMPANY.name}</p>
             <p className="mt-2 max-w-sm text-small text-body">{t.footer.tagline}</p>
             <dl className="mt-8 space-y-4 text-small">
-              <div><dt className="text-muted">{t.footer.phone}</dt><dd className="mt-0.5 font-medium text-ink"><CopyValue value={COMPANY.whatsappDisplay} label={t.footer.phone} href={`tel:${COMPANY.phoneIntl}`} /></dd><dd className="text-muted"><a href={`tel:${COMPANY.phoneAlt.intl}`} className="hover:text-corp">{COMPANY.phoneAlt.display}</a></dd></div>
-              <div><dt className="text-muted">{t.footer.email}</dt><dd className="mt-0.5 break-all font-medium text-ink"><CopyValue value={COMPANY.email} label={t.footer.email} href={`mailto:${COMPANY.email}`} /></dd><dd className="break-all text-muted"><a href={`mailto:${COMPANY.emailAlt}`} className="hover:text-corp">{COMPANY.emailAlt}</a></dd></div>
+              <div><dt className="text-muted">{t.footer.phone}</dt><dd className="mt-0.5 font-medium text-ink"><CopyValue value={COMPANY.whatsappDisplay} label={t.footer.phone} href={`tel:${COMPANY.phoneIntl}`} /></dd><dd className="text-muted"><a href={`tel:${COMPANY.phoneAlt.intl}`} className="inline-flex min-h-[24px] items-center hover:text-corp">{COMPANY.phoneAlt.display}</a></dd></div>
+              <div><dt className="text-muted">{t.footer.email}</dt><dd className="mt-0.5 break-all font-medium text-ink"><CopyValue value={COMPANY.email} label={t.footer.email} href={`mailto:${COMPANY.email}`} /></dd><dd className="break-all text-muted"><a href={`mailto:${COMPANY.emailAlt}`} className="inline-flex min-h-[24px] items-center hover:text-corp">{COMPANY.emailAlt}</a></dd></div>
               <div><dt className="text-muted">{t.footer.office}</dt><dd className="mt-0.5 text-ink">{COMPANY.address}</dd><dd className="text-muted">{t.company.hours}</dd></div>
             </dl>
           </div>

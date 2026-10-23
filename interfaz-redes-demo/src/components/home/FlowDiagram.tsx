@@ -31,7 +31,7 @@ export function FlowDiagram() {
                 <h3 className="mt-2 text-h4">{s.title}</h3>
                 <p className="mt-2 max-w-[22rem] text-small text-body">{s.text}</p>
                 <Link to={`/soluciones/${s.service}`} className="group mt-4 inline-flex items-center gap-1.5 text-small font-medium text-corp">
-                  <span className="link-line">{t.common.learnMore}</span><ArrowRight aria-hidden className="arrow-nudge h-3.5 w-3.5" strokeWidth={1.75} />
+                  <span className="link-line">{t.common.learnMore}</span><span className="sr-only">: {s.title}</span><ArrowRight aria-hidden className="arrow-nudge h-3.5 w-3.5" strokeWidth={1.75} />
                 </Link>
               </div>
             </li>

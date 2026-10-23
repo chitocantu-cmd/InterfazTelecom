@@ -251,7 +251,7 @@ export const SERVICES: Service[] = [
     faq: [
       { q: '¿Cuándo conviene fibra en lugar de cobre?', a: 'Cuando la distancia supera el alcance del cobre, cuando se conectan edificios distintos o cuando hay interferencia electromagnética en la ruta.' },
       { q: '¿Instalan fibra entre edificios?', a: 'Sí, enlaces monomodo y multimodo entre edificios, racks o pisos, por ducto subterráneo, aérea o interior.' },
-      { q: '¿Qué entregan al terminar?', a: 'Trazas OTDR de cada hilo, identificación de puertos y el diagrama de la trayectoria.' },
+      { q: '¿Qué entregan al terminar el tendido de fibra?', a: 'Trazas OTDR de cada hilo, identificación de puertos y el diagrama de la trayectoria.' },
       { q: '¿Reparan fibra existente?', a: 'Sí: diagnóstico y reparación de enlaces existentes, con medición para ubicar el punto de falla.' },
     ],
     quoteType: 'fibra',
@@ -303,7 +303,7 @@ export const SERVICES: Service[] = [
     ],
     faq: [
       { q: '¿Pueden reordenar un rack sin detener la red?', a: 'Se planea por bloques en una ventana acordada con su equipo de TI; cada cambio se documenta para restablecer las conexiones en el mismo orden.' },
-      { q: '¿Qué entregan al terminar?', a: 'Elevación del rack, tabla de puertos, etiquetado y fotografías antes y después.' },
+      { q: '¿Qué documentación del rack entregan?', a: 'Elevación del rack, tabla de puertos, etiquetado y fotografías antes y después.' },
       { q: '¿Incluyen UPS y PDU?', a: 'Se integran en el rack según la carga del equipo; el dimensionamiento se hace con el servicio de energía y respaldo.' },
     ],
     quoteType: 'infra',
@@ -329,7 +329,7 @@ export const SERVICES: Service[] = [
     ],
     applications: ['Oficinas con alta densidad de usuarios', 'Naves y almacenes con escáneres y terminales', 'Salas de juntas y áreas comunes', 'Campus y edificios múltiples'],
     scope: ['Site survey y mapa de cobertura', 'Ubicación y montaje de access points', 'Cableado y alimentación PoE', 'Controladora o gestión centralizada', 'Redes separadas para invitados y operación', 'Pruebas de cobertura'],
-    deliverables: ['Mapa de ubicación de AP', 'Configuración documentada', 'Pruebas de cobertura'],
+    deliverables: ['Mapa de ubicación de AP', 'Configuración de la controladora y las SSID', 'Pruebas de cobertura'],
     keySpecs: [
       { label: 'Diseño', value: 'Site survey' },
       { label: 'Gestión', value: 'Centralizada' },
@@ -460,7 +460,7 @@ export const SERVICES: Service[] = [
     ],
     applications: ['Oficinas y corporativos', 'Recepciones y áreas de atención', 'Migración desde telefonía análoga'],
     scope: ['Cableado y nodos de voz', 'Configuración de VLAN de voz', 'Alimentación PoE de teléfonos', 'Integración con conmutador'],
-    deliverables: ['Plano de extensiones', 'Configuración documentada'],
+    deliverables: ['Plano de extensiones', 'Configuración del conmutador documentada'],
     keySpecs: [
       { label: 'Integración', value: 'Voz y datos' },
       { label: 'Red', value: 'VLAN de voz' },
@@ -608,7 +608,7 @@ export const SERVICES: Service[] = [
       'Cálculo manual de horas extra, retardos y faltas',
       'Asistencia de varias sucursales sin consolidar',
     ],
-    applications: ['Plantas con turnos rotativos', 'Oficinas y corporativos', 'Empresas con varias sucursales', 'Sustitución de relojes checadores o listas en papel'],
+    applications: ['Plantas con turnos rotativos', 'Oficinas con horario de entrada y salida', 'Empresas con varias sucursales', 'Sustitución de relojes checadores o listas en papel'],
     scope: [
       'Definición de turnos, tolerancias y reglas de retardo',
       'Selección y montaje de checadores',

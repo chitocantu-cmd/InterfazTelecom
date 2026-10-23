@@ -45,10 +45,22 @@ Estado: ✅ hecho y verificado · 🟡 hecho, falta algo de la empresa · ⏳ pe
 | Centro técnico con flujo editorial (borrador → revisión → publicado) y Markdown | 🟡 | 5 borradores escritos; falta **revisión técnica** para publicarlos |
 | Arquitectura de eventos sin datos personales (dataLayer / GA4) | ✅ | Sin scripts de terceros mientras no haya `VITE_GA_ID` |
 | Preparación SEO (hreflang, canonical, noindex, sitemap multilingüe) | ✅ | Plan en `SEO_FASE_SIGUIENTE.md` |
+| Rendimiento medido contra producción y DNSIT (red y CPU limitadas) | ✅ | CLS 0, TBT ≤ 52 ms, abrir el menú móvil 40 ms; LCP de la portada 2.37 s (2.52 s en inglés): la foto pasó a ser el elemento principal |
+| Accesibilidad automatizada (Lighthouse, WCAG 2.2) | ✅ | 100 en 9 páginas; falta una revisión manual con lector de pantalla |
 
-## Pruebas (última corrida)
+## Pruebas (última corrida, 23 de octubre)
 
-Se registran en `AUDITORIA_FINAL_INTERFAZ.md` (sección «Interfaz 2.0»), con el detalle de cada comprobación.
+| Prueba | Resultado |
+| --- | --- |
+| `npm run typecheck` | ✅ sin errores |
+| `npm run lint` | ✅ 0 errores (16 avisos de estilo) |
+| `npm run build` | ✅ 140 páginas (28 indexables) + 404 |
+| `npm run check:hydration` | ✅ 63 rutas × 2 anchos sin avisos |
+| `npx playwright test` | ✅ 185 pasan, 29 omitidas (de un solo ancho o del sitio publicado), 0 fallan |
+| Lighthouse 12.8 móvil | ✅ accesibilidad 100 en las 9 páginas medidas |
+
+El detalle (mediciones, comparación con DNSIT y producción, errores corregidos y criterios de la fase 21) está en
+`AUDITORIA_FINAL_INTERFAZ.md`, parte 1 (interno, fuera de git).
 
 ## Decisiones que requieren a la empresa
 

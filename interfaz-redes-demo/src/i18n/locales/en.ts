@@ -604,7 +604,7 @@ const content: ContentTranslation = {
       faq: [
         { q: 'When is fiber better than copper?', a: 'When the distance exceeds copper’s reach, when separate buildings are connected or when there is electromagnetic interference along the route.' },
         { q: 'Do you install fiber between buildings?', a: 'Yes, single-mode and multimode links between buildings, racks or floors, in underground duct, aerial or indoor routes.' },
-        { q: 'What do you deliver at the end?', a: 'OTDR traces of every strand, port identification and the route diagram.' },
+        { q: 'What do you deliver when the fiber run is finished?', a: 'OTDR traces of every strand, port identification and the route diagram.' },
         { q: 'Do you repair existing fiber?', a: 'Yes: diagnosis and repair of existing links, with testing to locate the fault.' },
       ],
     },
@@ -630,7 +630,7 @@ const content: ContentTranslation = {
       ],
       faq: [
         { q: 'Can you reorganize a rack without taking the network down?', a: 'It is planned in blocks during a window agreed with your IT team; every change is documented to restore connections in the same order.' },
-        { q: 'What do you deliver at the end?', a: 'Rack elevation, port map, labeling and before and after photos.' },
+        { q: 'What rack documentation do you hand over?', a: 'Rack elevation, port map, labeling and before and after photos.' },
         { q: 'Do you include UPS and PDU?', a: 'They are integrated into the rack according to the equipment load; sizing is done with the power and backup service.' },
       ],
     },
@@ -641,7 +641,7 @@ const content: ContentTranslation = {
       problems: ['Areas without coverage or with drops when moving around the building', 'Congestion in meeting rooms, classrooms or cafeterias with many users', 'Warehouse scanners and terminals losing connection between storage racks', 'A single network for employees, guests and devices'],
       applications: ['Offices with high user density', 'Warehouses with scanners and terminals', 'Meeting rooms and common areas', 'Campuses and multiple buildings'],
       scope: ['Site survey and coverage map', 'Access point placement and mounting', 'Cabling and PoE power', 'Controller or centralized management', 'Separate networks for guests and operations', 'Coverage testing'],
-      deliverables: ['Access point location map', 'Documented configuration', 'Coverage tests'],
+      deliverables: ['Access point location map', 'Controller and SSID configuration', 'Coverage tests'],
       keySpecs: [{ label: 'Design', value: 'Site survey' }, { label: 'Management', value: 'Centralized' }, { label: 'Power', value: 'PoE' }],
       options: [
         { title: 'Predictive site survey', text: 'Design on drawings with the building’s materials; useful for new construction.' },
@@ -720,7 +720,7 @@ const content: ContentTranslation = {
       problems: ['Analog PBX systems with no room to grow or spare parts', 'Scattered extensions with unorganized cabling', 'Calls dropping when the network is congested'],
       applications: ['Offices and corporate buildings', 'Reception and customer service areas', 'Migration from analog telephony'],
       scope: ['Voice cabling and outlets', 'Voice VLAN configuration', 'PoE power for phones', 'PBX integration'],
-      deliverables: ['Extension map', 'Documented configuration'],
+      deliverables: ['Extension map', 'Documented phone system configuration'],
       keySpecs: [{ label: 'Integration', value: 'Voice and data' }, { label: 'Network', value: 'Voice VLAN' }, { label: 'Devices', value: 'PoE' }],
       process: [
         { title: 'Inventory', text: 'Extensions, lines, service areas and current equipment.' },
@@ -795,7 +795,7 @@ const content: ContentTranslation = {
       seoDescription: 'Attendance control in Monterrey with biometric and card time clocks: hours, late arrivals and absences in payroll-ready reports, for one or several sites.',
       intro: 'We record staff check-ins and check-outs with biometric or card time clocks, and set up the reports on hours, late arrivals and absences that your payroll team uses.',
       problems: ['Check-ins recorded by someone else', 'Manual calculation of overtime, late arrivals and absences', 'Attendance from several branches that is not consolidated'],
-      applications: ['Plants with rotating shifts', 'Offices and corporate buildings', 'Companies with several branches', 'Replacing time clocks or paper lists'],
+      applications: ['Plants with rotating shifts', 'Offices with set check-in and check-out times', 'Companies with several branches', 'Replacing time clocks or paper lists'],
       scope: ['Definition of shifts, tolerances and lateness rules', 'Time clock selection and mounting', 'Connection to the network and the management software', 'Staff enrollment with fingerprint, face or credential', 'Payroll report configuration', 'Training for administrative staff'],
       deliverables: ['Installed time clocks', 'Documented shift rules', 'Configured reports', 'Training'],
       keySpecs: [{ label: 'Identification', value: 'Fingerprint · face · card' }, { label: 'Reports', value: 'Hours · lateness · absences' }, { label: 'Integration', value: 'Access control' }],
