@@ -169,7 +169,7 @@ function Layout() {
         {/* Ocupa al menos la pantalla mientras carga la página, para que el footer no brinque al llegar el contenido. */}
         <SectionBoundary key={pathname} t={t}>
         <div className="page-enter">
-        <Suspense fallback={<div className="min-h-[100svh]" aria-busy="true" />}>
+        <Suspense fallback={<div className="min-h-[100svh]" aria-busy="true"><span aria-hidden className="route-progress" /></div>}>
         <Routes>{LOCALES.map((l) => localeRoutes(LOCALE_META[l].prefix))}</Routes>
         </Suspense>
         </div>

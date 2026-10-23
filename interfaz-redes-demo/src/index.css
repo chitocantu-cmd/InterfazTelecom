@@ -73,6 +73,8 @@
   html:lang(zh-CN) body { line-break: strict; }
   /* El ancho en «ch» del titular de la portada se mide con letras latinas; en coreano y chino cada carácter ocupa ~1 em. */
   html:lang(ko) .hero-title, html:lang(zh-CN) .hero-title { max-width: 11em; }
+  /* Los glifos coreanos y chinos ocupan más superficie: los titulares de escena (text-mega) bajan un escalón. */
+  html:lang(ko) .text-mega, html:lang(zh-CN) .text-mega { font-size: clamp(2.3rem, 1rem + 3.1vw, 4.3rem); line-height: 1.12; }
 }
 
 @layer components {
@@ -114,7 +116,8 @@
 @keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
 @keyframes fade-down { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
 @keyframes reveal { from { clip-path: inset(0 0 0 24%); transform: scale(1.06); } to { clip-path: inset(0); transform: none; } }
-@keyframes page-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes page-in { from { opacity: 0; transform: translateY(18px); clip-path: inset(0 0 12% 0); } to { opacity: 1; transform: none; clip-path: inset(0); } }
+@keyframes progress { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
 @keyframes packet-x { from { transform: translateX(-100%); } to { transform: translateX(340%); } }
 @keyframes packet-y { from { transform: translateY(-100%); } to { transform: translateY(340%); } }
 @keyframes dash { to { stroke-dashoffset: -32; } }
@@ -124,7 +127,11 @@
 .enter-reveal { animation: reveal 1.15s var(--ease-emph) both; animation-delay: var(--d, 0ms); }
 
 /* Transición entre páginas: sólo después de la primera navegación dentro del sitio (html[data-nav]), no al abrirlo. */
-html[data-nav] .page-enter { animation: page-in 0.38s var(--ease-out) both; }
+/* 3.0: la página nueva sube y se descubre de arriba abajo (máscara direccional); header y logotipo no se mueven.
+   Mientras una página se descarga, una línea recorre el borde inferior del header. */
+html[data-nav] .page-enter { animation: page-in 0.55s var(--ease-emph) both; }
+.route-progress { position: fixed; inset-inline: 0; top: var(--hdr); z-index: 49; height: 2px; overflow: hidden; }
+.route-progress::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, #26a5dc, transparent); animation: progress 1.1s var(--ease-inout) infinite; }
 
 /* Diagrama de flujo de la portada: un pulso recorre cada enlace mientras el diagrama está en pantalla.
    En el teléfono los enlaces son verticales (a la izquierda de cada etapa); desde 1024 px, horizontales. */
@@ -140,8 +147,187 @@ html[data-nav] .page-enter { animation: page-in 0.38s var(--ease-out) both; }
 /* Topología: la fibra «transmite» mientras el diagrama está en pantalla. */
 .topo-live .topo-fiber { stroke-dasharray: 10 6; animation: dash 1.4s linear infinite; }
 
+/* ------------------------------------------------------------------------------------------------
+   Interfaz 3.0 · sistema de movimiento (MOTION_DESIGN_SYSTEM.md). Mismos tokens que src/motion/tokens.ts.
+   Regla: el contenido está en el HTML y es legible sin JavaScript; el movimiento sólo lo presenta.
+   ------------------------------------------------------------------------------------------------ */
+:root { --ease-inout: cubic-bezier(0.65, 0, 0.35, 1); --dur-editorial: 700ms; --dur-cinematic: 1200ms; }
+
+/* Titulares palabra por palabra (SplitWords). .split-i: al cargar · .split-v: al entrar en pantalla. */
+@keyframes word-rise { from { transform: translateY(112%); } to { transform: none; } }
+.split-w { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: 0.12em; margin-bottom: -0.12em; }
+.split-i, .split-v { display: inline-block; }
+.split-i { animation: word-rise 1.05s var(--ease-emph) both; animation-delay: calc(var(--d0, 0ms) + var(--i, 0) * 55ms); }
+.reveal-armed .split-v { transform: translateY(112%); }
+.reveal-armed.is-in .split-v { transform: none; transition: transform 1.05s var(--ease-emph) calc(var(--i, 0) * 55ms); }
+
+/* Entradas al desplazarse ([data-reveal] + useReveal). Sin JavaScript nada se arma y todo se ve. */
+.reveal-armed[data-reveal='rise'] { opacity: 0; transform: translateY(28px); }
+.reveal-armed[data-reveal='rise'].is-in { opacity: 1; transform: none; transition: opacity 0.9s var(--ease-out) var(--rd, 0ms), transform 1s var(--ease-emph) var(--rd, 0ms); }
+.reveal-armed[data-reveal='mask'] { clip-path: inset(0 0 100% 0); }
+.reveal-armed[data-reveal='mask'].is-in { clip-path: inset(0); transition: clip-path 1.25s var(--ease-emph) var(--rd, 0ms); }
+.reveal-armed[data-reveal='line'] { transform: scaleX(0); transform-origin: left; }
+.reveal-armed[data-reveal='line'].is-in { transform: none; transition: transform 1.2s var(--ease-emph) var(--rd, 0ms); }
+
+/* CoverBox: caja con la proporción de la foto que cubre a .cover-stage (como object-fit: cover). */
+.cover-stage { container-type: size; overflow: hidden; }
+.cover-box {
+  position: absolute;
+  --w: max(100cqw, calc(100cqh * var(--r)));
+  --h: max(100cqh, calc(100cqw / var(--r)));
+  width: var(--w); height: var(--h);
+  left: calc((100cqw - var(--w)) * var(--px, 0.5));
+  top: calc((100cqh - var(--h)) * var(--py, 0.5));
+}
+.cover-box img { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* Anotaciones técnicas sobre fotografía (Callout). Entran con .is-on (JS) o .callouts-load (al cargar). */
+@keyframes ping { 0% { transform: scale(1); opacity: 0.9; } 80%, 100% { transform: scale(2.6); opacity: 0; } }
+@keyframes dot-in { from { transform: scale(0); } to { transform: none; } }
+@keyframes line-in { from { transform: scaleX(0); } to { transform: none; } }
+@keyframes label-in { from { opacity: 0; translate: -8px 0; } to { opacity: 1; translate: 0 0; } }
+.callout { position: absolute; width: 0; height: 0; z-index: 2; pointer-events: none; }
+.callout-dot { position: absolute; left: -5px; top: -5px; width: 10px; height: 10px; border-radius: 9999px; background: #26a5dc; box-shadow: 0 0 0 3px rgb(5 13 24 / 0.55); }
+.callout-dot::after { content: ''; position: absolute; inset: -1px; border-radius: 9999px; border: 1px solid #26a5dc; animation: ping 2.6s var(--ease-out) infinite; }
+.callout-line { position: absolute; left: 8px; top: 0; width: 48px; height: 1px; background: rgb(255 255 255 / 0.8); transform-origin: left center; }
+.callout-label {
+  position: absolute; left: 60px; top: 0; transform: translateY(-50%); white-space: nowrap;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-size: 0.7rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+  color: #fff; background: rgb(5 13 24 / 0.66); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  padding: 0.45rem 0.6rem; border: 1px solid rgb(255 255 255 / 0.16);
+}
+.callout-left .callout-line { left: auto; right: 8px; transform-origin: right center; }
+.callout-left .callout-label { left: auto; right: 60px; }
+.callout-dot, .callout-line, .callout-label { will-change: transform; }
+.callouts-js .callout-dot { transform: scale(0); }
+.callouts-js .callout-line { transform: scaleX(0); }
+.callouts-js .callout-label { opacity: 0; translate: -8px 0; }
+.callouts-js.is-on .callout-dot { transform: none; transition: transform 0.5s var(--ease-emph) var(--cd, 0ms); }
+.callouts-js.is-on .callout-line { transform: none; transition: transform 0.7s var(--ease-emph) calc(var(--cd, 0ms) + 150ms); }
+.callouts-js.is-on .callout-label { opacity: 1; translate: 0 0; transition: opacity 0.5s var(--ease-out) calc(var(--cd, 0ms) + 420ms), translate 0.6s var(--ease-emph) calc(var(--cd, 0ms) + 420ms); }
+.callouts-load .callout-dot { animation: dot-in 0.5s var(--ease-emph) both; animation-delay: var(--cd, 0ms); }
+.callouts-load .callout-line { animation: line-in 0.7s var(--ease-emph) both; animation-delay: calc(var(--cd, 0ms) + 150ms); }
+.callouts-load .callout-label { animation: label-in 0.6s var(--ease-emph) both; animation-delay: calc(var(--cd, 0ms) + 420ms); }
+
+/* Hero 3.0: la escena se abre como una compuerta, la cámara se asienta y una luz recorre la imagen.
+   Con el mouse (nivel full), las capas responden al cursor con profundidad distinta (--mx / --my). */
+@keyframes aperture { from { clip-path: inset(46% 0 46% 0); } to { clip-path: inset(0); } }
+@keyframes settle { from { transform: scale(1.16); } to { transform: none; } }
+@keyframes sweep { from { transform: translateX(-60%); opacity: 0; } 30% { opacity: 1; } to { transform: translateX(60%); opacity: 0; } }
+@keyframes cue { 0% { transform: translateY(-100%); } 100% { transform: translateY(200%); } }
+.hero3-scene { animation: aperture 1.5s var(--ease-inout) 120ms both; }
+/* Teléfono: recorte vertical (aisleTall, 2:3) · desde 768 px: la foto horizontal (3:2), encuadrada a la derecha. */
+.hero3-box { --r: 0.667; --px: 0.5; }
+@media (min-width: 768px) { .hero3-box { --r: 1.5; --px: 0.62; } }
+.hero3-zoom { animation: settle 2.6s var(--ease-emph) 120ms both; }
+.hero3-depth { transform: translate3d(calc(var(--mx, 0) * -18px), calc(var(--my, 0) * -12px), 0) scale(1.05); transition: transform 1.2s var(--ease-out); }
+.hero3-fore { transform: translate3d(calc(var(--mx, 0) * 8px), calc(var(--my, 0) * 6px), 0); transition: transform 1.2s var(--ease-out); }
+.hero3-sweep { background: linear-gradient(100deg, transparent 38%, rgb(38 165 220 / 0.16) 50%, transparent 62%); animation: sweep 2.4s var(--ease-inout) 1.1s both; }
+.scroll-cue { position: relative; overflow: hidden; width: 1px; height: 52px; background: rgb(255 255 255 / 0.22); }
+.scroll-cue::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent, #26a5dc, transparent); animation: cue 2.2s var(--ease-inout) infinite; }
+.magnetic { transition: transform 0.5s var(--ease-out); }
+
+/* Recorrido «De la conexión a la operación» (Journey.tsx).
+   Por defecto (teléfono, «reducir movimiento», sin JavaScript): capítulos apilados, foto y texto.
+   .journey-stage (escritorio, nivel full): escenario fijo con sticky; journey-motion.ts anima con GSAP. */
+.journey .jc { padding-bottom: 4.5rem; }
+.journey .jc-scene { position: relative; aspect-ratio: 4 / 3; max-width: 1600px; margin-inline: auto; }
+@media (min-width: 768px) { .journey .jc-scene { aspect-ratio: 16 / 9; } }
+.journey .jc-media { transform-origin: 50% 50%; will-change: transform; }
+.journey .jc-copy-wrap { margin-top: 2rem; }
+.journey .jc-shade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(0deg, rgb(5 13 24 / 0.45), transparent 35%); }
+.journey .callout-num { display: none; position: absolute; left: -10px; top: -10px; width: 20px; height: 20px; place-items: center; border-radius: 9999px; background: #26a5dc; color: #050d18; font: 600 0.66rem/1 'IBM Plex Mono', ui-monospace, monospace; box-shadow: 0 0 0 3px rgb(5 13 24 / 0.55); }
+@media (max-width: 767.98px) {
+  .journey .callout-line, .journey .callout-label, .journey .callout-dot { display: none; }
+  .journey .callout-num { display: grid; }
+}
+.journey-rail { display: none; }
+/* Red sobre la foto del último capítulo: trazo y nodos (cámaras). */
+.jc-net-path { fill: none; stroke: #4cc3f0; stroke-width: 3px; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 5px rgb(38 165 220 / 0.95)); }
+.jc-node { position: absolute; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 9999px; background: #e9f6fd; box-shadow: 0 0 0 3px rgb(38 165 220 / 0.55), 0 0 14px rgb(38 165 220 / 0.9); }
+
+.journey-stage .journey-track { position: relative; height: calc(var(--n) * 85vh + 100vh); }
+.journey-stage .journey-sticky { position: sticky; top: 0; height: 100vh; overflow: hidden; }
+.journey-stage .jc { position: absolute; inset: 0; padding: 0; }
+.journey-stage .jc-scene { position: absolute; inset: 0; aspect-ratio: auto; max-width: none; }
+.journey-stage .jc + .jc .jc-scene { clip-path: inset(100% 0 0 0); }
+.journey-stage .jc-shade { background: linear-gradient(90deg, rgb(5 13 24 / 0.88) 0%, rgb(5 13 24 / 0.55) 32%, transparent 62%), linear-gradient(0deg, rgb(5 13 24 / 0.8) 0%, transparent 42%), linear-gradient(180deg, rgb(5 13 24 / 0.55) 0%, transparent 22%); }
+.journey-stage .jc-legend { display: none; }
+.journey-stage .jc-copy-wrap { position: absolute; inset-inline: 0; bottom: 10vh; z-index: 3; margin: 0; pointer-events: none; }
+.journey-stage .jc-copy { max-width: min(36rem, 44vw); opacity: 0; transform: translateY(28px); transition: opacity 0.45s var(--ease-out), transform 0.8s var(--ease-emph); }
+.journey-stage .jc.is-active .jc-copy { opacity: 1; transform: none; pointer-events: auto; transition-delay: 0.1s; }
+.journey-stage .jc:not(.is-active) .jc-copy { visibility: hidden; transition: opacity 0.3s var(--ease-out), transform 0.5s var(--ease-out), visibility 0s linear 0.45s; }
+.journey-stage .journey-rail { display: block; position: absolute; right: var(--gutter); bottom: 10vh; z-index: 4; }
+.journey-stage .img-caption { top: calc(84px + 1rem); bottom: auto; }
+.journey-rail-line { position: absolute; left: 4px; top: 6px; bottom: 6px; width: 1px; background: rgb(255 255 255 / 0.2); }
+.journey-rail-fill { position: absolute; inset: 0; background: #26a5dc; transform-origin: top; transform: scaleY(var(--p, 0)); }
+.journey-rail-item { color: rgb(255 255 255 / 0.5); transition: color var(--dur-base) var(--ease-out); }
+.journey-rail-item:hover, .journey-rail-item.is-active { color: #fff; }
+.journey-rail-dot { position: relative; width: 9px; height: 9px; border-radius: 9999px; border: 1px solid rgb(255 255 255 / 0.5); background: #050d18; transition: background-color var(--dur-base), border-color var(--dur-base), transform var(--dur-base) var(--ease-out); }
+.journey-rail-item.is-active .journey-rail-dot { background: #26a5dc; border-color: #26a5dc; transform: scale(1.25); }
+.journey-rail-label { max-width: 0; overflow: hidden; white-space: nowrap; opacity: 0; transition: max-width 0.5s var(--ease-emph), opacity 0.3s; }
+.journey-rail-item.is-active .journey-rail-label, .journey-rail:hover .journey-rail-label, .journey-rail:focus-within .journey-rail-label { max-width: 16rem; opacity: 1; }
+
+/* Explorador de soluciones (ServicesStage.tsx): la foto nueva entra por una máscara sobre la anterior. */
+.sv-layer { position: absolute; inset: 0; z-index: 1; clip-path: inset(0 0 0 100%); }
+.sv-layer img { transform: scale(1.12); transition: transform 1.6s var(--ease-emph); }
+.sv-layer.is-prev { z-index: 2; clip-path: inset(0); }
+.sv-layer.is-prev img { transform: scale(1.04); }
+.sv-layer.is-current { z-index: 3; clip-path: inset(0); transition: clip-path 1.05s var(--ease-emph); }
+.sv-layer.is-current img { transform: none; }
+.sv-fade { animation: rise 0.7s var(--ease-out) 0.18s both; }
+.sv-tabs::-webkit-scrollbar { display: none; }
+
+/* Industrias (Sections.tsx · IndustriesIndex): paneles que se expanden. Teléfono: acordeón vertical.
+   Desde 1024 px: fila de paneles; el activo crece y los demás muestran el nombre en vertical. */
+.ind-panels { display: flex; flex-direction: column; gap: 6px; }
+.ind-panel { position: relative; overflow: hidden; background: #0a1626; isolation: isolate; }
+.ind-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1.1); filter: saturate(0.5) brightness(0.5); transition: transform 1.4s var(--ease-emph), filter 0.9s var(--ease-out); }
+.ind-panel.is-active .ind-img { transform: none; filter: none; }
+.ind-shade { position: absolute; inset: 0; background: linear-gradient(0deg, rgb(5 13 24 / 0.94) 0%, rgb(5 13 24 / 0.55) 48%, rgb(5 13 24 / 0.25) 100%); }
+.ind-tab { position: relative; z-index: 1; display: flex; width: 100%; align-items: center; gap: 0.9rem; padding: 1.6rem 1.25rem; text-align: left; color: #fff; }
+.ind-label { font-family: Archivo, 'Archivo Fallback', var(--cjk), Arial, sans-serif; font-size: 1.2rem; font-weight: 500; letter-spacing: -0.01em; }
+.ind-body { position: relative; z-index: 2; padding: 0 1.25rem 1.75rem; }
+.ind-panel:not(.is-active) .ind-body { display: none; }
+.ind-panel.is-active .ind-body { animation: rise 0.8s var(--ease-emph) 0.12s both; }
+@media (min-width: 1024px) {
+  .ind-panels { flex-direction: row; height: 600px; gap: 8px; }
+  .ind-panel { flex: 1 1 0; min-width: 0; transition: flex-grow 0.95s var(--ease-emph); }
+  .ind-panel.is-active { flex-grow: 4.4; }
+  .ind-tab { position: absolute; inset: 0; flex-direction: column; justify-content: space-between; align-items: flex-start; padding: 1.5rem; }
+  .ind-panel.is-active .ind-tab { pointer-events: none; }
+  .ind-label { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 1.3rem; white-space: nowrap; transition: opacity 0.4s var(--ease-out); }
+  .ind-panel.is-active .ind-label { opacity: 0; }
+  .ind-panel:not(.is-active):hover .ind-img { filter: saturate(0.75) brightness(0.65); }
+  .ind-body { position: absolute; inset: auto 0 0 0; padding: 2.25rem; }
+  .ind-panel:not(.is-active) .ind-body { display: block; visibility: hidden; opacity: 0; }
+  :lang(ko) .ind-label, :lang(zh-CN) .ind-label { transform: none; text-orientation: upright; letter-spacing: 0.06em; }
+}
+
+/* Proyectos (Sections.tsx · FeaturedProjects): lista editorial con vista previa que sigue al cursor. */
+.pj-row .pj-title { transition: color var(--dur-base) var(--ease-out), transform 0.6s var(--ease-emph); }
+.pj-row:hover .pj-title, .pj-row:focus-visible .pj-title { color: #0e4c92; transform: translateX(10px); }
+.pj-preview { width: 0; height: 0; }
+.pj-preview-frame { position: absolute; left: 24px; top: -130px; width: 360px; aspect-ratio: 4 / 3; overflow: hidden; background: #0a1626; opacity: 0; transform: scale(0.86) rotate(-2deg); transition: opacity 0.35s var(--ease-out), transform 0.6s var(--ease-emph); box-shadow: 0 30px 60px -30px rgb(8 29 54 / 0.6); }
+.pj-preview.is-on .pj-preview-frame { opacity: 1; transform: none; }
+.pj-preview-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; clip-path: inset(100% 0 0 0); transition: clip-path 0.7s var(--ease-emph); }
+.pj-preview-img.is-current { clip-path: inset(0); }
+
+/* Escena 3D (RackExplorer + three/rackScene.ts): marcas numeradas sobre cada componente. */
+.rack-host.is-dragging { cursor: grabbing; }
+.rack-marker {
+  position: absolute; left: 0; top: 0; margin: -12px 0 0 -12px; width: 24px; height: 24px; border-radius: 9999px;
+  display: grid; place-items: center; font: 600 0.66rem/1 'IBM Plex Mono', ui-monospace, monospace; color: #050d18;
+  background: #e9f6fd; box-shadow: 0 0 0 4px rgb(38 165 220 / 0.32); pointer-events: auto; cursor: pointer;
+  transition: opacity 0.3s, background-color 0.2s, box-shadow 0.2s;
+}
+.rack-marker:hover { background: #fff; }
+.rack-marker.is-active { background: #26a5dc; box-shadow: 0 0 0 6px rgb(38 165 220 / 0.28), 0 0 18px rgb(38 165 220 / 0.85); }
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
+  .hero3-depth, .hero3-fore { transform: none; }
+  .callout-dot::after, .scroll-cue::after { animation: none; display: none; }
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
   .flow-packet { display: none; }
 }

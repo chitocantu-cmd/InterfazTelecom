@@ -1,5 +1,5 @@
 import { ArrowRight } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { COMPANY } from '../../data/company'
 import { familiesOf, type Project } from '../../data/content'
 import { explorerQuery } from '../../data/explorer'
@@ -7,8 +7,10 @@ import { IMG, type ImgKey } from '../../data/media'
 import { useI18n } from '../../i18n'
 import { Link } from '../../i18n/Link'
 import { cn, waLink } from '../../lib/utils'
-import { Media } from '../plates'
-import { Button, Reveal, SectionHead, Tag, TextLink } from '../ui'
+import { useConvergence } from '../../motion/convergence'
+import { detectTier } from '../../motion/experience'
+import { SplitWords, useMagnetic, useReveal } from '../../motion/primitives'
+import { Button, SectionHead, Tag, TextLink } from '../ui'
 
 /* ---------- Capacidad + razones ---------- */
 export function Intro() {
@@ -78,35 +80,69 @@ export function ProjectMeta({ p, className }: { p: Project; className?: string }
 
 export function FeaturedProjects() {
   const { t, c } = useI18n()
-  const [a, b, d] = [c.projects[0], c.projects[2], c.projects[3]]
+  const [hover, setHover] = useState<number | null>(null)
+  const [shown, setShown] = useState(0)
+  const area = useRef<HTMLDivElement>(null)
+  const preview = useRef<HTMLDivElement>(null)
+  const root = useReveal<HTMLElement>()
+  const list = c.projects
+
+  // La vista previa sigue al cursor con un retraso suave (sin renders de React por cuadro). Sólo con mouse.
+  useEffect(() => {
+    const el = area.current, pv = preview.current
+    if (!el || !pv || detectTier() !== 'full') return
+    let x = 0, y = 0, tx = 0, ty = 0, raf = 0, inside = false
+    const loop = () => {
+      x += (tx - x) * 0.14; y += (ty - y) * 0.14
+      pv.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`
+      raf = inside || Math.abs(tx - x) + Math.abs(ty - y) > 0.5 ? requestAnimationFrame(loop) : 0
+    }
+    const move = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse') return
+      const r = el.getBoundingClientRect()
+      tx = e.clientX - r.left; ty = e.clientY - r.top
+      if (!inside) { inside = true; x = tx; y = ty }
+      raf ||= requestAnimationFrame(loop)
+    }
+    const leave = () => { inside = false }
+    el.addEventListener('pointermove', move)
+    el.addEventListener('pointerleave', leave)
+    return () => { el.removeEventListener('pointermove', move); el.removeEventListener('pointerleave', leave); cancelAnimationFrame(raf) }
+  }, [])
+  const enter = (i: number) => { setHover(i); setShown(i) }
+
   return (
-    <section className="py-24 md:py-32" aria-labelledby="proyectos-title">
+    <section ref={root} className="py-24 md:py-32" aria-labelledby="proyectos-title">
       <div className="container">
         <SectionHead id="proyectos-title" title={t.featured.title} lede={t.featured.lede} />
-        <Reveal className="mt-14">
-          <Link to={`/proyectos/${a.slug}`} className="group grid gap-8 lg:grid-cols-12 lg:items-end lg:gap-12">
-            <div className="overflow-hidden lg:col-span-8"><Media img={a.img} plate={a.plate} ratio="aspect-[16/10]" zoom pos="74% 50%" sizes="(min-width: 1024px) 66vw, 100vw" /></div>
-            <div className="lg:col-span-4 lg:pb-2">
-              <ProjectMeta p={a} />
-              <h3 className="mt-3 text-h2 transition-colors group-hover:text-corp">{a.title}</h3>
-              <p className="mt-4 text-body">{a.summary}</p>
-              <span className="mt-6 inline-flex items-center gap-2 text-small font-medium text-corp"><span className="link-line">{t.common.viewCase}</span><ArrowRight aria-hidden className="arrow-nudge h-4 w-4" strokeWidth={1.75} /></span>
+        <div ref={area} className="relative mt-14" onPointerLeave={() => setHover(null)}>
+          {/* Vista previa flotante (escritorio con mouse): la foto del proyecto bajo el cursor. */}
+          <div ref={preview} aria-hidden className={cn('pj-preview pointer-events-none absolute left-0 top-0 z-10 hidden lg:block', hover !== null && 'is-on')}>
+            <div className="pj-preview-frame">
+              {list.map((p, i) => {
+                const img = p.img ? IMG[p.img] : null
+                return img && <img key={p.slug} src={img.src} srcSet={img.srcSet} sizes="380px" alt="" loading="lazy" decoding="async" className={cn('pj-preview-img', i === shown && 'is-current')} style={{ objectPosition: img.pos }} />
+              })}
             </div>
-          </Link>
-        </Reveal>
-        <div className="mt-20 grid gap-16 md:grid-cols-2 md:gap-10">
-          {[b, d].map((p, i) => (
-            <Reveal key={p.slug} delay={i * 0.06} className={i === 1 ? 'md:mt-24' : ''}>
-              <Link to={`/proyectos/${p.slug}`} className="group block">
-                <div className="overflow-hidden"><Media img={p.img} plate={p.plate} ratio="aspect-[4/3]" zoom sizes="(min-width: 768px) 50vw, 100vw" /></div>
-                <ProjectMeta p={p} className="mt-6" />
-                <h3 className="mt-2 text-h3 transition-colors group-hover:text-corp">{p.title}</h3>
-                <p className="mt-2 max-w-measure text-small text-body">{p.summary}</p>
-              </Link>
-            </Reveal>
-          ))}
+          </div>
+          <ol className="border-t border-ink/80">
+            {list.map((p, i) => {
+              const img = p.img ? IMG[p.img] : null
+              return (
+                <li key={p.slug} data-reveal="rise" style={{ '--rd': `${i * 60}ms` } as CSSProperties} className="border-b border-line">
+                  <Link to={`/proyectos/${p.slug}`} onPointerEnter={() => enter(i)} onFocus={() => enter(i)} onBlur={() => setHover(null)} className="pj-row group grid grid-cols-[auto_1fr] items-start gap-x-5 gap-y-3 py-6 md:py-8 lg:grid-cols-[3rem_1fr_minmax(0,18rem)_2rem] lg:items-center">
+                    {img && <span className="col-span-2 block aspect-[16/9] overflow-hidden bg-mist lg:hidden"><img src={img.src} srcSet={img.srcSet} sizes="100vw" alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" style={{ objectPosition: img.pos }} /></span>}
+                    <span className="pt-1.5 font-mono text-[0.72rem] text-faint lg:pt-0">{String(i + 1).padStart(2, '0')}</span>
+                    <span className="pj-title font-display text-[clamp(1.35rem,1rem+1.3vw,2.25rem)] font-medium leading-[1.12] tracking-[-0.02em] text-ink">{p.title}</span>
+                    <ProjectMeta p={p} className="col-start-2 lg:col-start-auto" />
+                    <ArrowRight aria-hidden className="arrow-nudge hidden h-5 w-5 justify-self-end text-faint transition-colors group-hover:text-corp lg:block" strokeWidth={1.5} />
+                  </Link>
+                </li>
+              )
+            })}
+          </ol>
         </div>
-        <div className="mt-16"><TextLink to="/proyectos">{t.featured.all}</TextLink></div>
+        <div className="mt-12"><TextLink to="/proyectos">{t.featured.all}</TextLink></div>
       </div>
     </section>
   )
@@ -146,37 +182,51 @@ export function ExplorerTeaser() {
   )
 }
 
-/* ---------- Industrias ---------- */
+/* ---------- Industrias: paneles que se expanden ---------- */
 export function IndustriesIndex() {
   const { t, c } = useI18n()
-  const [hover, setHover] = useState(c.industries[0].id)
-  const ind = c.industryById(hover) ?? c.industries[0]
+  const [active, setActive] = useState(0)
+  const timer = useRef<number>()
+  const root = useReveal<HTMLElement>()
+  const hover = (i: number, pointer: string) => {
+    if (pointer !== 'mouse') return
+    window.clearTimeout(timer.current)
+    timer.current = window.setTimeout(() => setActive(i), 160)
+  }
   return (
-    <section className="py-24 md:py-32" aria-labelledby="industrias-title">
-      <div className="container grid gap-14 lg:grid-cols-12">
-        <div className="hidden lg:col-span-5 lg:block">
-          <div className="sticky top-36">
-            <Media img={ind.img} plate={ind.plate} ratio="aspect-[4/5] max-h-[620px] w-full" sizes="40vw" />
-          </div>
-        </div>
-        <div className="lg:col-span-6 lg:col-start-7">
-          <h2 id="industrias-title" className="text-h2">{t.industriesIndex.title}</h2>
-          <p className="mt-4 max-w-measure text-body">{t.industriesIndex.lede}</p>
-          <ul className="mt-10 border-t border-line">
-            {c.industries.map((it) => (
-              <li key={it.id} className="border-b border-line">
-                <Link to={`/industrias/${it.id}`} onMouseEnter={() => setHover(it.id)} onFocus={() => setHover(it.id)} className="group flex items-start justify-between gap-6 py-6">
-                  <span>
-                    <span className={cn('block font-display text-[1.55rem] font-medium tracking-[-0.015em] transition-colors', hover === it.id ? 'text-corp' : 'text-ink')}>{it.name}</span>
-                    <span className="mt-1.5 block text-small text-muted">{it.lede}</span>
-                  </span>
-                  <ArrowRight aria-hidden className={cn('arrow-nudge mt-2 h-5 w-5 shrink-0 transition-colors', hover === it.id ? 'text-corp' : 'text-faint')} strokeWidth={1.5} />
-                </Link>
+    <section ref={root} className="py-24 md:py-32" aria-labelledby="industrias-title">
+      <div className="container">
+        <SectionHead id="industrias-title" title={t.industriesIndex.title} lede={t.industriesIndex.lede} />
+        <ul className="ind-panels mt-12" onPointerLeave={() => window.clearTimeout(timer.current)}>
+          {c.industries.map((ind, i) => {
+            const on = i === active
+            const img = ind.img ? IMG[ind.img] : null
+            return (
+              <li key={ind.id} className={cn('ind-panel', on && 'is-active')} onPointerEnter={(e) => hover(i, e.pointerType)}>
+                {img && <img src={img.src} srcSet={img.srcSet} sizes="(min-width: 1024px) 55vw, 100vw" alt={img.alt} loading="lazy" decoding="async" className="ind-img" style={{ objectPosition: img.pos }} />}
+                <span aria-hidden className="ind-shade" />
+                <button type="button" aria-expanded={on} aria-controls={`ind-${ind.id}`} onClick={() => { window.clearTimeout(timer.current); setActive(i) }} className="ind-tab">
+                  <span className="font-mono text-[0.72rem] text-lumen">{String(i + 1).padStart(2, '0')}</span>
+                  <span className="ind-label">{ind.name}</span>
+                </button>
+                <div id={`ind-${ind.id}`} className="ind-body" {...(on ? {} : { inert: '' })}>
+                  <h3 className="text-h2 !text-white">{ind.name}</h3>
+                  <p className="mt-3 max-w-[32rem] text-white/75">{ind.lede}</p>
+                  <p className="mt-6 font-mono text-[0.7rem] uppercase tracking-[0.12em] text-lumen">{t.industriesIndex.needs}</p>
+                  <ul className="mt-3 grid gap-2 sm:grid-cols-3 sm:gap-4">
+                    {ind.challenges.map((x) => <li key={x} className="border-t border-white/20 pt-2 text-small text-white/85">{x}</li>)}
+                  </ul>
+                  <Link to={`/industrias/${ind.id}`} className="group mt-7 inline-flex items-center gap-2 font-medium text-white">
+                    <span className="link-line">{t.industriesIndex.open(ind.name)}</span>
+                    <ArrowRight aria-hidden className="arrow-nudge h-4 w-4 text-lumen" strokeWidth={1.75} />
+                  </Link>
+                </div>
+                {img?.ref && on && <p className="img-caption !bottom-auto top-4 z-[3]">{t.common.referenceImage}</p>}
               </li>
-            ))}
-          </ul>
-          <TextLink to="/industrias" className="mt-8">{t.industriesIndex.all}</TextLink>
-        </div>
+            )
+          })}
+        </ul>
+        <TextLink to="/industrias" className="mt-10">{t.industriesIndex.all}</TextLink>
       </div>
     </section>
   )
@@ -204,23 +254,32 @@ export function ProcessLine({ tone = 'mist' }: { tone?: 'mist' | 'white' }) {
   )
 }
 
-/* ---------- Llamado final ---------- */
+/* ---------- Escena final: conexiones que convergen en el llamado a la acción ---------- */
 export function FinalCTA() {
   const { t } = useI18n()
+  const canvas = useRef<HTMLCanvasElement>(null)
+  useConvergence(canvas)
+  const root = useReveal<HTMLElement>()
+  const magnetic = useMagnetic<HTMLSpanElement>()
   return (
-    <section className="relative bg-white" aria-labelledby="cta-title">
-      <div className="relative mx-auto h-[420px] max-w-frame overflow-hidden md:h-[560px]">
-        <img src={IMG.aisleWide.src} srcSet={IMG.aisleWide.srcSet} sizes="(min-width: 1600px) 1600px, 100vw" alt="" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: '50% 42%' }} />
-      </div>
-      <div className="container relative -mt-40 pb-24 md:-mt-48 md:pb-32">
-        <div className="max-w-3xl bg-white px-0 pt-10 md:px-14 md:pt-14">
-          <h2 id="cta-title" className="text-h1">{t.finalCta.title}</h2>
-          <p className="mt-6 max-w-measure text-lead text-body">{t.finalCta.lede}</p>
-          <div className="mt-10 flex flex-wrap gap-3">
-            <Button to="/contacto" track="cta-final" arrow>{t.common.requestQuote}</Button>
-            <Button href={waLink(t.wa.survey)} variant="secondary">WhatsApp {COMPANY.whatsappDisplay}</Button>
-          </div>
+    <section ref={root} className="relative isolate overflow-hidden bg-night text-white" aria-labelledby="cta-title">
+      <canvas ref={canvas} aria-hidden className="absolute inset-0 h-full w-full" />
+      <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(38%_42%_at_50%_50%,rgb(23_105_200/0.22),transparent_75%)]" />
+      <div className="container relative flex min-h-[min(820px,88vh)] flex-col items-center justify-center py-28 text-center">
+        <p data-reveal="rise" className="flex items-center gap-3 font-mono text-[0.72rem] uppercase tracking-[0.12em] text-lumen">
+          <span aria-hidden className="h-px w-8 bg-lumen" />{t.finalCta.eyebrow}<span aria-hidden className="h-px w-8 bg-lumen" />
+        </p>
+        <h2 id="cta-title" data-reveal="words" className="mt-7 max-w-[13ch] text-mega !font-semibold !text-white"><SplitWords text={t.finalCta.title} mode="view" /></h2>
+        <p data-reveal="rise" className="mt-7 max-w-[36rem] text-lead text-white/70">{t.finalCta.lede}</p>
+        <div data-reveal="rise" className="mt-10 flex flex-wrap justify-center gap-3">
+          <span ref={magnetic} className="inline-block"><Button to="/contacto" track="cta-final" arrow variant="light">{t.common.requestQuote}</Button></span>
+          <Button href={waLink(t.wa.survey)} variant="outlineLight">WhatsApp {COMPANY.whatsappDisplay}</Button>
         </div>
+        <dl data-reveal="rise" className="mt-16 grid gap-x-12 gap-y-4 border-t border-white/15 pt-8 text-small sm:grid-cols-3 sm:text-left">
+          <div><dt className="text-white/50">{t.footer.phone}</dt><dd className="mt-1"><a href={`tel:${COMPANY.phoneIntl}`} className="inline-flex min-h-[24px] items-center text-white hover:text-lumen">{COMPANY.whatsappDisplay}</a></dd></div>
+          <div><dt className="text-white/50">{t.footer.email}</dt><dd className="mt-1 break-all"><a href={`mailto:${COMPANY.email}`} className="inline-flex min-h-[24px] items-center text-white hover:text-lumen">{COMPANY.email}</a></dd></div>
+          <div><dt className="text-white/50">{t.finalCta.hours}</dt><dd className="mt-1 text-white/85">{t.company.hours}</dd></div>
+        </dl>
       </div>
     </section>
   )

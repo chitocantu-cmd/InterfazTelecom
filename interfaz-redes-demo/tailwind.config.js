@@ -10,6 +10,8 @@ export default {
     extend: {
       colors: {
         navy: { DEFAULT: '#081D36', 900: '#061528', 800: '#0B2442' },
+        // 3.0 · escenas oscuras (hero, recorrido, escena 3D, cierre): el azul marino llevado casi a negro.
+        night: { DEFAULT: '#050D18', 900: '#030912', 800: '#0A1626', 700: '#102036' },
         corp: { DEFAULT: '#0E4C92', deep: '#0A3B73' },  // azul oscuro del logotipo
         tech: '#1769C8',  // azul de la placa del logotipo
         lumen: '#26A5DC',
@@ -28,6 +30,8 @@ export default {
         mono: ['"IBM Plex Mono"', 'ui-monospace', 'Menlo', 'monospace'],
       },
       fontSize: {
+        // 3.0 · titulares de escena (hero, capítulos, cierre).
+        mega: ['clamp(2.75rem, 1rem + 3.9vw, 5.25rem)', { lineHeight: '0.98', letterSpacing: '-0.036em' }],
         display: ['clamp(2.6rem, 1.4rem + 4.2vw, 5rem)', { lineHeight: '1.0', letterSpacing: '-0.032em' }],
         h1: ['clamp(2.25rem, 1.5rem + 2.8vw, 3.75rem)', { lineHeight: '1.04', letterSpacing: '-0.028em' }],
         h2: ['clamp(1.85rem, 1.35rem + 1.9vw, 2.9rem)', { lineHeight: '1.08', letterSpacing: '-0.022em' }],

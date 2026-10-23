@@ -404,7 +404,7 @@ test.describe('explorador de soluciones', () => {
 
 test.describe('idiomas', () => {
   test('cada idioma tiene su ruta, su lang y textos propios', async ({ page }) => {
-    for (const [path, lang, h1] of [['/en', 'en', 'We connect the infrastructure that runs your business.'], ['/ko', 'ko', '기업 운영을 움직이는 인프라를 연결합니다.'], ['/zh-CN', 'zh-CN', '连接驱动企业运营的基础设施。']]) {
+    for (const [path, lang, h1] of [['/en', 'en', 'The infrastructure that connects your operation.'], ['/ko', 'ko', '귀사의 운영을 연결하는 인프라.'], ['/zh-CN', 'zh-CN', '连接您运营的基础设施。']]) {
       await page.goto(path)
       await expect(page.locator('html')).toHaveAttribute('lang', lang)
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(h1)
@@ -474,7 +474,8 @@ test.describe('WhatsApp flotante', () => {
     test.skip(isMobile, 'en móvil no hay botón flotante')
     await page.goto('/')
     await expect(fab(page)).toHaveCSS('visibility', 'hidden')
-    await page.mouse.wheel(0, 1400)
+    // Durante el recorrido fijo de la portada tampoco aparece (taparía su índice); después de él, sí.
+    await page.locator('#soluciones').scrollIntoViewIfNeeded()
     await expect(fab(page)).toBeVisible()
     await expect(fab(page)).toHaveAttribute('href', /^https:\/\/wa\.me\/528180871700\?text=/)
     await page.goto('/soluciones/fibra-optica')
@@ -885,5 +886,100 @@ test.describe('correcciones P3 (SEO)', () => {
     test.skip(isMobile, 'sólo escritorio')
     await page.goto('/soluciones/fibra-optica')
     await expect(page.getByRole('navigation', { name: 'Principal' }).getByRole('button', { name: 'Soluciones (sección actual)' })).toBeVisible()
+  })
+})
+
+// Interfaz 3.0: experiencia cinematográfica. El contenido y los controles funcionan igual en todos los niveles
+// (full: escritorio con mouse · lite: teléfono · reduced: «reducir movimiento»); el movimiento sólo los presenta.
+test.describe('Interfaz 3.0', () => {
+  test('hero: titular y botones disponibles desde el primer momento', async ({ page }) => {
+    const errors = trackErrors(page)
+    await page.goto('/')
+    const hero = page.locator('section[aria-labelledby="hero-title"]')
+    await expect(hero.getByRole('heading', { level: 1 })).toHaveText('La infraestructura que conecta tu operación.')
+    const cta = hero.getByRole('link', { name: 'Solicitar cotización' })
+    await expect(cta).toHaveAttribute('href', '/contacto')
+    await cta.click({ timeout: 2000 })
+    await expect(page).toHaveURL('/contacto')
+    expect(errors).toEqual([])
+  })
+
+  test('recorrido: escenario fijo en escritorio, capítulos apilados en el teléfono', async ({ page, isMobile }) => {
+    await page.goto('/')
+    const journey = page.locator('#recorrido')
+    await expect(journey.locator('article.jc')).toHaveCount(4)
+    if (isMobile) {
+      await expect(journey).not.toHaveClass(/journey-stage/)
+      await page.locator('#capitulo-2').scrollIntoViewIfNeeded()
+      await expect(page.locator('#capitulo-2-t')).toBeInViewport()
+      return
+    }
+    await expect(journey).toHaveClass(/journey-ready/)
+    // El índice del recorrido lleva a cada capítulo y lo activa.
+    await journey.locator('a[data-rail="2"]').click()
+    await expect(page.locator('#capitulo-3')).toHaveClass(/is-active/, { timeout: 8000 })
+    await expect(page.locator('#capitulo-3-t')).toBeVisible()
+    await expect(page.locator('#capitulo-1 .jc-copy')).toBeHidden()
+  })
+
+  test('recorrido con «reducir movimiento»: sin escenario fijo, todo legible', async ({ browser }) => {
+    const ctx = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 1440, height: 900 } })
+    const page = await ctx.newPage()
+    await page.goto('/')
+    await expect(page.locator('#recorrido')).not.toHaveClass(/journey-stage/)
+    for (const id of ['capitulo-1-t', 'capitulo-4-t']) {
+      await page.locator(`#${id}`).scrollIntoViewIfNeeded()
+      await expect(page.locator(`#${id}`)).toBeVisible()
+    }
+    await ctx.close()
+  })
+
+  test('explorador de soluciones: pestañas con teclado y cotización del servicio elegido', async ({ page }) => {
+    await page.goto('/')
+    const tabs = page.getByRole('tablist', { name: 'Frentes técnicos' })
+    const panel = page.locator('#sv-panel')
+    await tabs.getByRole('tab', { name: 'Fibra óptica' }).click()
+    await expect(tabs.getByRole('tab', { name: 'Fibra óptica' })).toHaveAttribute('aria-selected', 'true')
+    await expect(panel.getByRole('heading', { level: 3 })).toHaveText('Fibra óptica')
+    await expect(panel.getByRole('link', { name: 'Cotizar fibra óptica' })).toHaveAttribute('href', '/contacto?servicio=fibra-optica')
+    await page.keyboard.press('ArrowRight')
+    await expect(tabs.getByRole('tab', { name: 'Redes empresariales' })).toBeFocused()
+    await expect(panel.getByRole('heading', { level: 3 })).toHaveText('Redes empresariales')
+    await panel.getByRole('link', { name: 'Cotizar redes empresariales' }).click()
+    await expect(page).toHaveURL('/contacto?servicio=redes-empresariales')
+  })
+
+  test('explora una instalación: la lista explica cada componente, con o sin 3D', async ({ page }) => {
+    for (const url of ['/', '/?experiencia=lite']) {
+      await page.goto(url)
+      const sec = page.locator('section[aria-labelledby="instalacion-title"]')
+      await sec.scrollIntoViewIfNeeded()
+      await sec.getByRole('button', { name: 'UPS' }).click()
+      await expect(sec.getByRole('button', { name: 'UPS' })).toHaveAttribute('aria-pressed', 'true')
+      await expect(sec.getByText('Mantiene encendido el equipo crítico')).toBeVisible()
+      await expect(sec.getByRole('link', { name: /Energía y respaldo/ })).toHaveAttribute('href', '/soluciones/calidad-de-energia')
+      if (url.includes('lite')) await expect(sec.locator('canvas')).toHaveCount(0)
+    }
+  })
+
+  test('industrias: los paneles se expanden y llevan a la página del sector', async ({ page }) => {
+    await page.goto('/')
+    const panels = page.locator('.ind-panels')
+    await panels.scrollIntoViewIfNeeded()
+    const tab = panels.getByRole('button', { name: /Centros de distribución/ })
+    await tab.click()
+    await expect(tab).toHaveAttribute('aria-expanded', 'true')
+    await panels.getByRole('link', { name: 'Soluciones para centros de distribución y logística' }).click()
+    await expect(page).toHaveURL('/industrias/cedis')
+  })
+
+  test('escena final: el llamado a la acción y el contacto en todas las páginas que la usan', async ({ page }) => {
+    for (const path of ['/', '/soluciones', '/nosotros']) {
+      await page.goto(path)
+      const cta = page.locator('section[aria-labelledby="cta-title"]')
+      await cta.scrollIntoViewIfNeeded()
+      await expect(cta.getByRole('heading', { level: 2 })).toHaveText('Hablemos de tu próximo proyecto.')
+      await expect(cta.getByRole('link', { name: 'Solicitar cotización' })).toHaveAttribute('href', '/contacto')
+    }
   })
 })

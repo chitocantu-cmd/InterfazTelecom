@@ -1,5 +1,5 @@
 import { ArrowRight } from 'lucide-react'
-import { QUOTE_FOR } from '../components/home/Explorer'
+import { QUOTE_FOR } from '../data/solutions'
 import { FinalCTA } from '../components/home/Sections'
 import { Topology } from '../components/home/Topology'
 import { PageHero } from '../components/layout/PageHero'

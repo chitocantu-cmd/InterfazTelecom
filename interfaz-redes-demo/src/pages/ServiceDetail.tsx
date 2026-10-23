@@ -12,6 +12,7 @@ import { Link, Navigate } from '../i18n/Link'
 import { track } from '../lib/analytics'
 import { cn, scrollToId, waLink } from '../lib/utils'
 import { useSeo } from '../lib/seo'
+import { SplitWords } from '../motion/primitives'
 
 // El cotizador está al final de la página: se descarga aparte para que el resto se muestre e hidrate antes.
 const QuoteWizard = lazy(() => import('../components/quote/QuoteWizard').then((m) => ({ default: m.QuoteWizard })))
@@ -38,7 +39,7 @@ export default function ServiceDetail() {
             <Breadcrumbs items={[{ to: '/soluciones', label: t.nav.solutions }, ...(sameName ? [] : [{ to: `/soluciones#${cat.id}`, label: cat.name }]), { label: s.name }]} />
             <div className="mt-14 lg:my-auto lg:pt-10">
               {!sameName && <p className="mb-3 text-small font-medium text-corp">{cat.name}</p>}
-              <h1 className="text-h1">{s.name}</h1>
+              <h1 className="text-h1"><SplitWords text={s.name} delay={60} /></h1>
               <p className="mt-6 max-w-measure text-lead text-body">{s.intro}</p>
               <div className="mt-9 flex flex-wrap gap-3">
                 <Button onClick={() => scrollToId('cotizar')} track={`servicio-${s.slug}`}>{T.quoteThis}</Button>

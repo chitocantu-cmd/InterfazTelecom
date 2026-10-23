@@ -11,6 +11,7 @@ import { useI18n } from '../i18n'
 import { Link, Navigate } from '../i18n/Link'
 import { scrollToId, waLink } from '../lib/utils'
 import { useSeo } from '../lib/seo'
+import { SplitWords } from '../motion/primitives'
 
 const QuoteWizard = lazy(() => import('../components/quote/QuoteWizard').then((m) => ({ default: m.QuoteWizard })))
 
@@ -34,7 +35,7 @@ export default function IndustryDetail() {
             <Breadcrumbs items={[{ to: '/industrias', label: t.nav.industries }, { label: ind.name }]} />
             <div className="mt-14 lg:my-auto lg:pt-10">
               <p className="mb-3 text-small font-medium text-corp">{t.nav.industries}</p>
-              <h1 className="text-h1">{ind.name}</h1>
+              <h1 className="text-h1"><SplitWords text={ind.name} delay={60} /></h1>
               <p className="mt-6 max-w-measure text-lead text-body">{ind.intro}</p>
               <div className="mt-9 flex flex-wrap gap-3">
                 <Button onClick={() => scrollToId('asesoria')} track={`industria-${ind.id}`}>{T.advice}</Button>

@@ -15,6 +15,7 @@ import { Link, Navigate } from '../i18n/Link'
 import { track } from '../lib/analytics'
 import { cn, useHydrated, waLink } from '../lib/utils'
 import { useSeo } from '../lib/seo'
+import { SplitWords } from '../motion/primitives'
 
 export function Projects() {
   const { t, c } = useI18n()
@@ -119,7 +120,7 @@ export function ProjectDetail() {
           <div className="mt-12 grid gap-8 md:mt-16 lg:grid-cols-12 lg:items-end">
             <div className="lg:col-span-8">
               <ProjectMeta p={p} />
-              <h1 className="mt-4 text-h1">{p.title}</h1>
+              <h1 className="mt-4 text-h1"><SplitWords text={p.title} delay={60} /></h1>
             </div>
             <p className="max-w-measure text-lead text-body lg:col-span-4">{p.summary}</p>
           </div>

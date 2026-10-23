@@ -74,10 +74,11 @@ export function useScrollToTop() {
   const target = hash.slice(1) || new URLSearchParams(search).get('s')
   // `key` cambia con cada clic: un enlace a la sección en la que ya está vuelve a desplazarse.
   const clickToSection = target ? key : null
-  const firstRender = useRef(true)
+  // La entrada inicial se reconoce por su `key` (no por «primer efecto»: en desarrollo, StrictMode corre los efectos
+  // dos veces y la página animaba su entrada al abrirse).
+  const firstKey = useRef(key)
   useEffect(() => {
-    const initial = firstRender.current
-    firstRender.current = false
+    const initial = key === firstKey.current
     if (!initial) document.documentElement.setAttribute('data-nav', '')
     if (target) {
       // La página puede seguir descargándose (se carga bajo demanda): se espera hasta 3 s a que exista la sección.
@@ -96,6 +97,8 @@ export function useScrollToTop() {
     window.scrollTo({ top: 0, behavior: 'auto' })
     // Al navegar, el foco va al contenido para que el teclado y los lectores de pantalla empiecen por la página nueva.
     document.getElementById('contenido')?.focus({ preventScroll: true })
+    // `key` no va en las dependencias: cambia también con los filtros (?tipo=…), que no deben llevar la vista arriba.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, target, clickToSection])
 }
 
@@ -103,7 +106,10 @@ export function useScrollToTop() {
 export function scrollToId(id: string) {
   const el = document.getElementById(id)
   if (!el) return
-  el.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' })
+  // En un escenario fijo (recorrido de la portada) cada capítulo publica su posición en la pista: data-scroll-to.
+  const behavior = reducedMotion() ? 'auto' : 'smooth'
+  if (el.dataset.scrollTo) window.scrollTo({ top: Number(el.dataset.scrollTo), behavior })
+  else el.scrollIntoView({ behavior, block: 'start' })
   if (!el.hasAttribute('tabindex')) {
     el.setAttribute('tabindex', '-1')
     el.classList.add('outline-none')

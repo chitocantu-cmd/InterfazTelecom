@@ -17,6 +17,8 @@ function pic(name: string, width: number) {
 //              Muestra trabajos del equipo, no un proyecto o cliente en particular.
 export const IMG = {
   aisle: { ...pic('aisle', 1536), ref: true, alt: 'Pasillo de site con racks, patch panels y escalerilla portacables', pos: '60% 50%' },
+  // Recorte vertical de «aisle» para el hero a pantalla completa en el teléfono (sin estirar la foto horizontal).
+  aisleTall: { ...pic('aisleTall', 683), ref: true, alt: 'Pasillo de site con racks, patch panels y escalerilla portacables', pos: '50% 50%' },
   aisleWide: { ...pic('aisleWide', 1536), ref: true, alt: 'Pasillo frío entre dos filas de racks con canaleta de fibra', pos: '50% 50%' },
   rack: { ...pic('rack', 1536), ref: true, alt: 'Frente de rack con patch panels, organizadores y switches de acceso', pos: '50% 45%' },
   fiber: { ...pic('fiber', 1536), ref: true, alt: 'Charola de empalme con fibras en código de colores y adaptadores LC', pos: '50% 40%' },

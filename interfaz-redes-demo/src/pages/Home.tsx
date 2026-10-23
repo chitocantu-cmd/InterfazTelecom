@@ -1,6 +1,7 @@
-import { Explorer } from '../components/home/Explorer'
-import { FlowDiagram } from '../components/home/FlowDiagram'
 import { Hero } from '../components/home/Hero'
+import { Journey } from '../components/home/Journey'
+import { RackExplorer } from '../components/home/RackExplorer'
+import { ServicesStage } from '../components/home/ServicesStage'
 import { ExplorerTeaser, FeaturedProjects, FieldGallery, FinalCTA, IndustriesIndex, Intro, ProcessLine } from '../components/home/Sections'
 import { useT } from '../i18n'
 import { useSeo } from '../lib/seo'
@@ -11,12 +12,13 @@ export default function Home() {
   return (
     <>
       <Hero />
+      <Journey />
       <Intro />
       <FieldGallery lede={t.field.homeLede} items={['rackTecnico', 'plafon', 'patchPanel', 'pasillo']} />
-      <Explorer />
-      <FlowDiagram />
-      <ExplorerTeaser />
+      <ServicesStage />
+      <RackExplorer />
       <IndustriesIndex />
+      <ExplorerTeaser />
       <FeaturedProjects />
       <ProcessLine />
       <FinalCTA />

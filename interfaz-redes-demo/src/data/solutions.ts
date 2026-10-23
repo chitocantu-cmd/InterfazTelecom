@@ -10,6 +10,9 @@ export type { QuoteType } from './quote-types'
 export type PlateKind = 'rack' | 'fiber' | 'cctv' | 'cabling' | 'wifi' | 'access' | 'site' | 'engineering'
 export type CategoryId = 'infraestructura' | 'fibra' | 'seguridad' | 'conectividad' | 'ingenieria'
 
+/** Tipo del cotizador que corresponde a cada frente (los CTA de cada frente llegan con él preseleccionado). */
+export const QUOTE_FOR: Record<CategoryId, QuoteType> = { infraestructura: 'cableado', fibra: 'fibra', seguridad: 'cctv', conectividad: 'infra', ingenieria: 'otro' }
+
 export interface Spec { label: string; value: string }
 export interface SpecTable { title: string; note?: string; columns: string[]; rows: string[][] }
 export interface Step { title: string; text: string }
