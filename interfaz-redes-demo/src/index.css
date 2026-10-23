@@ -71,6 +71,8 @@
   html:lang(ko) :is(h1, h2, h3, h4, .text-display, .text-h1, .text-h2, .text-h3) { letter-spacing: -0.01em; line-height: 1.22; }
   html:lang(zh-CN) :is(h1, h2, h3, h4, .text-display, .text-h1, .text-h2, .text-h3) { letter-spacing: 0; line-height: 1.24; }
   html:lang(zh-CN) body { line-break: strict; }
+  /* El ancho en «ch» del titular de la portada se mide con letras latinas; en coreano y chino cada carácter ocupa ~1 em. */
+  html:lang(ko) .hero-title, html:lang(zh-CN) .hero-title { max-width: 11em; }
 }
 
 @layer components {

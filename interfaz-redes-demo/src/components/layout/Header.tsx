@@ -1,6 +1,6 @@
 import { AnimatePresence, m } from 'motion/react'
 import { ArrowRight, ChevronDown, Compass, Menu, X } from 'lucide-react'
-import { useEffect, useRef, useState, type FocusEvent, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent } from 'react'
+import { useDeferredValue, useEffect, useRef, useState, type FocusEvent, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent } from 'react'
 import { useLocation } from 'react-router-dom'
 import { publishedResources } from '../../content/recursos'
 import { IMG } from '../../data/media'
@@ -39,6 +39,8 @@ export function Header() {
   const hoverOpened = useRef(false) // el menú lo abrió el cursor y aún no hay clic
   const reduce = useReducedMotion()
   const compact = scrolled && !mobile
+  // El botón cambia al instante y el menú se dibuja en el render siguiente: el toque responde sin esperar al menú.
+  const mobileMenu = useDeferredValue(mobile)
 
   const NAV = [
     { to: '/soluciones', label: t.nav.solutions, mega: true },
@@ -72,16 +74,22 @@ export function Header() {
     if (!mobile) return
     const prevOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    // Mientras el menú móvil cubre la página, el teclado no recorre lo que queda detrás.
+    // Mientras el menú móvil cubre la página, el teclado no recorre lo que queda detrás. `inert` obliga a recalcular
+    // toda la página (cientos de ms en un teléfono lento): se aplica después de pintar el menú, no antes.
     const behind = Array.from(headerRef.current?.parentElement?.children ?? []).filter((el) => el !== headerRef.current)
-    behind.forEach((el) => el.setAttribute('inert', ''))
+    const setInert = (on: boolean) => behind.forEach((el) => (on ? el.setAttribute('inert', '') : el.removeAttribute('inert')))
+    let timer = 0
+    const frame = requestAnimationFrame(() => { timer = window.setTimeout(() => setInert(true)) })
     // Si la pantalla se ensancha (tableta girada), el menú móvil desaparece: se cierra para liberar el scroll.
     const wide = window.matchMedia('(min-width: 1024px)')
     const closeIfWide = () => { if (wide.matches) setMobile(false) }
     wide.addEventListener('change', closeIfWide)
     return () => {
       document.body.style.overflow = prevOverflow
-      behind.forEach((el) => el.removeAttribute('inert'))
+      cancelAnimationFrame(frame)
+      window.clearTimeout(timer)
+      // Al cerrar, igual: primero se pinta la página sin el menú.
+      requestAnimationFrame(() => window.setTimeout(() => setInert(false)))
       wide.removeEventListener('change', closeIfWide)
     }
   }, [mobile])
@@ -212,7 +220,7 @@ export function Header() {
                     </div>
                   ))}
                 </div>
-                <aside className="col-span-4 border-l border-line pl-10" aria-live="polite">
+                <aside className="col-span-4 border-l border-line pl-10">
                   <div className="relative aspect-[16/10] overflow-hidden bg-mist">
                     {img && <img key={cat.id} src={img.src} srcSet={img.srcSet} sizes="380px" alt="" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: img.pos }} />}
                   </div>
@@ -242,7 +250,7 @@ export function Header() {
           )}
         </AnimatePresence>
 
-        <AnimatePresence>{mobile && <MobileNav onClose={() => setMobile(false)} reduce={!!reduce} nav={NAV.slice(1)} />}</AnimatePresence>
+        <AnimatePresence>{mobileMenu && <MobileNav onClose={() => setMobile(false)} reduce={!!reduce} nav={NAV.slice(1)} />}</AnimatePresence>
       </header>
     </>
   )

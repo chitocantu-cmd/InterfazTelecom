@@ -108,7 +108,7 @@ export default function IndustryDetail() {
           <ol className="grid gap-x-12 gap-y-10 sm:grid-cols-2 lg:col-span-8">
             {ind.considerations.map((x, i) => (
               <Reveal as="li" key={x.title} delay={i * 0.05} className="border-t border-white/20 pt-6">
-                <span className="font-mono text-[0.75rem] text-white/45">{String(i + 1).padStart(2, '0')}</span>
+                <span className="font-mono text-[0.75rem] text-white/55">{String(i + 1).padStart(2, '0')}</span>
                 <h3 className="mt-2 text-h4 !text-white">{x.title}</h3>
                 <p className="mt-2 text-small text-white/70">{x.text}</p>
               </Reveal>

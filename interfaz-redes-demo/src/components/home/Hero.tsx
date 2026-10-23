@@ -8,6 +8,9 @@ import { Button } from '../ui'
 /** Imagen de la portada. En escritorio es lo más grande de la pantalla: prerender.mjs la precarga con prioridad
  *  alta sólo ahí (en el teléfono queda debajo del texto y no debe competir con las fuentes ni el CSS). */
 export const HERO_IMAGE = { src: IMG.aisle.src, srcSet: IMG.aisle.srcSet, sizes: '(min-width: 1024px) 50vw, 100vw' }
+/** En el teléfono, como máximo la versión de 1024 px: con pantallas de densidad 2.6–3× el navegador pediría la
+ *  original (casi el doble de peso) para una foto que ahí ocupa 400 px de ancho y es la que marca el LCP. */
+const HERO_MOBILE_SET = IMG.aisle.srcSet?.split(', ').filter((c) => parseInt(c.split(' ')[1]) <= 1024).join(', ')
 
 /** Retardo de la coreografía de entrada (index.css: .enter-rise / .enter-reveal). */
 const d = (ms: number) => ({ '--d': `${ms}ms` }) as CSSProperties
@@ -30,7 +33,7 @@ export function Hero() {
               <span aria-hidden className="mt-[0.72em] h-px w-8 shrink-0 bg-corp" />
               {t.hero.eyebrow}
             </p>
-            <h1 id="hero-title" className="enter-rise mt-5 max-w-[15ch] text-display !font-semibold lg:max-w-[11.5ch] lg:!text-[clamp(3.1rem,1.2rem+3.2vw,4.6rem)]" style={d(110)}>
+            <h1 id="hero-title" className="hero-title enter-rise mt-5 max-w-[15ch] text-display !font-semibold lg:max-w-[11.5ch] lg:!text-[clamp(3.1rem,1.2rem+3.2vw,4.6rem)]" style={d(110)}>
               {t.hero.title}
             </h1>
             <p className="enter-rise mt-6 max-w-[33rem] text-lead text-body" style={d(260)}>{t.hero.lede}</p>
@@ -49,7 +52,10 @@ export function Hero() {
             HTML para que el lector de pantalla empiece por el título. */}
         <div className="relative aspect-[4/3] w-full sm:aspect-[16/9] lg:absolute lg:inset-y-0 lg:right-0 lg:aspect-auto lg:w-1/2">
           <div className="absolute inset-0 overflow-hidden">
-            <img src={HERO_IMAGE.src} srcSet={HERO_IMAGE.srcSet} sizes={HERO_IMAGE.sizes} alt={IMG.aisle.alt} className="enter-reveal absolute inset-0 h-full w-full object-cover" style={{ ...d(180), objectPosition: '66% 50%' }} />
+            <picture>
+              {HERO_MOBILE_SET && <source media="(max-width: 1023.98px)" srcSet={HERO_MOBILE_SET} sizes="100vw" />}
+              <img src={HERO_IMAGE.src} srcSet={HERO_IMAGE.srcSet} sizes={HERO_IMAGE.sizes} alt={IMG.aisle.alt} className="enter-reveal absolute inset-0 h-full w-full object-cover" style={{ ...d(180), objectPosition: '66% 50%' }} />
+            </picture>
           </div>
           {IMG.aisle.ref && <p className="img-caption !bottom-auto top-4">{t.common.referenceImage}</p>}
           <figure className="enter-rise absolute bottom-4 left-4 w-[34%] border-[5px] border-white bg-white shadow-[0_18px_40px_-20px_rgba(8,29,54,0.55)] sm:w-[24%] lg:bottom-10 lg:left-10 lg:w-[27%] xl:w-[24%]" style={d(760)}>

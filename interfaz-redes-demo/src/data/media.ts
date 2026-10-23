@@ -1,7 +1,7 @@
-// Todas las imágenes de src/assets/img. Las versiones <nombre>-640.webp y <nombre>-1024.webp
+// Todas las imágenes de src/assets/img. Las versiones <nombre>-400.webp, -640.webp y -1024.webp
 // (tools/variantes.py) entran al srcset para que el navegador descargue la que le alcanza.
 const FILES = import.meta.glob<string>('../assets/img/**/*.webp', { eager: true, import: 'default' })
-const VARIANTS = [640, 1024]
+const VARIANTS = [400, 640, 1024]
 
 /** Imagen original (de `width` px de ancho) con su srcset de versiones reducidas, si existen. */
 function pic(name: string, width: number) {

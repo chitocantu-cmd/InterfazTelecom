@@ -130,7 +130,7 @@ export function ExplorerTeaser() {
             {c.explorer.scenarios.map((s, i) => (
               <li key={s.id} className="bg-navy">
                 <Link to={`/explorador?${explorerQuery({ scenario: s.id, extras: [] })}`} className="group flex h-full flex-col p-5 transition-colors hover:bg-white/[0.04] focus-visible:bg-white/[0.04]">
-                  <span className="mono-tag text-white/40">{String(i + 1).padStart(2, '0')}</span>
+                  <span className="mono-tag text-white/55">{String(i + 1).padStart(2, '0')}</span>
                   <span className="mt-2 flex items-start justify-between gap-3 font-display text-[1.05rem] font-medium leading-snug text-white">
                     {s.label}
                     <ArrowRight aria-hidden className="arrow-nudge mt-1 h-4 w-4 shrink-0 text-white/40 group-hover:text-lumen" strokeWidth={1.75} />

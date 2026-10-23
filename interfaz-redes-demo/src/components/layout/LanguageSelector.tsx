@@ -75,7 +75,7 @@ export function LanguageSelector({ variant = 'header' }: { variant?: 'header' | 
   }
 
   return (
-    <div ref={wrap} className="relative">
+    <div ref={wrap} className="relative" onBlur={(e) => { if (!wrap.current?.contains(e.relatedTarget as Node | null)) setOpen(false) }}>
       <button
         ref={button}
         type="button"

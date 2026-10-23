@@ -761,11 +761,13 @@ test.describe('correcciones P1', () => {
     test.skip(!isMobile, 'sólo móvil')
     await page.goto('/')
     await page.getByRole('button', { name: 'Abrir menú' }).click()
-    expect(await page.locator('#contenido').evaluate((el) => el.hasAttribute('inert'))).toBe(true)
+    // `inert` se aplica (y se quita) justo después de pintar el menú.
+    const inert = () => page.locator('#contenido').evaluate((el) => el.hasAttribute('inert'))
+    await expect.poll(inert).toBe(true)
     await page.keyboard.press('Escape')
     await expect(page.locator('#menu-movil')).toBeHidden()
     await expect(page.getByRole('button', { name: 'Abrir menú' })).toBeFocused()
-    expect(await page.locator('#contenido').evaluate((el) => el.hasAttribute('inert'))).toBe(false)
+    await expect.poll(inert).toBe(false)
     expect(await page.evaluate(() => document.body.style.overflow)).toBe('')
   })
 

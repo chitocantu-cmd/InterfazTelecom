@@ -343,7 +343,7 @@ export function QuoteWizard({ initialTypes, context, contextValue, initialDescri
           >
             {step === 0 && (
               <fieldset>
-                <legend data-step-title tabIndex={-1} className="font-display text-[1.6rem] font-semibold text-ink outline-none">{T.needTitle}</legend>
+                <legend data-step-title tabIndex={-1} className="font-display text-[1.6rem] font-semibold leading-tight text-ink outline-none">{T.needTitle}</legend>
                 <p className="mt-1.5 text-[0.9rem] text-muted">{T.needHint}</p>
                 {context && <p className="mt-3 inline-block bg-mist px-2.5 py-1 font-mono text-[0.75rem] text-ink">{T.from} {context}</p>}
                 <div className="mt-6 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
@@ -378,7 +378,7 @@ export function QuoteWizard({ initialTypes, context, contextValue, initialDescri
 
             {step === 1 && (
               <div>
-                <h3 data-step-title tabIndex={-1} className="font-display text-[1.6rem] font-semibold text-ink outline-none">{T.projectTitle}</h3>
+                <h3 data-step-title tabIndex={-1} className="font-display text-[1.6rem] font-semibold leading-tight text-ink outline-none">{T.projectTitle}</h3>
                 <p className="mt-1.5 text-[0.9rem] text-muted">{T.projectHint}</p>
                 {summary && <SummaryBox title={T.summaryTitle} lines={summary.lines} />}
                 <div className="mt-6 grid gap-5">
@@ -438,7 +438,7 @@ export function QuoteWizard({ initialTypes, context, contextValue, initialDescri
 
             {step === 2 && (
               <div>
-                <h3 data-step-title tabIndex={-1} className="font-display text-[1.6rem] font-semibold text-ink outline-none">{T.contactTitle}</h3>
+                <h3 data-step-title tabIndex={-1} className="font-display text-[1.6rem] font-semibold leading-tight text-ink outline-none">{T.contactTitle}</h3>
                 <p className="mt-1.5 text-[0.9rem] text-muted">{T.contactHint}</p>
                 <div className="mt-6 grid gap-5 sm:grid-cols-2">
                   <Field id={`${uid}-name`} label={T.name} error={err('name', 2)}>
@@ -469,7 +469,7 @@ export function QuoteWizard({ initialTypes, context, contextValue, initialDescri
               <div>
                 <div role="status">
                   <p className="inline-flex items-center gap-2 bg-[#E7F6EF] px-2.5 py-1 font-mono text-[0.72rem] uppercase tracking-[0.08em] text-[#1D7A53]"><Check aria-hidden className="h-3.5 w-3.5" />{T.folio} {send.folio}</p>
-                  <h3 data-step-title tabIndex={-1} className="mt-3 font-display text-[1.6rem] font-semibold text-ink outline-none">{T.received}</h3>
+                  <h3 data-step-title tabIndex={-1} className="mt-3 font-display text-[1.6rem] font-semibold leading-tight text-ink outline-none">{T.received}</h3>
                   <p className="mt-1.5 max-w-measure text-[0.95rem] text-body">{T.receivedText}</p>
                 </div>
                 <dl className="mt-6 divide-y divide-line border-y border-line text-[0.92rem]">
@@ -505,7 +505,7 @@ export function QuoteWizard({ initialTypes, context, contextValue, initialDescri
             {step === 3 && send.state !== 'done' && (
               <div>
                 <p className="inline-flex items-center gap-2 bg-[#E7F6EF] px-2.5 py-1 font-mono text-[0.72rem] uppercase tracking-[0.08em] text-[#1D7A53]"><Check aria-hidden className="h-3.5 w-3.5" />{T.readyBadge}</p>
-                <h3 data-step-title tabIndex={-1} className="mt-3 font-display text-[1.6rem] font-semibold text-ink outline-none">{T.reviewTitle}</h3>
+                <h3 data-step-title tabIndex={-1} className="mt-3 font-display text-[1.6rem] font-semibold leading-tight text-ink outline-none">{T.reviewTitle}</h3>
                 <p className="mt-1.5 text-[0.9rem] text-muted">{api ? T.reviewApi : T.reviewManual}</p>
                 <dl className="mt-6 divide-y divide-line border-y border-line text-[0.92rem]">
                   <Row label={T.rowNeed} editLabel={T.editLabel(T.rowNeed)} edit={T.edit} onEdit={() => go(0)} disabled={sending}>{typeLabels.join(', ')}{context && <span className="block text-[0.82rem] text-muted">{T.reference} {context}</span>}</Row>

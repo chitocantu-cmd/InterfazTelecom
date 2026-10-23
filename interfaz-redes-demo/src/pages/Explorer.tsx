@@ -122,7 +122,7 @@ export default function Explorer() {
                   <m.div key={step} initial={reduce ? false : { opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} exit={reduce ? { opacity: 0 } : { opacity: 0, x: -10 }} transition={{ duration: 0.22, ease: [0.2, 0.7, 0.2, 1] }}>
                     {step === 0 && (
                       <fieldset>
-                        <legend data-step-title tabIndex={-1} className="font-display text-[1.6rem] font-semibold text-ink outline-none">{T.questions.scenario}</legend>
+                        <legend data-step-title tabIndex={-1} className="font-display text-[1.6rem] font-semibold leading-tight text-ink outline-none">{T.questions.scenario}</legend>
                         <div className="mt-6 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
                           {c.explorer.scenarios.map((s) => {
                             const on = state.scenario === s.id
@@ -143,7 +143,7 @@ export default function Explorer() {
 
                     {step > 0 && step < RESULT - 1 && (
                       <fieldset>
-                        <legend data-step-title tabIndex={-1} className="font-display text-[1.6rem] font-semibold text-ink outline-none">{T.questions[key]}</legend>
+                        <legend data-step-title tabIndex={-1} className="font-display text-[1.6rem] font-semibold leading-tight text-ink outline-none">{T.questions[key]}</legend>
                         <div className="mt-6 grid gap-2.5 sm:grid-cols-2">
                           {lists[key as keyof typeof lists].map((o) => {
                             const on = state[key as keyof typeof lists] === o.id
@@ -163,7 +163,7 @@ export default function Explorer() {
 
                     {step === RESULT - 1 && (
                       <fieldset>
-                        <legend data-step-title tabIndex={-1} className="font-display text-[1.6rem] font-semibold text-ink outline-none">{T.questions.extras}</legend>
+                        <legend data-step-title tabIndex={-1} className="font-display text-[1.6rem] font-semibold leading-tight text-ink outline-none">{T.questions.extras}</legend>
                         <p className="mt-1.5 text-[0.9rem] text-muted">{T.extrasHint}</p>
                         <div className="mt-6 grid gap-2.5 sm:grid-cols-2">
                           {c.explorer.extras.map((o) => {

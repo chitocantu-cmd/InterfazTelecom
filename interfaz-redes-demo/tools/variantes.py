@@ -1,4 +1,4 @@
-"""Genera las versiones reducidas de las imágenes del sitio: <nombre>-640.webp y <nombre>-1024.webp.
+"""Genera las versiones reducidas de las imágenes del sitio: <nombre>-400.webp, -640.webp y -1024.webp.
 
 El navegador elige la más chica que le alcanza según el ancho en pantalla (srcset en
 src/data/media.ts), así los celulares y las tarjetas descargan menos. Sólo crea versiones
@@ -10,7 +10,7 @@ from pathlib import Path
 
 from PIL import Image
 
-WIDTHS = (640, 1024)
+WIDTHS = (400, 640, 1024)
 ROOT = Path(__file__).resolve().parent.parent / 'src' / 'assets' / 'img'
 
 for src in sorted(ROOT.rglob('*.webp')):
