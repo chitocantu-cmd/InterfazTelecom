@@ -66,7 +66,8 @@ export function Journey() {
               <article key={sc.img} id={CHAPTER_IDS[i]} className="jc" aria-labelledby={`${CHAPTER_IDS[i]}-t`} data-index={i}>
                 <div className="jc-scene cover-stage">
                   <CoverBox ratio={sc.ratio} px={sc.px} py={sc.py} className="jc-media">
-                    <img src={img.src} srcSet={img.srcSet} sizes="100vw" alt={img.alt} loading="lazy" decoding="async" />
+                    {/* Baja prioridad: no compiten con la foto del hero. En el teléfono, como máximo la versión de 1024 px. */}
+                    <img src={img.src} srcSet={img.srcSet} sizes="(min-width: 768px) 100vw, 85vw" alt={img.alt} loading="lazy" decoding="async" {...{ fetchpriority: 'low' }} />
                     {sc.network && (
                       <svg aria-hidden className="jc-net absolute inset-0 h-full w-full" viewBox="0 0 1 1" preserveAspectRatio="none">
                         {sc.network.paths.map((p, k) => (

@@ -122,7 +122,7 @@ export function ServicesStage() {
                 // En el teléfono sólo se descargan la foto activa y la anterior; en escritorio, todas (carga diferida).
                 return (
                   <div key={it.key} aria-hidden={i !== active} className={cn('sv-layer', state, !state && 'max-lg:hidden')}>
-                    <img src={img.src} srcSet={img.srcSet} sizes="(min-width: 1024px) 55vw, 100vw" alt={i === active ? img.alt : ''} loading={i === 0 ? 'eager' : 'lazy'} decoding="async" className="h-full w-full object-cover" style={{ objectPosition: img.pos }} />
+                    <img src={img.src} srcSet={img.srcSet} sizes="(min-width: 1024px) 55vw, 100vw" alt={i === active ? img.alt : ''} loading="lazy" decoding="async" className="h-full w-full object-cover" style={{ objectPosition: img.pos }} />
                   </div>
                 )
               })}

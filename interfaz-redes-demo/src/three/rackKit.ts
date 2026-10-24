@@ -31,14 +31,25 @@ function canvasTex(w: number, h: number, draw: (g: CanvasRenderingContext2D, w: 
   return t
 }
 
-function grain(g: CanvasRenderingContext2D, w: number, h: number, amount = 0.03, seed = 7) {
-  const rnd = mulberry(seed)
-  const d = g.getImageData(0, 0, w, h)
-  for (let i = 0; i < d.data.length; i += 4) {
-    const n = (rnd() - 0.5) * 255 * amount
-    d.data[i] += n; d.data[i + 1] += n; d.data[i + 2] += n
+// Grano: un mosaico de ruido de 128 px que se genera una vez y se superpone con un patrón (recorrer los píxeles de
+// cada textura con getImageData costaba cientos de milisegundos al armar la escena).
+let noiseTile: HTMLCanvasElement | null = null
+function grain(g: CanvasRenderingContext2D, w: number, h: number, amount = 0.03) {
+  if (!noiseTile) {
+    noiseTile = document.createElement('canvas')
+    noiseTile.width = noiseTile.height = 128
+    const ng = noiseTile.getContext('2d')!
+    const d = ng.createImageData(128, 128)
+    const rnd = mulberry(7)
+    for (let i = 0; i < d.data.length; i += 4) { const v = rnd() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255 }
+    ng.putImageData(d, 0, 0)
   }
-  g.putImageData(d, 0, 0)
+  g.save()
+  g.globalAlpha = Math.min(1, amount * 2.4)
+  g.globalCompositeOperation = 'overlay'
+  g.fillStyle = g.createPattern(noiseTile, 'repeat')!
+  g.fillRect(0, 0, w, h)
+  g.restore()
 }
 
 function ears(g: CanvasRenderingContext2D, h: number, color = '#1b1e21') {
@@ -84,7 +95,7 @@ export const tex = {
       }
       for (let s = 0; s < 4; s++) { const x = w - 60 - (4 - s) * 40; g.fillStyle = '#0a0b0c'; g.fillRect(x, 30, 32, 40); g.fillStyle = '#6d757c'; g.fillRect(x + 3, 33, 26, 34) }
       g.fillStyle = '#2e3338'; g.fillRect(60, 40, 70, 30)
-      grain(g, w, h, 0.025, seed)
+      grain(g, w, h, 0.025)
     })
     const emissive = canvasTex(PW, PH, (g, w, h) => {
       g.fillStyle = '#000'; g.fillRect(0, 0, w, h)
@@ -128,7 +139,7 @@ export const tex = {
       }
       g.fillStyle = '#2b3136'; g.fillRect(60, 30, 110, 60)
       g.fillStyle = '#0e1114'; g.fillRect(70, 40, 90, 40)
-      grain(g, w, h, 0.03, seed)
+      grain(g, w, h, 0.03)
     })
     const emissive = canvasTex(PW, h, (g, w) => {
       g.fillStyle = '#000'; g.fillRect(0, 0, w, h)
@@ -174,17 +185,24 @@ export const tex = {
   }, false),
 }
 
+// Phong y no PBR: en Windows cada programa de shader pasa por Direct3D y los PBR tardaban cientos de milisegundos en
+// compilarse (bloqueando la página). Para este estilo de ilustración técnica, Phong da el mismo brillo en los bordes.
+const phong = (color: number, shininess: number, specular = 0x2a3038) => new THREE.MeshPhongMaterial({ color, shininess, specular })
 export const MAT = {
-  paint: new THREE.MeshStandardMaterial({ color: 0x1a1e23, roughness: 0.62, metalness: 0.25 }),
-  rail: new THREE.MeshStandardMaterial({ color: 0x2a2e33, roughness: 0.45, metalness: 0.6 }),
-  inner: new THREE.MeshStandardMaterial({ color: 0x050607, roughness: 1 }),
-  galv: new THREE.MeshStandardMaterial({ color: 0xb8bfc4, roughness: 0.42, metalness: 0.75 }),
-  duct: new THREE.MeshStandardMaterial({ color: 0xd9a714, roughness: 0.5 }),
+  paint: phong(0x1c2026, 26),
+  rail: phong(0x2e333a, 40, 0x3a4048),
+  inner: new THREE.MeshPhongMaterial({ color: 0x050607, shininess: 0, specular: 0x000000 }),
+  galv: phong(0xb3bac0, 60, 0x8a929a),
+  duct: phong(0xd9a714, 30, 0x3a3320),
 }
-export const cable = (color: number, roughness = 0.5) => new THREE.MeshStandardMaterial({ color, roughness, metalness: 0 })
+export const cable = (color: number) => phong(color, 22, 0x1d2a3a)
 
 export type Unit = 'pp' | 'fo' | 'mg' | 'sw' | 'bl' | 'nvr' | 'ups'
 export interface LayoutItem { t: Unit; u: number; seed?: number; part?: string }
+
+// Tres variantes de frente de switch bastan para que no se vean repetidos; cada textura se dibuja una sola vez.
+const switchCache = new Map<number, ReturnType<typeof tex.switch>>()
+const switchTex = (variant: number) => switchCache.get(variant) ?? switchCache.set(variant, tex.switch(variant + 3)).get(variant)!
 
 /** Rack de 42U. Frente en +X local, ancho en Z (0.6 m), fondo en X (1.07 m). Devuelve el grupo y las unidades con parte. */
 export function buildRack(layout: LayoutItem[], { seed = 1, cords = true, cordColor = 0x1f6fd1 } = {}) {
@@ -207,7 +225,7 @@ export function buildRack(layout: LayoutItem[], { seed = 1, cords = true, cordCo
   box(0.01, H - 0.15, W - 0.06, MAT.inner, -D + 0.05, H / 2, 0)
 
   const cache = new Map<string, THREE.Material>()
-  const units: { part?: string; mesh: THREE.Mesh; y: number; h: number; emissive?: THREE.MeshStandardMaterial }[] = []
+  const units: { part?: string; mesh: THREE.Mesh; y: number; h: number; emissive?: THREE.MeshPhongMaterial }[] = []
   const pp: THREE.Vector3[][] = []
   const sw: THREE.Vector3[][] = []
   let u = 42
@@ -216,14 +234,14 @@ export function buildRack(layout: LayoutItem[], { seed = 1, cords = true, cordCo
     const yTop = 0.12 + u * U
     const yC = yTop - (n * U) / 2
     const key = `${item.t}${n}`
-    let mat: THREE.MeshStandardMaterial
-    if (item.t === 'pp') mat = (cache.get(key) ?? cache.set(key, new THREE.MeshStandardMaterial({ map: tex.patch(), roughness: 0.6, metalness: 0.3 })).get(key)) as THREE.MeshStandardMaterial
-    else if (item.t === 'fo') mat = (cache.get(key) ?? cache.set(key, new THREE.MeshStandardMaterial({ map: tex.fiber(), roughness: 0.5, metalness: 0.3 })).get(key)) as THREE.MeshStandardMaterial
-    else if (item.t === 'mg') mat = (cache.get(key) ?? cache.set(key, new THREE.MeshStandardMaterial({ map: tex.manager(), roughness: 0.7 })).get(key)) as THREE.MeshStandardMaterial
-    else if (item.t === 'sw') { const x = tex.switch(item.seed ?? seed); mat = new THREE.MeshStandardMaterial({ map: x.map, emissiveMap: x.emissive, emissive: 0xffffff, emissiveIntensity: 1.5, roughness: 0.45, metalness: 0.4 }) }
-    else if (item.t === 'nvr') { const x = tex.nvr(item.seed ?? seed); mat = new THREE.MeshStandardMaterial({ map: x.map, emissiveMap: x.emissive, emissive: 0xffffff, emissiveIntensity: 1.4, roughness: 0.5, metalness: 0.45 }) }
-    else if (item.t === 'ups') { const x = tex.ups(); mat = new THREE.MeshStandardMaterial({ map: x.map, emissiveMap: x.emissive, emissive: 0xffffff, emissiveIntensity: 1.2, roughness: 0.55, metalness: 0.3 }) }
-    else mat = (cache.get(key) ?? cache.set(key, new THREE.MeshStandardMaterial({ map: tex.blank(n), roughness: 0.6, metalness: 0.3 })).get(key)) as THREE.MeshStandardMaterial
+    let mat: THREE.MeshPhongMaterial
+    if (item.t === 'pp') mat = (cache.get(key) ?? cache.set(key, new THREE.MeshPhongMaterial({ map: tex.patch(), shininess: 18, specular: 0x222831 })).get(key)) as THREE.MeshPhongMaterial
+    else if (item.t === 'fo') mat = (cache.get(key) ?? cache.set(key, new THREE.MeshPhongMaterial({ map: tex.fiber(), shininess: 18, specular: 0x222831 })).get(key)) as THREE.MeshPhongMaterial
+    else if (item.t === 'mg') mat = (cache.get(key) ?? cache.set(key, new THREE.MeshPhongMaterial({ map: tex.manager(), shininess: 8, specular: 0x14181d })).get(key)) as THREE.MeshPhongMaterial
+    else if (item.t === 'sw') { const x = switchTex((item.seed ?? seed) % 3); mat = new THREE.MeshPhongMaterial({ map: x.map, emissiveMap: x.emissive, emissive: 0xffffff, emissiveIntensity: 1.5, shininess: 24, specular: 0x262c35 }) }
+    else if (item.t === 'nvr') { const x = tex.nvr(item.seed ?? seed); mat = new THREE.MeshPhongMaterial({ map: x.map, emissiveMap: x.emissive, emissive: 0xffffff, emissiveIntensity: 1.4, shininess: 24, specular: 0x262c35 }) }
+    else if (item.t === 'ups') { const x = tex.ups(); mat = new THREE.MeshPhongMaterial({ map: x.map, emissiveMap: x.emissive, emissive: 0xffffff, emissiveIntensity: 1.2, shininess: 20, specular: 0x222831 }) }
+    else mat = (cache.get(key) ?? cache.set(key, new THREE.MeshPhongMaterial({ map: tex.blank(n), shininess: 18, specular: 0x222831 })).get(key)) as THREE.MeshPhongMaterial
     const depth = item.t === 'mg' ? 0.08 : item.t === 'pp' || item.t === 'fo' ? 0.12 : item.t === 'bl' ? 0.01 : item.t === 'ups' ? 0.6 : 0.45
     const forward = item.t === 'mg' ? 0.055 : 0
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(depth, n * U - 0.002, 0.4826), [mat, MAT.rail, MAT.rail, MAT.rail, MAT.rail, MAT.rail])
@@ -288,7 +306,7 @@ export function buildLadder({ length = 6, width = 0.4, y = 2.4, z0 = 0, bundles 
       for (let k = 0; k <= 8; k++) pts.push(new THREE.Vector3(ox + (rnd() - 0.5) * 0.004, oy + (rnd() - 0.5) * 0.003, z0 - (k / 8) * length))
       geos.push(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, 0.0035, 5, false))
     }
-    g.add(new THREE.Mesh(mergeGeometries(geos), cable(color, 0.55))); geos.forEach((x) => x.dispose())
+    g.add(new THREE.Mesh(mergeGeometries(geos), cable(color))); geos.forEach((x) => x.dispose())
   }
   return g
 }
@@ -309,7 +327,7 @@ export function buildDrops(xs: number[], { yTop = 2.33, yBottom = 1.98, z = -0.7
     }
   })
   const g = new THREE.Group()
-  g.add(new THREE.Mesh(mergeGeometries(geos), cable(0x1f6fd1, 0.55)))
+  g.add(new THREE.Mesh(mergeGeometries(geos), cable(0x1f6fd1)))
   geos.forEach((x) => x.dispose())
   return g
 }

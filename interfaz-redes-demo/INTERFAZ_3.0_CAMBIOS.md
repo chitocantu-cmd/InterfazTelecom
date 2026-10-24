@@ -49,7 +49,7 @@ anterior (`home/Explorer.tsx`, reemplazado por `ServicesStage`). `QUOTE_FOR` pas
 | `src/components/home/Journey.tsx`, `journey-motion.ts` | Recorrido y su línea de tiempo GSAP |
 | `src/components/home/ServicesStage.tsx` | Explorador de soluciones |
 | `src/components/home/RackExplorer.tsx` | Sección «Explora una instalación» |
-| `src/three/rackKit.ts`, `rackScene.ts` | Piezas y escena 3D |
+| `src/three/rackKit.ts`, `rackScene.ts` | Piezas y escena 3D (armado por pasos, materiales Phong, sin bloquear la página) |
 | `src/data/journey.ts` | Fotos, encuadres, anotaciones y servicios de cada capítulo |
 | `src/assets/img/aisleTall*.webp` | Recorte vertical del hero para teléfono |
 
@@ -62,9 +62,9 @@ anterior (`home/Explorer.tsx`, reemplazado por `ServicesStage`). `QUOTE_FOR` pas
 
 | Paquete | 2.0 | 3.0 |
 | --- | --- | --- |
-| JavaScript inicial (gzip) | 120.6 KB | 128.2 KB |
+| JavaScript inicial (gzip) | 120.6 KB | 128.3 KB |
 | GSAP + recorrido (sólo `full`) | — | 46.1 KB |
-| three.js + escena (sólo `full`, al acercarse) | — | 144.0 KB |
+| three.js + escena (sólo `full`, al acercarse) | — | 143.1 KB |
 | Portada en el teléfono, foto del hero | 141 KB (1024 px, horizontal) | 119 KB (683 px, recorte vertical) |
 
 ## Pendientes y decisiones de la empresa

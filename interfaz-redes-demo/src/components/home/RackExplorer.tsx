@@ -40,20 +40,24 @@ export function RackExplorer() {
   useEffect(() => {
     const el = host.current
     if (tier !== 'full' || !el || !overlay.current || !hasWebGL()) return
-    let cancelled = false
-    // La escena se descarga cuando la sección está a una pantalla de distancia.
+    const abort = new AbortController()
+    // La escena se descarga cuando la sección está a una pantalla de distancia y se arma por pasos (rackScene.ts).
     const io = new IntersectionObserver(([e]) => {
       if (!e.isIntersecting) return
       io.disconnect()
       setStatus('loading')
       import('../../three/rackScene')
         .then(({ createRackScene }) => {
-          if (cancelled || !host.current || !overlay.current) return
-          scene.current = createRackScene(host.current, overlay.current, {
+          if (abort.signal.aborted || !host.current || !overlay.current) return null
+          return createRackScene(host.current, overlay.current, {
             onSelect: (p) => setSelected(p),
             onReady: () => setStatus('ready'),
-          })
-          scene.current.focus('patch')
+          }, abort.signal)
+        })
+        .then((created) => {
+          if (!created) return
+          scene.current = created
+          created.focus(selectedRef.current)
         })
         .catch(() => setStatus('failed'))
     }, { rootMargin: '900px 0px' })
@@ -61,7 +65,7 @@ export function RackExplorer() {
     const lost = () => setStatus('failed')
     el.addEventListener('webglcontextlost', lost, true)
     return () => {
-      cancelled = true
+      abort.abort()
       io.disconnect()
       el.removeEventListener('webglcontextlost', lost, true)
       scene.current?.dispose()
@@ -69,6 +73,9 @@ export function RackExplorer() {
     }
   }, [tier])
 
+  // La escena puede terminar de armarse después de que la persona eligió otro componente: enfoca el vigente.
+  const selectedRef = useRef<Part>(selected)
+  selectedRef.current = selected
   const choose = (p: Part) => { setSelected(p); scene.current?.focus(p) }
   const part = t.rack3d.parts[selected]
 

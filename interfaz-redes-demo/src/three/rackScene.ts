@@ -2,13 +2,13 @@
  * Escena 3D «Explora una instalación»: un rack de telecomunicaciones entre otros dos, escalerilla con cableado,
  * canaleta de fibra y piso técnico. Se descarga aparte (three.js) y sólo en el nivel «full» con WebGL.
  *
- * Rendimiento: se dibuja bajo demanda (sólo mientras la cámara se mueve, se arrastra o parpadea un LED, y nunca
+ * Rendimiento: se arma por pasos que ceden el hilo principal; materiales Phong (compilan rápido también en
+ * Windows/Direct3D) y sin mapa de entorno PMREM (bloqueaba más de medio segundo); se dibuja bajo demanda (sólo mientras la cámara se mueve, se arrastra o parpadea un LED, y nunca
  * fuera de pantalla o con la pestaña oculta); DPR limitado a 1.75; texturas procedurales pequeñas; cordones unidos
  * en una geometría por rack. Control: arrastrar gira la cámara dentro de un rango (la rueda del mouse sigue
  * desplazando la página); seleccionar un componente acerca la cámara y lo resalta.
  */
 import * as THREE from 'three'
-import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 import { buildDrops, buildDuct, buildLadder, buildRack, disposeDeep, tex, U, type LayoutItem } from './rackKit'
 
 export const PARTS = ['tray', 'fiber', 'patch', 'organizer', 'switch', 'nvr', 'ups'] as const
@@ -50,34 +50,44 @@ export interface RackScene {
 interface View { target: THREE.Vector3; theta: number; phi: number; radius: number }
 const easeInOut = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2)
 
-export function createRackScene(host: HTMLElement, overlay: HTMLElement, opts: RackSceneOptions): RackScene {
+/** Cede el hilo principal entre pasos del armado: el navegador puede pintar y responder a la persona. */
+const breathe = () => new Promise<void>((resolve) => setTimeout(resolve, 0))
+const mark = (step: string) => performance.mark(`rack:${step}`)
+
+/**
+ * Arma la escena por pasos (renderer y luces → cada rack → escalerilla → entorno → shaders) cediendo el hilo principal
+ * entre uno y otro: ninguna tarea larga bloquea el desplazamiento ni los clics. Si `signal` se cancela a medio camino
+ * (la persona salió de la página), libera lo creado y devuelve null.
+ */
+export async function createRackScene(host: HTMLElement, overlay: HTMLElement, opts: RackSceneOptions, signal?: AbortSignal): Promise<RackScene | null> {
+  mark('inicio')
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75))
   renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.toneMapping = THREE.ACESFilmicToneMapping
   renderer.toneMappingExposure = 1.05
+  // Sin revisar el registro de cada shader al usarlo por primera vez: en Windows esa consulta obliga a terminar la
+  // compilación de golpe (~0.4 s de bloqueo). Los shaders son los de three.js; en desarrollo se siguen revisando.
+  renderer.debug.checkShaderErrors = import.meta.env.DEV
   renderer.domElement.className = 'block h-full w-full'
   host.appendChild(renderer.domElement)
 
   const scene = new THREE.Scene()
   scene.fog = new THREE.Fog(0x050d18, 5.5, 12)
-  const pmrem = new THREE.PMREMGenerator(renderer)
-  const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture
-  scene.environment = envTex
-  scene.environmentIntensity = 0.35
+  const abandon = () => { disposeDeep(scene); renderer.dispose(); renderer.forceContextLoss(); renderer.domElement.remove(); return null }
 
   const camera = new THREE.PerspectiveCamera(32, 1, 0.05, 40)
 
   // Luz de producto: principal desde el frente derecho, un cono desde el plafón que ilumina el pasillo, y un
   // contraluz azul (el color de Interfaz) casi horizontal que dibuja los costados sin teñir los techos.
-  const key = new THREE.DirectionalLight(0xf3f7ff, 2.1); key.position.set(2.5, 3.2, 4.5); scene.add(key)
-  const rim = new THREE.DirectionalLight(0x26a5dc, 1.6); rim.position.set(-4.5, 1.1, -2.5); scene.add(rim)
-  const fill = new THREE.HemisphereLight(0x5f7fa3, 0x050d18, 0.32); scene.add(fill)
+  const key = new THREE.DirectionalLight(0xf3f7ff, 2.3); key.position.set(2.5, 3.2, 4.5); scene.add(key)
+  const rim = new THREE.DirectionalLight(0x26a5dc, 1.8); rim.position.set(-4.5, 1.1, -2.5); scene.add(rim)
+  const fill = new THREE.HemisphereLight(0x7f9fc3, 0x0a1626, 0.75); scene.add(fill)
   const pool = new THREE.SpotLight(0xe4f1ff, 22, 9, 0.6, 0.65, 1.4); pool.position.set(0.4, 4.4, 2.4); pool.target.position.set(0, 0, 0.3); scene.add(pool, pool.target)
 
   // Piso técnico oscuro con retícula y sombra de contacto bajo los racks.
   const floorTex = tex.floor()
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.85, metalness: 0.1 }))
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), new THREE.MeshPhongMaterial({ map: floorTex, shininess: 12, specular: 0x10202c }))
   floor.rotation.x = -Math.PI / 2
   scene.add(floor)
   const shadow = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 1.9), new THREE.MeshBasicMaterial({ map: tex.contact(), transparent: true, depthWrite: false }))
@@ -85,12 +95,19 @@ export function createRackScene(host: HTMLElement, overlay: HTMLElement, opts: R
   scene.add(shadow)
 
   // Tres racks en línea; el del centro es el que se explora. Frente hacia +Z (rotación de -90° en Y).
+  await breathe(); if (signal?.aborted) return abandon()
   const row = new THREE.Group()
-  const main = buildRack(MAIN, { seed: 2, cordColor: 0x1f6fd1 })
-  const left = buildRack(SIDE, { seed: 5, cordColor: 0x1f6fd1 })
-  const right = buildRack(SIDE, { seed: 9, cordColor: 0xe9eef2 })
-  for (const [r, x] of [[left.group, -0.62], [main.group, 0], [right.group, 0.62]] as const) { r.rotation.y = -Math.PI / 2; r.position.x = x; row.add(r) }
   scene.add(row)
+  mark('base')
+  const main = buildRack(MAIN, { seed: 2, cordColor: 0x1f6fd1 })
+  mark('rack-principal')
+  await breathe(); if (signal?.aborted) return abandon()
+  const left = buildRack(SIDE, { seed: 5, cordColor: 0x1f6fd1 })
+  await breathe(); if (signal?.aborted) return abandon()
+  const right = buildRack(SIDE, { seed: 9, cordColor: 0xe9eef2 })
+  mark('racks-laterales')
+  for (const [r, x] of [[left.group, -0.62], [main.group, 0], [right.group, 0.62]] as const) { r.rotation.y = -Math.PI / 2; r.position.x = x; row.add(r) }
+  await breathe(); if (signal?.aborted) return abandon()
 
   // Escalerilla con cableado azul y canaleta de fibra, a lo largo de la fila; bajada de cable al rack principal.
   const ladder = buildLadder({ length: 5, y: 2.34, z0: 2.5, bundles: [{ offset: -0.1, color: 0x1f6fd1, count: 18 }, { offset: 0.08, color: 0x2d7fe0, count: 14 }] })
@@ -106,6 +123,8 @@ export function createRackScene(host: HTMLElement, overlay: HTMLElement, opts: R
   const drops = buildDrops([-0.62, 0, 0.62])
   drops.traverse((o) => { o.userData.part = 'tray' })
   scene.add(drops)
+
+  mark('escalerilla')
 
   // Anclas de cada parte (centro del frente) y su caja de resaltado.
   const anchors = new Map<Part, { pos: THREE.Vector3; size: THREE.Vector3 }>()
@@ -180,7 +199,10 @@ export function createRackScene(host: HTMLElement, overlay: HTMLElement, opts: R
     placeMarkers()
     if ((more || dragging) && visible) raf = requestAnimationFrame(loop)
   }
-  const request = () => { if (!raf && visible) raf = requestAnimationFrame(loop) }
+  // Nada se dibuja hasta terminar el armado: un cuadro adelantado (lo pedían los observadores de tamaño y visibilidad)
+  // compilaba todos los shaders de golpe, antes de la compilación en paralelo.
+  let ready = false
+  const request = () => { if (ready && !raf && visible) raf = requestAnimationFrame(loop) }
 
   const placeMarkers = () => {
     const w = host.clientWidth, h = host.clientHeight
@@ -278,13 +300,62 @@ export function createRackScene(host: HTMLElement, overlay: HTMLElement, opts: R
     request()
   }, 900)
 
-  resize()
-  applyCamera()
-  renderer.render(scene, camera)
-  placeMarkers()
-  opts.onReady()
+  /**
+   * En Windows (ANGLE sobre Direct3D) cada shader se termina de crear la primera vez que dibuja algo: con toda la
+   * escena a la vez eran ~0.5 s de bloqueo. Se dibuja un objeto de cada tipo de material por turno, cediendo el hilo
+   * entre uno y otro, así ninguna tarea es larga. En otros sistemas cuesta casi nada.
+   */
+  async function warmUp() {
+    const drawables: THREE.Object3D[] = []
+    scene.traverse((o) => { if ((o as THREE.Mesh).isMesh || (o as THREE.LineSegments).isLineSegments) drawables.push(o) })
+    const kinds = new Map<string, THREE.Object3D>()
+    for (const o of drawables) {
+      const m = (o as THREE.Mesh).material
+      for (const mt of Array.isArray(m) ? m : [m]) {
+        const k = `${mt.type}:${'map' in mt && mt.map ? 'm' : ''}${'emissiveMap' in mt && mt.emissiveMap ? 'e' : ''}${mt.transparent ? 't' : ''}`
+        if (!kinds.has(k)) kinds.set(k, o)
+      }
+    }
+    // Texturas: se suben a la GPU de a pocas (subir las ~30 de golpe en el primer cuadro bloqueaba ~0.4 s).
+    const textures = new Set<THREE.Texture>()
+    for (const o of drawables) {
+      const m = (o as THREE.Mesh).material
+      for (const mt of Array.isArray(m) ? m : [m]) for (const v of Object.values(mt)) if (v instanceof THREE.Texture) textures.add(v)
+    }
+    let n = 0
+    for (const tx of textures) {
+      if (signal?.aborted) return
+      renderer.initTexture(tx)
+      if (++n % 3 === 0) await breathe()
+    }
+    const before = drawables.map((o) => [o.visible, o.frustumCulled] as const)
+    for (const rep of new Set(kinds.values())) {
+      if (signal?.aborted) break
+      drawables.forEach((o) => { o.visible = o === rep; o.frustumCulled = o !== rep })
+      renderer.render(scene, camera)
+      await breathe()
+    }
+    drawables.forEach((o, i) => { o.visible = before[i][0]; o.frustumCulled = before[i][1] })
+  }
 
-  return {
+  /**
+   * Espera, sin bloquear, a que la GPU termine lo encolado por el primer cuadro (en Windows ahí se crean los shaders
+   * de Direct3D). Sin esto, la siguiente consulta de WebGL del primer clic esperaba ~0.4 s con la página congelada.
+   */
+  async function settleGpu() {
+    const gl = renderer.getContext()
+    if (!(gl instanceof WebGL2RenderingContext)) return
+    const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0)
+    if (!sync) return
+    gl.flush()
+    const t0 = performance.now()
+    while (gl.getSyncParameter(sync, gl.SYNC_STATUS) !== gl.SIGNALED && performance.now() - t0 < 4000 && !signal?.aborted) {
+      await new Promise((resolve) => setTimeout(resolve, 32))
+    }
+    gl.deleteSync(sync)
+  }
+
+  const api: RackScene = {
     focus,
     dispose() {
       cancelAnimationFrame(raf)
@@ -297,12 +368,34 @@ export function createRackScene(host: HTMLElement, overlay: HTMLElement, opts: R
       canvas.removeEventListener('pointercancel', up)
       markers.forEach((m) => m.remove())
       disposeDeep(scene)
-      envTex.dispose(); pmrem.dispose()
       renderer.dispose()
       renderer.forceContextLoss()
       canvas.remove()
     },
   }
+
+  resize()
+  applyCamera()
+  // Los shaders se compilan en paralelo cuando el navegador lo permite; el primer cuadro ya no se traba.
+  await breathe()
+  // El contorno de resaltado se compila con todo lo demás (si no, su shader se compilaría al primer clic).
+  highlight.visible = true
+  if (!signal?.aborted) await renderer.compileAsync(scene, camera).catch(() => {})
+  highlight.visible = false
+  mark('shaders')
+  if (signal?.aborted) { api.dispose(); return null }
+  await warmUp()
+  mark('calentamiento')
+  if (signal?.aborted) { api.dispose(); return null }
+  renderer.render(scene, camera)
+  mark('primer-cuadro')
+  await settleGpu()
+  mark('gpu-lista')
+  if (signal?.aborted) { api.dispose(); return null }
+  ready = true
+  placeMarkers()
+  opts.onReady()
+  return api
 }
 
 export { U }

@@ -97,6 +97,18 @@ un LED; nunca fuera de pantalla ni con la pestaña oculta), DPR ≤ 1.75, órbit
 resaltado por componente, marcas numeradas que no se amontonan, y `dispose()` que libera geometrías, texturas y el
 contexto WebGL al salir.
 
+Armado sin congelar la página (medido con la GPU real de un equipo de oficina):
+
+1. Se arma por pasos que ceden el hilo principal (`breathe()`), cancelable si la persona sale de la página.
+2. Nada se dibuja hasta terminar (`ready`): un cuadro adelantado compilaba todos los shaders de golpe.
+3. Materiales **Phong**, no PBR, y **sin mapa de entorno PMREM**: en Windows cada shader pasa por Direct3D y los PBR
+   más el entorno costaban más de un segundo de bloqueo.
+4. `compileAsync` (compilación en paralelo), luego un dibujo por tipo de material y las texturas subidas de a tres.
+5. Un *fence* de WebGL2 espera, sin bloquear, a que la GPU termine antes de declarar la escena lista.
+6. `renderer.debug.checkShaderErrors` sólo en desarrollo (consultar el registro de cada shader fuerza la compilación).
+
+Las marcas `rack:*` (Performance de DevTools) muestran cuánto tarda cada paso.
+
 ### Industrias, proyectos y escena final (`Sections.tsx`)
 Paneles que se expanden (`flex-grow`; en el teléfono, acordeón), lista editorial de proyectos con vista previa que
 sigue al cursor (`full`), y la escena final con conexiones que convergen en el llamado a la acción. `FinalCTA` es la
