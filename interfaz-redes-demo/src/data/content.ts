@@ -257,9 +257,10 @@ export const industryById = (id?: string) => INDUSTRIES.find((i) => i.id === id)
 
 // ---------- Proyectos ----------
 /**
- * Estado editorial. «demostrativo»: describe un tipo de intervención con fines ilustrativos (no es un proyecto de un
- * cliente): se muestra identificado como tal, con noindex y fuera del sitemap. «autorizado»: proyecto real cuyo nombre,
- * datos y fotografías el cliente autorizó publicar; sólo esos se indexan.
+ * Estado editorial. «demostrativo»: describe un tipo de intervención (no es un proyecto de un cliente). Se presenta como
+ * tipo de proyecto, sin rótulo visible y sin cliente, fecha, resultados ni galería; queda con noindex y fuera del
+ * sitemap. «autorizado»: proyecto real cuyo nombre, datos y fotografías el cliente autorizó publicar; sólo esos muestran
+ * esos datos y se indexan.
  */
 export type ProjectStatus = 'demostrativo' | 'autorizado'
 
@@ -317,7 +318,7 @@ export const PROJECTS: Project[] = [
   {
     slug: 'red-de-planta-nave-industrial',
     status: 'demostrativo',
-    seoDescription: 'Caso demostrativo: backbone de fibra desde el site principal, cuarto de distribución con rack y UPS, nodos Cat6A y cobertura WiFi en piso de producción.',
+    seoDescription: 'Backbone de fibra desde el site principal, cuarto de distribución con rack y UPS, nodos Cat6A y cobertura WiFi en piso de producción.',
     code: 'DEMO-01',
     services: ['fibra-optica', 'racks-y-site', 'cableado-estructurado', 'wifi-empresarial'],
     img: 'proyNave',
@@ -332,7 +333,7 @@ export const PROJECTS: Project[] = [
   {
     slug: 'renovacion-cableado-corporativo',
     status: 'demostrativo',
-    seoDescription: 'Caso demostrativo: cableado de oficinas sin documentación sustituido por Cat6, con plano de nodos, rack reordenado y cada punto certificado y etiquetado.',
+    seoDescription: 'Cableado de oficinas sin documentación sustituido por Cat6, con plano de nodos, rack reordenado y cada punto certificado y etiquetado.',
     code: 'DEMO-02',
     services: ['cableado-estructurado', 'racks-y-site', 'certificacion-y-pruebas'],
     img: 'proyCorporativo',
@@ -347,7 +348,7 @@ export const PROJECTS: Project[] = [
   {
     slug: 'videovigilancia-cedis',
     status: 'demostrativo',
-    seoDescription: 'Caso demostrativo: videovigilancia de andenes, patios y perímetro de un CEDIS con cámaras fijas y PTZ, red PoE dedicada, NVR central y acceso remoto.',
+    seoDescription: 'Videovigilancia de andenes, patios y perímetro de un CEDIS con cámaras fijas y PTZ, red PoE dedicada, NVR central y acceso remoto.',
     code: 'DEMO-03',
     services: ['cctv-videovigilancia', 'redes-empresariales', 'enlaces-inalambricos'],
     img: 'proyCedis',
@@ -362,7 +363,7 @@ export const PROJECTS: Project[] = [
   {
     slug: 'enlace-fibra-entre-edificios',
     status: 'demostrativo',
-    seoDescription: 'Caso demostrativo: fibra monomodo por ducto subterráneo entre un edificio administrativo y la nave, con fusión, medición OTDR por hilo e integración al núcleo.',
+    seoDescription: 'Fibra monomodo por ducto subterráneo entre un edificio administrativo y la nave, con fusión, medición OTDR por hilo e integración al núcleo.',
     code: 'DEMO-04',
     services: ['fibra-optica', 'certificacion-y-pruebas', 'redes-empresariales'],
     img: 'proyFibra',
@@ -377,7 +378,7 @@ export const PROJECTS: Project[] = [
   {
     slug: 'ordenamiento-site',
     status: 'demostrativo',
-    seoDescription: 'Caso demostrativo: reorganización de un rack saturado con organizadores, patch cords nuevos, etiquetado y tabla de puertos para acortar cada diagnóstico.',
+    seoDescription: 'Reorganización de un rack saturado con organizadores, patch cords nuevos, etiquetado y tabla de puertos para acortar cada diagnóstico.',
     code: 'DEMO-05',
     services: ['racks-y-site', 'calidad-de-energia', 'mantenimiento-y-soporte'],
     img: 'proySite',
@@ -392,7 +393,7 @@ export const PROJECTS: Project[] = [
   {
     slug: 'wifi-campus-educativo',
     status: 'demostrativo',
-    seoDescription: 'Caso demostrativo: WiFi para un campus educativo con site survey por edificio, access points ubicados por densidad, redes por perfil y gestión centralizada.',
+    seoDescription: 'WiFi para un campus educativo con site survey por edificio, access points ubicados por densidad, redes por perfil y gestión centralizada.',
     code: 'DEMO-06',
     services: ['wifi-empresarial', 'redes-empresariales', 'cableado-estructurado'],
     img: 'proyCampus',

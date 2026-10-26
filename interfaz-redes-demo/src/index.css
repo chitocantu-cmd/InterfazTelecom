@@ -303,20 +303,13 @@ html[data-nav] .page-enter { animation: page-in 0.55s var(--ease-emph) both; }
 }
 
 /* Proyectos (Sections.tsx · FeaturedProjects): lista editorial con vista previa que sigue al cursor. */
-.pj-row .pj-title { transition: color var(--dur-base) var(--ease-out), transform 0.6s var(--ease-emph); }
-.pj-row:hover .pj-title, .pj-row:focus-visible .pj-title { color: #0e4c92; transform: translateX(10px); }
-.pj-preview { width: 0; height: 0; }
-.pj-preview-frame { position: absolute; left: 24px; top: -130px; width: 360px; aspect-ratio: 4 / 3; overflow: hidden; background: #0a1626; opacity: 0; transform: scale(0.86) rotate(-2deg); transition: opacity 0.35s var(--ease-out), transform 0.6s var(--ease-emph); box-shadow: 0 30px 60px -30px rgb(8 29 54 / 0.6); }
-.pj-preview.is-on .pj-preview-frame { opacity: 1; transform: none; }
-.pj-preview-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; clip-path: inset(100% 0 0 0); transition: clip-path 0.7s var(--ease-emph); }
-.pj-preview-img.is-current { clip-path: inset(0); }
 
 /* Escena 3D (RackExplorer + three/rackScene.ts): paneles translúcidos sobre la escena, marco de enfoque con etiqueta,
    viñeta que aísla la pieza elegida y marcas numeradas. */
 .rack-panel { background: rgb(6 13 23 / 0.74); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border: 1px solid rgb(255 255 255 / 0.1); border-radius: 2px; }
 .rack-focus { position: absolute; left: 0; top: 0; opacity: 0; pointer-events: none; transition: opacity 0.35s var(--ease-out); }
 .rack-focus.is-on { opacity: 1; }
-.rack-focus i { position: absolute; width: 18px; height: 18px; border: 0 solid #4cc3f0; filter: drop-shadow(0 0 6px rgb(76 195 240 / 0.65)); }
+.rack-focus i { position: absolute; width: 18px; height: 18px; border: 0 solid #4cc3f0; filter: drop-shadow(0 0 2px rgb(76 195 240 / 0.45)); }
 .rack-focus i:nth-child(1) { left: 0; top: 0; border-left-width: 2px; border-top-width: 2px; }
 .rack-focus i:nth-child(2) { right: 0; top: 0; border-right-width: 2px; border-top-width: 2px; }
 .rack-focus i:nth-child(3) { left: 0; bottom: 0; border-left-width: 2px; border-bottom-width: 2px; }
@@ -328,6 +321,9 @@ html[data-nav] .page-enter { animation: page-in 0.55s var(--ease-emph) both; }
 }
 .rack-focus.label-below .rack-focus-label { top: auto; bottom: -30px; }
 .rack-focus.is-on .rack-focus-label { animation: label-in 0.5s var(--ease-emph) 0.25s both; }
+/* Pieza bajo el mouse: esquinas cortas y claras, sin brillo (la elegida conserva el marco azul). */
+.rack-focus.is-hover { transition-duration: 0.2s; }
+.rack-focus.is-hover i { width: 11px; height: 11px; border-color: rgb(233 246 253 / 0.75); filter: none; }
 .rack-vignette {
   position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity 0.7s var(--ease-out);
   background: radial-gradient(circle at var(--fx, 50%) var(--fy, 50%), transparent calc(var(--fr, 240px) * 0.5), rgb(3 8 15 / 0.62) calc(var(--fr, 240px) * 1.35));
@@ -342,8 +338,8 @@ html[data-nav] .page-enter { animation: page-in 0.55s var(--ease-emph) both; }
   background: #e9f6fd; box-shadow: 0 0 0 4px rgb(38 165 220 / 0.32); pointer-events: auto; cursor: pointer;
   transition: opacity 0.3s, background-color 0.2s, box-shadow 0.2s;
 }
-.rack-marker:hover { background: #fff; }
-.rack-marker.is-active { background: #26a5dc; box-shadow: 0 0 0 6px rgb(38 165 220 / 0.28), 0 0 18px rgb(38 165 220 / 0.85); }
+.rack-marker:hover, .rack-marker.is-hover { background: #fff; box-shadow: 0 0 0 5px rgb(255 255 255 / 0.2); }
+.rack-marker.is-active { background: #26a5dc; box-shadow: 0 0 0 5px rgb(38 165 220 / 0.3); }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

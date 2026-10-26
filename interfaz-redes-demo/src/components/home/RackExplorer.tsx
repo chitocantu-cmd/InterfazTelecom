@@ -104,6 +104,8 @@ export function RackExplorer() {
       <div key={selected ?? 'overview'} className="sv-fade">
         <p className="font-mono text-[0.68rem] uppercase tracking-[0.12em] text-lumen">{selected ? String(PARTS.indexOf(selected) + 1).padStart(2, '0') : '00'} · {info.name}</p>
         <p className="mt-2.5 text-[0.98rem] leading-relaxed text-white/85">{info.text}</p>
+        {/* Ficha de lo que se ve en el modelo (no una especificación de proyecto). */}
+        <p className="mt-4 border-t border-white/10 pt-3 font-mono text-[0.68rem] uppercase leading-relaxed tracking-[0.08em] text-white/60"><span className="text-white/35">{t.rack3d.inScene} ·</span> {info.spec}</p>
       </div>
       <p className="mt-5 text-label text-white/50">{t.rack3d.related}</p>
       <ul className="mt-2 flex flex-wrap gap-2">
@@ -133,34 +135,42 @@ export function RackExplorer() {
           </div>
           <p data-reveal="rise" className="max-w-[30rem] text-white/70 lg:col-span-5 lg:justify-self-end">{t.rack3d.lede}</p>
         </div>
+      </div>
 
-        {/* Escenario */}
-        <div data-reveal="mask" className="rack-stage relative mt-12 overflow-hidden rounded-[2px] border border-white/10 bg-[#060d17]">
-          <div className="relative aspect-[4/3] sm:aspect-[16/10] lg:aspect-[16/9]">
-            <div ref={host} className={cn('rack-host absolute inset-0', use3d ? 'cursor-grab' : 'hidden')} role={use3d ? 'img' : undefined} aria-label={use3d ? t.rack3d.canvasLabel : undefined} />
-            <div ref={overlay} aria-hidden className={cn('pointer-events-none absolute inset-0 overflow-hidden', !use3d && 'hidden')} />
-            {!use3d && (
-              // Vistas fijas de la misma escena (teléfono, equipos sin WebGL, «reducir movimiento»).
-              <img key={selected ?? 'overview'} src={still.src} srcSet={still.srcSet} sizes="(min-width: 1024px) 90vw, 100vw" alt={t.rack3d.canvasLabel} loading="lazy" decoding="async" className="rack-still absolute inset-0 h-full w-full object-cover" />
-            )}
-            {use3d && status !== 'ready' && (
-              <div className="absolute inset-0 grid place-items-center">
-                <p className="flex items-center gap-3 font-mono text-[0.72rem] uppercase tracking-[0.12em] text-white/60"><Box aria-hidden className="h-4 w-4 animate-pulse text-lumen" strokeWidth={1.5} />{t.rack3d.loading}</p>
-              </div>
-            )}
-            <div className="rack-toolbar pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between gap-4 bg-gradient-to-b from-night/80 to-transparent p-3 pb-8 font-mono text-[0.68rem] uppercase tracking-[0.12em] text-white/60 sm:p-4 sm:pb-10">
+      {/* Escenario a todo el ancho (hasta 1600 px); los paneles se alinean con la retícula del contenido. */}
+      <div data-reveal="mask" className="rack-stage relative mx-auto mt-12 max-w-frame overflow-hidden border-y border-white/10 bg-[#060d17] md:mt-14">
+        <div className="relative aspect-[4/3] sm:aspect-[16/10] lg:aspect-auto lg:h-[min(86svh,54vw)] lg:min-h-[560px]">
+          <div ref={host} className={cn('rack-host absolute inset-0', use3d ? 'cursor-grab' : 'hidden')} role={use3d ? 'img' : undefined} aria-label={use3d ? t.rack3d.canvasLabel : undefined} />
+          <div ref={overlay} aria-hidden className={cn('pointer-events-none absolute inset-0 overflow-hidden', !use3d && 'hidden')} />
+          {!use3d && (
+            // Vistas fijas de la misma escena (teléfono, equipos sin WebGL, «reducir movimiento»).
+            <img key={selected ?? 'overview'} src={still.src} srcSet={still.srcSet} sizes="(min-width: 1600px) 1600px, 100vw" alt={t.rack3d.canvasLabel} loading="lazy" decoding="async" className="rack-still absolute inset-0 h-full w-full object-cover" />
+          )}
+          {use3d && status !== 'ready' && (
+            <div className="absolute inset-0 grid place-items-center">
+              <p className="flex items-center gap-3 font-mono text-[0.72rem] uppercase tracking-[0.12em] text-white/60"><Box aria-hidden className="h-4 w-4 animate-pulse text-lumen" strokeWidth={1.5} />{t.rack3d.loading}</p>
+            </div>
+          )}
+          <div className="rack-toolbar pointer-events-none absolute inset-x-0 top-0 bg-gradient-to-b from-night/80 to-transparent pb-8 sm:pb-10">
+            <div className="container flex items-center justify-between gap-4 pt-3 font-mono text-[0.68rem] uppercase tracking-[0.12em] text-white/60 sm:pt-4">
               {use3d && <span className="min-w-0 truncate">{t.rack3d.hint}</span>}
               <button type="button" onClick={() => choose(null)} disabled={!selected} className="pointer-events-auto ml-auto inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-[2px] border border-white/20 bg-night/50 px-3 py-1.5 text-white/85 backdrop-blur-sm transition-[color,border-color,opacity] hover:border-lumen hover:text-white disabled:opacity-40">
                 <RotateCcw aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} />{t.rack3d.reset}
               </button>
             </div>
-            {/* Paneles sobre la escena (escritorio) */}
-            <div className="rack-panel absolute left-4 top-16 hidden max-h-[calc(100%-5rem)] w-[16.5rem] overflow-y-auto p-3 lg:block">{list(false)}</div>
-            <div className="rack-panel absolute bottom-4 right-4 hidden w-[24rem] p-5 lg:block">{card}</div>
+          </div>
+          {/* Paneles sobre la escena (escritorio), dentro de la retícula del contenido */}
+          <div className="container pointer-events-none absolute inset-0 hidden lg:block">
+            <div className="relative h-full">
+              <div className="rack-panel pointer-events-auto absolute left-0 top-16 max-h-[calc(100%-6rem)] w-[16.5rem] overflow-y-auto p-3">{list(false)}</div>
+              <div className="rack-panel pointer-events-auto absolute bottom-6 right-0 w-[24rem] p-5">{card}</div>
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Teléfono y tableta: lista y ficha debajo del escenario */}
+      {/* Teléfono y tableta: lista y ficha debajo del escenario */}
+      <div className="container">
         <div className="mt-4 grid gap-4 md:mt-6 md:grid-cols-2 md:gap-6 lg:hidden">
           <div className="rack-panel p-2 sm:p-3">{list(true)}</div>
           <div className="rack-panel p-5">{card}</div>

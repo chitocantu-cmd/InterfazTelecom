@@ -1,8 +1,9 @@
 /**
- * Piezas del site 3D: racks de 42U, equipo montado, cordones con conectores, organizadores verticales con haces de
- * cable, escalerilla, canaleta, varillas roscadas, luminarias, piso técnico y muro. Texturas procedurales dibujadas
- * en canvas (sin marcas ni especificaciones escritas) y materiales físicos (PBR). Las geometrías repetidas se unen
- * en una sola por material para dibujar con pocas llamadas.
+ * Piezas del site 3D: racks de 42U, equipo montado, cordones con conectores y etiquetas, organizadores verticales con
+ * haces de cable, escalerilla, canaleta, varillas roscadas, tierra física, placas de identificación, piso técnico y
+ * muro. Texturas procedurales dibujadas en canvas (sin marcas de fabricante) con relieve: el mapa de normales sale de
+ * la luminancia de cada frente (puertos, ventilas y ranuras se hunden). Materiales físicos (PBR); la pintura
+ * electrostática lleva microtextura. Las geometrías repetidas se unen en una sola por material (pocas llamadas).
  */
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
@@ -49,6 +50,74 @@ function grain(g: CanvasRenderingContext2D, w: number, h: number, amount = 0.03)
   g.fillStyle = g.createPattern(noiseTile, 'repeat')!
   g.fillRect(0, 0, w, h)
   g.restore()
+}
+
+/**
+ * Mapa de normales a partir de la luminancia de un canvas: lo oscuro se hunde (puertos, ventilas, ranuras) y lo claro
+ * sobresale (etiquetas, tornillos). Con el grano del dibujo, además, cada frente tiene microrrelieve.
+ */
+function normalOf(src: HTMLCanvasElement, strength = 2.4) {
+  const w = src.width, h = src.height
+  const data = src.getContext('2d')!.getImageData(0, 0, w, h).data
+  const lum = new Float32Array(w * h)
+  for (let i = 0, k = 0; i < lum.length; i++, k += 4) lum[i] = (data[k] * 0.299 + data[k + 1] * 0.587 + data[k + 2] * 0.114) / 255
+  const out = document.createElement('canvas')
+  out.width = w; out.height = h
+  const g = out.getContext('2d')!
+  const img = g.createImageData(w, h)
+  const o = img.data
+  for (let y = 0; y < h; y++) {
+    const up = (y > 0 ? y - 1 : y) * w, down = (y < h - 1 ? y + 1 : y) * w, row = y * w
+    for (let x = 0; x < w; x++) {
+      const l = x > 0 ? x - 1 : x, r = x < w - 1 ? x + 1 : x
+      // El canvas crece hacia abajo y la textura (v) hacia arriba: la pendiente vertical cambia de signo.
+      const nx = -(lum[row + r] - lum[row + l]) * strength
+      const ny = (lum[down + x] - lum[up + x]) * strength
+      const inv = 1 / Math.sqrt(nx * nx + ny * ny + 1)
+      const k = (row + x) * 4
+      o[k] = (nx * inv * 0.5 + 0.5) * 255; o[k + 1] = (ny * inv * 0.5 + 0.5) * 255; o[k + 2] = (inv * 0.5 + 0.5) * 255; o[k + 3] = 255
+    }
+  }
+  g.putImageData(img, 0, 0)
+  const t = new THREE.CanvasTexture(out)
+  t.anisotropy = 8
+  return t
+}
+
+/** Pintura electrostática: piel de naranja apenas visible (normales) y brillo que varía (rugosidad). */
+function coatMaps() {
+  const size = 256
+  const c = document.createElement('canvas')
+  c.width = c.height = size
+  const g = c.getContext('2d')!
+  // Dos escalas de ruido: cada una, un mosaico pequeño repetido 3 × 3, ampliado con suavizado y recortado al centro
+  // (así el resultado se repite sin costuras).
+  const rnd = mulberry(11)
+  const octave = (n: number, alpha: number) => {
+    const small = document.createElement('canvas')
+    small.width = small.height = n
+    const sg = small.getContext('2d')!
+    const d = sg.createImageData(n, n)
+    for (let i = 0; i < d.data.length; i += 4) { const v = 96 + rnd() * 64; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255 }
+    sg.putImageData(d, 0, 0)
+    const k = size / n
+    g.save(); g.globalAlpha = alpha; g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'
+    for (let ty = -1; ty <= 1; ty++) for (let tx = -1; tx <= 1; tx++) g.drawImage(small, tx * size, ty * size, n * k, n * k)
+    g.restore()
+  }
+  g.fillStyle = '#808080'; g.fillRect(0, 0, size, size)
+  octave(32, 0.6)
+  octave(96, 0.5)
+  const normal = normalOf(c, 1.6)
+  // Rugosidad: multiplica la del material entre 0.82 y 1.
+  const rc = document.createElement('canvas')
+  rc.width = rc.height = size
+  const rg = rc.getContext('2d')!
+  rg.drawImage(c, 0, 0)
+  rg.globalCompositeOperation = 'lighten'; rg.fillStyle = 'rgb(210,210,210)'; rg.fillRect(0, 0, size, size)
+  const rough = new THREE.CanvasTexture(rc)
+  for (const t of [normal, rough]) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(5, 9) }
+  return { normal, rough }
 }
 
 /** Orejas de montaje con tornillos (en las orillas de cada frente de 19"). */
@@ -141,8 +210,16 @@ export const tex = {
   /** Tapa ventilada: perforación hexagonal. */
   blank: (units: number) => canvasTex(PW, PH * units, (g, w, h) => {
     g.fillStyle = '#17191c'; g.fillRect(0, 0, w, h); ears(g, h)
-    g.fillStyle = '#08090a'
-    for (let y = 12, row = 0; y < h - 8; y += 9, row++) for (let x = 60 + (row % 2) * 5; x < w - 60; x += 10) { g.beginPath(); g.arc(x, y, 2.6, 0, 7); g.fill() }
+    // Perforación hexagonal: un mosaico de 10 × 18 px repetido como patrón (en vez de miles de círculos).
+    const tile = document.createElement('canvas')
+    tile.width = 10; tile.height = 18
+    const tg = tile.getContext('2d')!
+    tg.fillStyle = '#08090a'
+    for (const [x, y] of [[5, 4.5], [0, 13.5], [10, 13.5]]) { tg.beginPath(); tg.arc(x, y, 2.6, 0, 7); tg.fill() }
+    g.save(); g.translate(55, 7.5)
+    g.fillStyle = g.createPattern(tile, 'repeat')!
+    g.fillRect(0, 0, w - 110, h - 16)
+    g.restore()
     bevel(g, w, h); grain(g, w, h)
   }),
   nvr: (seed: number) => {
@@ -233,8 +310,8 @@ export const tex = {
 // Materiales físicos compartidos.
 const std = (o: THREE.MeshStandardMaterialParameters) => new THREE.MeshStandardMaterial(o)
 export const MAT = {
-  coat: std({ color: 0x16191d, roughness: 0.52, metalness: 0.3 }),
-  coatEdge: std({ color: 0x23272c, roughness: 0.4, metalness: 0.45 }),
+  coat: std({ color: 0x16191d, roughness: 0.58, metalness: 0.3 }),
+  coatEdge: std({ color: 0x23272c, roughness: 0.46, metalness: 0.45 }),
   inner: std({ color: 0x050607, roughness: 1, metalness: 0 }),
   galv: std({ color: 0xa9b0b6, roughness: 0.34, metalness: 0.92 }),
   rod: std({ color: 0x8c949b, roughness: 0.4, metalness: 0.9 }),
@@ -243,16 +320,81 @@ export const MAT = {
   strap: std({ color: 0x0a0b0c, roughness: 0.85, metalness: 0 }),
   copper: std({ color: 0xb87333, roughness: 0.32, metalness: 1 }),
   boot: std({ color: 0x3b4148, roughness: 0.5, metalness: 0 }),
+  label: std({ color: 0xe9ebe6, roughness: 0.78, metalness: 0 }),
+  ground: std({ color: 0x2f8a3c, roughness: 0.5, metalness: 0 }),
+}
+
+/** Aplica la microtextura de pintura a los materiales de los gabinetes (una sola vez). */
+function paintCoats() {
+  if (MAT.coat.normalMap) return
+  const { normal, rough } = coatMaps()
+  for (const m of [MAT.coat, MAT.coatEdge]) { m.normalMap = normal; m.normalScale.set(0.35, 0.35); m.roughnessMap = rough; m.needsUpdate = true }
 }
 export const cable = (color: number, roughness = 0.42) => std({ color, roughness, metalness: 0 })
 
 export type Unit = 'pp' | 'fo' | 'mg' | 'sw' | 'bl' | 'nvr' | 'ups'
+/** Rugosidad, metalicidad e intensidad de LED/pantalla de cada tipo de equipo. */
+const LOOK: Record<Unit, [number, number, number]> = { pp: [0.5, 0.3, 0], fo: [0.45, 0.3, 0], mg: [0.72, 0, 0], sw: [0.42, 0.35, 2.2], nvr: [0.45, 0.35, 2], ups: [0.55, 0.35, 1.6], bl: [0.55, 0.35, 0] }
 export interface LayoutItem { t: Unit; u: number; seed?: number; part?: string }
 export interface RackUnit { part?: string; mesh: THREE.Mesh; y: number; h: number; emissive?: THREE.MeshStandardMaterial }
 
-const texCache = new Map<string, THREE.Texture | { map: THREE.Texture; emissive: THREE.Texture }>()
-function cached<T extends THREE.Texture | { map: THREE.Texture; emissive: THREE.Texture }>(key: string, make: () => T): T {
+type Cached = THREE.Texture | { map: THREE.Texture; normal?: THREE.Texture; emissive?: THREE.Texture }
+const texCache = new Map<string, Cached>()
+function cached<T extends Cached>(key: string, make: () => T): T {
   return (texCache.get(key) as T) ?? (texCache.set(key, make()).get(key) as T)
+}
+
+type UnitTex = { map: THREE.Texture; normal?: THREE.Texture; emissive?: THREE.Texture }
+const unitKey = (item: LayoutItem, seed: number) => {
+  const s = item.seed ?? seed
+  return item.t === 'sw' ? `sw${s % 3}` : item.t === 'nvr' ? `nvr${s}` : item.t === 'bl' ? `bl${item.u}` : item.t
+}
+/** Color y, si tiene, LED o pantallas de un equipo. Se guardan para reutilizarse entre racks. */
+function unitBase(item: LayoutItem, seed: number): UnitTex {
+  const key = unitKey(item, seed)
+  const hit = texCache.get(key) as UnitTex | undefined
+  if (hit) return hit
+  const s = item.seed ?? seed
+  let made: UnitTex
+  if (item.t === 'pp') made = { map: tex.patch() }
+  else if (item.t === 'fo') made = { map: tex.fiber() }
+  else if (item.t === 'mg') made = { map: tex.manager() }
+  else if (item.t === 'sw') made = tex.switch((s % 3) + 3)
+  else if (item.t === 'nvr') made = tex.nvr(s)
+  else if (item.t === 'ups') made = tex.ups()
+  else made = { map: tex.blank(item.u) }
+  texCache.set(key, made)
+  return made
+}
+/** Color, relieve y LED de un equipo. */
+function unitTextures(item: LayoutItem, seed: number): UnitTex & { normal: THREE.Texture } {
+  const base = unitBase(item, seed)
+  if (!base.normal) base.normal = normalOf(base.map.image as HTMLCanvasElement, item.t === 'mg' ? 3.2 : item.t === 'bl' ? 2.8 : 2.4)
+  return base as UnitTex & { normal: THREE.Texture }
+}
+
+/**
+ * Prepara texturas y relieves de los racks por pasos (cada uno toma de unos a decenas de milisegundos), para que
+ * armar los racks después no bloquee la página.
+ */
+export async function prepareRackTextures(layouts: { layout: LayoutItem[]; seed: number }[], pause: () => Promise<void>, signal?: AbortSignal) {
+  paintCoats()
+  railTextures()
+  await pause()
+  for (const { layout, seed } of layouts) {
+    for (const item of layout) {
+      if (signal?.aborted) return
+      const known = texCache.get(unitKey(item, seed)) as UnitTex | undefined
+      if (!known) { unitBase(item, seed); await pause() }
+      if (!known?.normal) { unitTextures(item, seed); await pause() }
+    }
+  }
+}
+
+function railTextures() {
+  const map = cached('rail', tex.rail) as THREE.Texture
+  const normal = cached('rail:n', () => normalOf(map.image as HTMLCanvasElement, 3)) as THREE.Texture
+  return { map, normal }
 }
 
 /**
@@ -261,6 +403,7 @@ function cached<T extends THREE.Texture | { map: THREE.Texture; emissive: THREE.
  */
 export function buildRack(layout: LayoutItem[], { seed = 1, cords = true, cordColor = 0x1f6fd1, door = false } = {}) {
   const rnd = mulberry(seed)
+  paintCoats()
   const g = new THREE.Group()
   const W = 0.6, D = 1.07, H = 2.0, t = 0.03
   const box = (w: number, h: number, d: number, m: THREE.Material, x: number, y: number, z: number, shadow = true) => {
@@ -280,7 +423,8 @@ export function buildRack(layout: LayoutItem[], { seed = 1, cords = true, cordCo
   box(0.025, 0.07, W, MAT.coatEdge, -0.0125, H - 0.035, 0)
   box(0.03, 0.06, W, MAT.plastic, -0.015, 0.03, 0)
   // Rieles perforados
-  const railMat = std({ map: cached('rail', tex.rail) as THREE.Texture, roughness: 0.38, metalness: 0.85 })
+  const rail = railTextures()
+  const railMat = std({ map: rail.map, normalMap: rail.normal, roughness: 0.38, metalness: 0.85 })
   ;(railMat.map as THREE.Texture).repeat.set(1, 1)
   box(0.02, 42 * U, 0.032, railMat, -0.06, 0.12 + 21 * U, 0.2493, false)
   box(0.02, 42 * U, 0.032, railMat, -0.06, 0.12 + 21 * U, -0.2493, false)
@@ -293,16 +437,9 @@ export function buildRack(layout: LayoutItem[], { seed = 1, cords = true, cordCo
   for (const item of layout) {
     const n = item.u
     const yC = 0.12 + u * U - (n * U) / 2
-    let mat: THREE.MeshStandardMaterial
-    const glowing = (x: { map: THREE.Texture; emissive: THREE.Texture }, intensity: number, rough = 0.45) =>
-      std({ map: x.map, emissiveMap: x.emissive, emissive: 0xffffff, emissiveIntensity: intensity, roughness: rough, metalness: 0.35 })
-    if (item.t === 'pp') mat = std({ map: cached('pp', tex.patch) as THREE.Texture, roughness: 0.5, metalness: 0.3 })
-    else if (item.t === 'fo') mat = std({ map: cached('fo', tex.fiber) as THREE.Texture, roughness: 0.45, metalness: 0.3 })
-    else if (item.t === 'mg') mat = std({ map: cached('mg', tex.manager) as THREE.Texture, roughness: 0.7, metalness: 0 })
-    else if (item.t === 'sw') mat = glowing(cached(`sw${(item.seed ?? seed) % 3}`, () => tex.switch(((item.seed ?? seed) % 3) + 3)), 2.2, 0.42)
-    else if (item.t === 'nvr') mat = glowing(cached(`nvr${item.seed ?? seed}`, () => tex.nvr(item.seed ?? seed)), 2, 0.45)
-    else if (item.t === 'ups') mat = glowing(cached('ups', tex.ups), 1.6, 0.55)
-    else mat = std({ map: cached(`bl${n}`, () => tex.blank(n)) as THREE.Texture, roughness: 0.55, metalness: 0.35 })
+    const tx = unitTextures(item, seed)
+    const [roughness, metalness, glow] = LOOK[item.t]
+    const mat = std({ map: tx.map, normalMap: tx.normal, roughness, metalness, ...(tx.emissive ? { emissiveMap: tx.emissive, emissive: 0xffffff, emissiveIntensity: glow } : {}) })
     const depth = item.t === 'mg' ? 0.08 : item.t === 'pp' || item.t === 'fo' ? 0.12 : item.t === 'bl' ? 0.012 : item.t === 'ups' ? 0.6 : 0.45
     const forward = item.t === 'mg' ? 0.055 : 0
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(depth, n * U - 0.002, 0.4826), [mat, MAT.coatEdge, MAT.coatEdge, MAT.coatEdge, MAT.coatEdge, MAT.coatEdge])
@@ -325,6 +462,7 @@ export function buildRack(layout: LayoutItem[], { seed = 1, cords = true, cordCo
     const tubes: THREE.BufferGeometry[] = []
     const whites: THREE.BufferGeometry[] = []
     const boots: THREE.BufferGeometry[] = []
+    const labels: THREE.BufferGeometry[] = []
     pp.forEach((ports, pi) => {
       const target = sw[pi]
       if (!target) return
@@ -344,6 +482,9 @@ export function buildRack(layout: LayoutItem[], { seed = 1, cords = true, cordCo
         ], false, 'centripetal')
         ;(i % 7 === 3 ? whites : tubes).push(new THREE.TubeGeometry(curve, 22, 0.0028, 6, false))
         for (const p of [a, b]) boots.push(new THREE.BoxGeometry(0.024, 0.0105, 0.0125).translate(p.x + 0.012, p.y, p.z))
+        // Etiqueta de identificación en cada cordón, junto al patch panel (como en una instalación documentada).
+        const at = curve.getPoint(0.14)
+        labels.push(new THREE.BoxGeometry(0.014, 0.0072, 0.0072).translate(at.x, at.y, at.z))
       })
     })
     const add = (geos: THREE.BufferGeometry[], m: THREE.Material) => {
@@ -356,6 +497,7 @@ export function buildRack(layout: LayoutItem[], { seed = 1, cords = true, cordCo
     add(tubes, cable(cordColor))
     add(whites, cable(0xe8ecef, 0.5))
     add(boots, MAT.boot)
+    add(labels, MAT.label)
   }
 
   // Puerta frontal perforada: el equipo se ve atenuado detrás, como en un site real.
@@ -462,6 +604,25 @@ export function buildRods(points: [number, number, number, number][]) {
   g.add(new THREE.Mesh(mergeGeometries(geos), MAT.rod))
   geos.forEach((x) => x.dispose())
   return g
+}
+
+/** Placa de identificación del rack (rotulado según TIA-606: cada gabinete con su clave). Plano que mira a +Z. */
+export function buildNameplate(text: string) {
+  const t = canvasTex(256, 64, (g, w, h) => {
+    g.fillStyle = '#e6e9ec'; g.fillRect(0, 0, w, h)
+    g.strokeStyle = '#9aa1a8'; g.lineWidth = 3; g.strokeRect(2, 2, w - 4, h - 4)
+    g.fillStyle = '#14171a'; g.font = '700 38px "IBM Plex Mono", ui-monospace, monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'
+    g.fillText(text, w / 2, h / 2 + 2)
+  })
+  return new THREE.Mesh(new THREE.PlaneGeometry(0.1, 0.025), std({ map: t, roughness: 0.6, metalness: 0 }))
+}
+
+/** Conductor de tierra física (verde) del rack a la barra de tierra del muro. */
+export function buildGround(points: [number, number, number][]) {
+  const curve = new THREE.CatmullRomCurve3(points.map(([x, y, z]) => new THREE.Vector3(x, y, z)), false, 'centripetal')
+  const m = new THREE.Mesh(new THREE.TubeGeometry(curve, 80, 0.0045, 6, false), MAT.ground)
+  m.castShadow = true
+  return m
 }
 
 /** Libera geometrías, materiales y texturas de un objeto y sus hijos. */

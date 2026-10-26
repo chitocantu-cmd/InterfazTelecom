@@ -142,7 +142,6 @@ export function Journey() {
             </Link>
           </div>
         </div>
-        <p className="mt-10 text-label text-white/45">{t.journey.note}</p>
       </div>
     </section>
   )

@@ -21,7 +21,7 @@ export default function Industries() {
 
   return (
     <>
-      <PageHero crumbs={[{ label: t.nav.industries }]} title={t.industries.title} lede={t.industries.lede} aside={<p className="mt-4 text-small text-muted">{t.industries.disclaimer}</p>} />
+      <PageHero crumbs={[{ label: t.nav.industries }]} title={t.industries.title} lede={t.industries.lede} />
 
       <section className="pb-24 md:pb-28">
         <div className="container">

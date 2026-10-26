@@ -4,11 +4,12 @@ import { Header } from './components/layout/Header'
 import { LanguageSuggestion } from './components/layout/LanguageSelector'
 import { WhatsAppButton } from './components/layout/WhatsAppButton'
 import { Button } from './components/ui'
-import { I18nProvider, useT, type Messages } from './i18n'
+import { I18nProvider, useI18n, useT, type Messages } from './i18n'
+import { Link } from './i18n/Link'
 import { LOCALE_META, LOCALES, splitLocale } from './i18n/config'
 import { useContactClicks, usePageViews } from './lib/analytics'
 import { useSeo } from './lib/seo'
-import { useScrollToTop } from './lib/utils'
+import { useScrollToTop, waLink } from './lib/utils'
 import { LazyMotion, MotionConfig, type FeatureBundle } from 'motion/react'
 import { Component, lazy, startTransition, Suspense, useEffect, useState, type ReactNode } from 'react'
 import Home from './pages/Home'
@@ -96,15 +97,35 @@ function MotionFeatures({ children }: { children: ReactNode }) {
   return <LazyMotion features={features ?? featuresPending}>{children}</LazyMotion>
 }
 
+/** Página no encontrada: además de volver, lleva directo a cada frente técnico o a WhatsApp. */
 function NotFound() {
-  const t = useT()
+  const { t, c } = useI18n()
   useSeo(t.seo.notFound, { noindex: true })
   return (
-    <section className="container py-32">
-      <p className="text-small font-medium text-corp">{t.notFound.code}</p>
-      <h1 className="mt-4 text-h1">{t.notFound.title}</h1>
-      <p className="mt-4 text-muted">{t.notFound.text}</p>
-      <div className="mt-8 flex gap-3"><Button to="/">{t.notFound.home}</Button><Button to="/soluciones" variant="secondary">{t.notFound.solutions}</Button></div>
+    <section className="container grid gap-16 py-28 md:py-32 lg:grid-cols-12">
+      <div className="lg:col-span-6">
+        <p className="text-small font-medium text-corp">{t.notFound.code}</p>
+        <h1 className="mt-4 text-h1">{t.notFound.title}</h1>
+        <p className="mt-4 text-muted">{t.notFound.text}</p>
+        <div className="mt-8 flex flex-wrap gap-3"><Button to="/">{t.notFound.home}</Button><Button to="/soluciones" variant="secondary">{t.notFound.solutions}</Button></div>
+        <a href={waLink(t.wa.general)} target="_blank" rel="noopener noreferrer" className="mt-8 inline-block text-small text-corp link-line">{t.common.writeWhatsapp}</a>
+      </div>
+      <nav aria-label={t.solutions.nav} className="lg:col-span-5 lg:col-start-8">
+        <p className="font-mono text-[0.72rem] uppercase tracking-[0.12em] text-muted">{t.solutions.nav}</p>
+        <ul className="mt-4 border-t border-ink/80">
+          {c.categories.map((cat) => (
+            <li key={cat.id} className="border-b border-line">
+              <Link to={`/soluciones#${cat.id}`} className="group grid grid-cols-[3rem_1fr] gap-x-3 py-4">
+                <span className="pt-1 font-mono text-[0.7rem] text-faint">{cat.code}</span>
+                <span>
+                  <span className="block font-medium text-ink transition-colors group-hover:text-corp">{cat.name}</span>
+                  <span className="mt-1 block text-small text-muted">{cat.lede}</span>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
     </section>
   )
 }

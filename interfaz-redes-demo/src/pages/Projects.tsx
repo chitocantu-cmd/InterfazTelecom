@@ -38,7 +38,7 @@ export function Projects() {
 
   return (
     <>
-      <PageHero crumbs={[{ label: t.nav.projects }]} title={T.title} lede={T.lede} aside={<p className="mt-4 text-small text-muted">{T.aside}</p>} />
+      <PageHero crumbs={[{ label: t.nav.projects }]} title={T.title} lede={T.lede} />
       <section className="pb-28">
         <div className="container">
           <div className="flex flex-col gap-6 border-y border-line py-6 lg:flex-row lg:items-center lg:justify-between">
@@ -103,13 +103,15 @@ export function ProjectDetail() {
   const next = c.projects[(i + 1) % c.projects.length]
   const m = p.img ? IMG[p.img] : null
   const industry = c.industryById(p.industry)
-  const demo = p.status === 'demostrativo'
+  // Los tipos de proyecto (estado «demostrativo») no llevan rótulo: se presentan como lo que son, el alcance de un tipo
+  // de intervención, sin cliente, fecha ni resultados. Sólo los proyectos autorizados muestran esos datos.
+  const authorized = p.status === 'autorizado'
   const meta: [string, string][] = [
     [T.sector, industry?.name ?? ''],
     ...(p.client ? [[T.client, p.client] as [string, string]] : []),
     ...(p.location ? [[T.location, p.location] as [string, string]] : []),
     ...(p.year ? [[T.year, String(p.year)] as [string, string]] : []),
-    [T.status, demo ? t.common.demoCase : T.authorized],
+    ...(authorized ? [[T.status, T.authorized] as [string, string]] : []),
   ]
 
   return (
@@ -144,12 +146,7 @@ export function ProjectDetail() {
                 <h2 className="text-h3">{T.results}</h2>
                 <ul className="mt-6 space-y-3">{p.results.map((r) => <li key={r} className="flex gap-4 text-body"><span aria-hidden className="mt-[0.8em] h-px w-4 shrink-0 bg-corp" />{r}</li>)}</ul>
               </div>
-            ) : (
-              <div className="mt-12 bg-mist p-7">
-                <p className="font-medium text-ink">{T.results}</p>
-                <p className="mt-2 text-small text-body">{T.resultsPending}</p>
-              </div>
-            )}
+            ) : null}
           </div>
           <aside className="lg:col-span-4 lg:col-start-9">
             <div className="lg:sticky lg:top-36">

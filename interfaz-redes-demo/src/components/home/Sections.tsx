@@ -1,5 +1,5 @@
 import { ArrowRight } from 'lucide-react'
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useRef, useState, type CSSProperties } from 'react'
 import { COMPANY } from '../../data/company'
 import { familiesOf, type Project } from '../../data/content'
 import { explorerQuery } from '../../data/explorer'
@@ -8,7 +8,6 @@ import { useI18n } from '../../i18n'
 import { Link } from '../../i18n/Link'
 import { cn, waLink } from '../../lib/utils'
 import { useConvergence } from '../../motion/convergence'
-import { detectTier } from '../../motion/experience'
 import { SplitWords, useMagnetic, useReveal } from '../../motion/primitives'
 import { Button, SectionHead, Tag, TextLink } from '../ui'
 
@@ -75,74 +74,42 @@ export function FieldGallery({ items, lede, className }: { items: ImgKey[]; lede
 export function ProjectMeta({ p, className }: { p: Project; className?: string }) {
   const { t, c } = useI18n()
   const fam = familiesOf(p).slice(0, 2).map((f) => t.projects.families[f])
-  return <p className={cn('text-label text-muted', className)}>{[c.industryById(p.industry)?.name, ...fam, p.status === 'demostrativo' ? t.common.demoCase : null].filter(Boolean).join(' · ')}</p>
+  return <p className={cn('text-label text-muted', className)}>{[c.industryById(p.industry)?.name, ...fam].filter(Boolean).join(' · ')}</p>
 }
 
 export function FeaturedProjects() {
   const { t, c } = useI18n()
-  const [hover, setHover] = useState<number | null>(null)
-  const [shown, setShown] = useState(0)
-  const area = useRef<HTMLDivElement>(null)
-  const preview = useRef<HTMLDivElement>(null)
   const root = useReveal<HTMLElement>()
-  const list = c.projects
-
-  // La vista previa sigue al cursor con un retraso suave (sin renders de React por cuadro). Sólo con mouse.
-  useEffect(() => {
-    const el = area.current, pv = preview.current
-    if (!el || !pv || detectTier() !== 'full') return
-    let x = 0, y = 0, tx = 0, ty = 0, raf = 0, inside = false
-    const loop = () => {
-      x += (tx - x) * 0.14; y += (ty - y) * 0.14
-      pv.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`
-      raf = inside || Math.abs(tx - x) + Math.abs(ty - y) > 0.5 ? requestAnimationFrame(loop) : 0
-    }
-    const move = (e: PointerEvent) => {
-      if (e.pointerType !== 'mouse') return
-      const r = el.getBoundingClientRect()
-      tx = e.clientX - r.left; ty = e.clientY - r.top
-      if (!inside) { inside = true; x = tx; y = ty }
-      raf ||= requestAnimationFrame(loop)
-    }
-    const leave = () => { inside = false }
-    el.addEventListener('pointermove', move)
-    el.addEventListener('pointerleave', leave)
-    return () => { el.removeEventListener('pointermove', move); el.removeEventListener('pointerleave', leave); cancelAnimationFrame(raf) }
-  }, [])
-  const enter = (i: number) => { setHover(i); setShown(i) }
-
   return (
     <section ref={root} className="py-24 md:py-32" aria-labelledby="proyectos-title">
       <div className="container">
         <SectionHead id="proyectos-title" title={t.featured.title} lede={t.featured.lede} />
-        <div ref={area} className="relative mt-14" onPointerLeave={() => setHover(null)}>
-          {/* Vista previa flotante (escritorio con mouse): la foto del proyecto bajo el cursor. */}
-          <div ref={preview} aria-hidden className={cn('pj-preview pointer-events-none absolute left-0 top-0 z-10 hidden lg:block', hover !== null && 'is-on')}>
-            <div className="pj-preview-frame">
-              {list.map((p, i) => {
-                const img = p.img ? IMG[p.img] : null
-                return img && <img key={p.slug} src={img.src} srcSet={img.srcSet} sizes="380px" alt="" loading="lazy" decoding="async" className={cn('pj-preview-img', i === shown && 'is-current')} style={{ objectPosition: img.pos }} />
-              })}
-            </div>
-          </div>
-          <ol className="border-t border-ink/80">
-            {list.map((p, i) => {
-              const img = p.img ? IMG[p.img] : null
-              return (
-                <li key={p.slug} data-reveal="rise" style={{ '--rd': `${i * 60}ms` } as CSSProperties} className="border-b border-line">
-                  <Link to={`/proyectos/${p.slug}`} onPointerEnter={() => enter(i)} onFocus={() => enter(i)} onBlur={() => setHover(null)} className="pj-row group grid grid-cols-[auto_1fr] items-start gap-x-5 gap-y-3 py-6 md:py-8 lg:grid-cols-[3rem_1fr_minmax(0,18rem)_2rem] lg:items-center">
-                    {img && <span className="col-span-2 block aspect-[16/9] overflow-hidden bg-mist lg:hidden"><img src={img.src} srcSet={img.srcSet} sizes="100vw" alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" style={{ objectPosition: img.pos }} /></span>}
-                    <span className="pt-1.5 font-mono text-[0.72rem] text-faint lg:pt-0">{String(i + 1).padStart(2, '0')}</span>
-                    <span className="pj-title font-display text-[clamp(1.35rem,1rem+1.3vw,2.25rem)] font-medium leading-[1.12] tracking-[-0.02em] text-ink">{p.title}</span>
-                    <ProjectMeta p={p} className="col-start-2 lg:col-start-auto" />
-                    <ArrowRight aria-hidden className="arrow-nudge hidden h-5 w-5 justify-self-end text-faint transition-colors group-hover:text-corp lg:block" strokeWidth={1.5} />
-                  </Link>
-                </li>
-              )
-            })}
-          </ol>
-        </div>
-        <div className="mt-12"><TextLink to="/proyectos">{t.featured.all}</TextLink></div>
+        {/* Índice editorial: cada tipo de proyecto con su imagen fija, en una retícula asimétrica (7/5, 5/7). Al pasar
+            el mouse la imagen se acerca apenas dentro de su marco y el título cambia de color; nada flota encima. */}
+        <ol className="mt-14 grid gap-x-8 gap-y-14 md:grid-cols-2 lg:grid-cols-12 lg:gap-x-10 lg:gap-y-20">
+          {c.projects.map((p, i) => {
+            const img = p.img ? IMG[p.img] : null
+            const wide = i % 4 === 0 || i % 4 === 3
+            return (
+              <li key={p.slug} data-reveal="rise" style={{ '--rd': `${(i % 2) * 90}ms` } as CSSProperties} className={wide ? 'lg:col-span-7' : 'lg:col-span-5'}>
+                <Link to={`/proyectos/${p.slug}`} className="group block">
+                  <div className="relative aspect-[16/10] overflow-hidden bg-mist lg:aspect-auto lg:h-[clamp(15rem,23vw,22rem)]">
+                    {img && <img src={img.src} srcSet={img.srcSet} sizes={wide ? '(min-width: 1024px) 56vw, (min-width: 768px) 50vw, 100vw' : '(min-width: 1024px) 40vw, (min-width: 768px) 50vw, 100vw'} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-[1200ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.035]" style={{ objectPosition: img.pos }} />}
+                  </div>
+                  <div className="mt-5 grid grid-cols-[2.25rem_1fr_auto] items-baseline gap-x-3 border-t border-line pt-4">
+                    <span className="font-mono text-[0.72rem] text-faint">{String(i + 1).padStart(2, '0')}</span>
+                    <div>
+                      <h3 className="font-display text-[clamp(1.25rem,1.05rem+0.7vw,1.7rem)] font-medium leading-[1.15] tracking-[-0.018em] text-ink transition-colors group-hover:text-corp">{p.title}</h3>
+                      <ProjectMeta p={p} className="mt-2" />
+                    </div>
+                    <ArrowRight aria-hidden className="arrow-nudge h-5 w-5 self-center text-faint transition-colors group-hover:text-corp" strokeWidth={1.5} />
+                  </div>
+                </Link>
+              </li>
+            )
+          })}
+        </ol>
+        <div className="mt-14"><TextLink to="/proyectos">{t.featured.all}</TextLink></div>
       </div>
     </section>
   )

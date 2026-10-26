@@ -58,7 +58,6 @@ export default function IndustryDetail() {
         <div className="container grid gap-12 lg:grid-cols-12">
           <div className="lg:col-span-4">
             <h2 id="necesidades" className="text-h2">{T.needs}</h2>
-            <p className="mt-5 text-small text-muted">{t.industries.disclaimer}</p>
           </div>
           <div className="grid gap-12 sm:grid-cols-2 lg:col-span-7 lg:col-start-6">
             <div>

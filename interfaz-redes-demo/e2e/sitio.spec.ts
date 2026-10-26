@@ -77,6 +77,7 @@ test.describe('acomodo en otros anchos', () => {
 
   for (const width of [320, 768, 1024, 1280, 1920, 2560]) {
     test(`sin elementos fuera de la pantalla a ${width}px`, async ({ page }) => {
+      test.slow() // 13 cargas de página: con todas las pruebas en paralelo, el servidor de desarrollo tarda más
       await page.setViewportSize({ width, height: 900 })
       for (const route of MAIN) {
         await page.goto(route)
@@ -347,10 +348,12 @@ test.describe('proyectos', () => {
     await expect(list.locator('h2')).toHaveCount(PROJECTS.length)
   })
 
-  test('los casos demostrativos no se indexan', async ({ page }) => {
+  test('los tipos de proyecto no se indexan ni muestran cliente, fecha ni resultados', async ({ page }) => {
     await page.goto(`/proyectos/${PROJECTS[0].slug}`)
-    await expect(page.getByText('Caso demostrativo').first()).toBeVisible()
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex')
+    await expect(page.getByText('Caso demostrativo')).toHaveCount(0)
+    await expect(page.locator('main dl').getByText(/^(Cliente|Estado)$/)).toHaveCount(0)
+    await expect(page.getByRole('heading', { name: 'Resultados documentados' })).toHaveCount(0)
   })
 })
 
@@ -976,10 +979,10 @@ test.describe('Interfaz 3.0', () => {
     }
   })
 
-  test('el sitio no muestra leyendas de «imagen de referencia»', async ({ page }) => {
-    for (const path of ['/', '/soluciones/cableado-estructurado', '/proyectos']) {
+  test('el sitio no muestra leyendas de «imagen de referencia» ni de «caso demostrativo»', async ({ page }) => {
+    for (const path of ['/', '/soluciones/cableado-estructurado', '/proyectos', `/proyectos/${PROJECTS[0].slug}`, '/industrias', '/industrias/cedis']) {
       await page.goto(path)
-      await expect(page.getByText(/imagen de referencia|representación ilustrativa/i)).toHaveCount(0)
+      await expect(page.getByText(/imagen de referencia|representación ilustrativa|caso demostrativo|casos demostrativos/i)).toHaveCount(0)
     }
   })
 

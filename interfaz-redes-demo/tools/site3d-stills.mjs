@@ -33,7 +33,7 @@ const show = () => page.evaluate(() => { const el = document.querySelector('.rac
 await show()
 await page.waitForSelector('.rack-host canvas', { timeout: 20000 })
 await page.waitForFunction(() => !document.querySelector('.rack-stage')?.textContent?.match(/Preparando la escena/), null, { timeout: 20000 })
-await page.waitForTimeout(2500)
+await page.waitForTimeout(3600) // la cámara llega a la vista general en 2.6 s
 
 const save = async (name) => {
   await show(); await page.waitForTimeout(400)

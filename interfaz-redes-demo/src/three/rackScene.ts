@@ -1,12 +1,16 @@
 /**
- * Escena 3D «Un site de telecomunicaciones, pieza por pieza»: tres racks con organizadores verticales, escalerilla,
- * canaleta y bajadas de cable, en un cuarto con piso técnico, muro, plafón y luminarias. Se descarga aparte
- * (three.js) y sólo en el nivel «full» con WebGL.
+ * Escena 3D «Un site de telecomunicaciones, pieza por pieza»: una fila de cinco racks rotulados con organizadores
+ * verticales, escalerilla, canaleta, bajadas de cable y tierra física, en un cuarto con piso técnico, muro, plafón y
+ * luminarias. Se descarga aparte (three.js) y sólo en el nivel «full» con WebGL.
  *
- * Imagen: materiales físicos (PBR) con un entorno de reflejos suave, sombras estáticas (se calculan una vez),
- * luz cenital de luminarias, contraluz, niebla que funde el fondo y un brillo sutil (bloom) sólo en LED y luminarias.
- * Inspección: al elegir un componente la cámara se acerca, aparece un marco de enfoque con su nombre y una viñeta
- * que aísla la pieza; «Restablecer vista» vuelve a la vista general. En reposo la cámara respira apenas.
+ * Imagen: materiales físicos (PBR) con relieve en cada frente, un entorno de reflejos hecho a la medida del cuarto
+ * (las luminarias lineales se reflejan en metal y frentes), sombras estáticas (se calculan una vez), contraluz, niebla
+ * que funde el fondo, brillo sutil (bloom) sólo en LED y luminarias, profundidad de campo con la profundidad real de
+ * la escena y un acabado fotográfico (viñeta óptica y grano fino).
+ * Inspección: al entrar en pantalla, la cámara llega desde un plano abierto; al elegir un componente se acerca, el
+ * foco se va a la pieza (lo demás se desenfoca) y aparecen un marco con su nombre y una viñeta. Al pasar el mouse
+ * sobre una pieza se marca con un marco tenue. «Restablecer vista» vuelve a la vista general. En reposo la cámara
+ * respira apenas.
  *
  * Rendimiento (medido con la GPU de un equipo de oficina, Intel UHD / Direct3D 11): el armado se hace por pasos que
  * ceden el hilo principal; nada se dibuja hasta terminar; los shaders se compilan en paralelo (también los del
@@ -14,12 +18,12 @@
  * dibujo sólo en pantalla y con la pestaña visible (30 cuadros por segundo en reposo, 60 al moverse).
  */
 import * as THREE from 'three'
-import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
-import { buildDrops, buildDuct, buildLadder, buildRack, buildRods, buildVerticalManager, disposeDeep, MAT, tex, U, type LayoutItem } from './rackKit'
+import { DofPass, FinishPass } from './lensPasses'
+import { buildDrops, buildDuct, buildGround, buildLadder, buildNameplate, buildRack, buildRods, buildVerticalManager, disposeDeep, MAT, prepareRackTextures, tex, U, type LayoutItem } from './rackKit'
 
 export const PARTS = ['tray', 'fiber', 'patch', 'organizer', 'switch', 'nvr', 'ups'] as const
 export type Part = (typeof PARTS)[number]
@@ -84,8 +88,40 @@ async function waitForGpu(renderer: THREE.WebGLRenderer, signal?: AbortSignal) {
 }
 
 /**
- * Compila en paralelo (sin bloquear) los shaders que usa PMREMGenerator.fromScene: los materiales del cuarto de
- * RoomEnvironment, la caja de fondo y los filtros de desenfoque y GGX. Sin esto, generar el entorno compilaba todo de
+ * Entorno de reflejos a la medida del cuarto: muros y plafón oscuros, piso gris, las dos luminarias lineales (muy
+ * brillantes, como las reales) y un panel azul tenue donde está el contraluz. Así los reflejos en metal, pantallas y
+ * frentes coinciden con la luz de la escena.
+ */
+function buildEnvScene() {
+  const env = new THREE.Scene()
+  const basic = (hex: number, k = 1, side: THREE.Side = THREE.FrontSide) => {
+    const m = new THREE.MeshBasicMaterial({ side })
+    m.color.setHex(hex).multiplyScalar(k)
+    return m
+  }
+  const room = new THREE.Mesh(new THREE.BoxGeometry(12, 3, 8), basic(0x26303b, 1, THREE.BackSide))
+  room.position.set(0, 1.5, -0.4)
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(12, 8), basic(0x3a4249))
+  floor.rotation.x = -Math.PI / 2; floor.position.set(0, 0.002, -0.4)
+  env.add(room, floor)
+  for (const z of [0.75, -1.25]) {
+    const lamp = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.16), basic(0xeaf3ff, 16))
+    lamp.rotation.x = Math.PI / 2; lamp.position.set(0, 2.97, z)
+    env.add(lamp)
+  }
+  const rim = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.6), basic(0x4d95d8, 1.4))
+  rim.position.set(-3.6, 1.6, -3.4); rim.lookAt(0, 1.2, 0)
+  env.add(rim)
+  return env
+}
+
+function disposeScene(root: THREE.Object3D) {
+  root.traverse((o) => { const m = o as THREE.Mesh; m.geometry?.dispose(); (m.material as THREE.Material | undefined)?.dispose() })
+}
+
+/**
+ * Compila en paralelo (sin bloquear) los shaders que usa PMREMGenerator.fromScene: los materiales del cuarto del
+ * entorno, la caja de fondo y los filtros de desenfoque y GGX. Sin esto, generar el entorno compilaba todo de
  * golpe en Windows (más de medio segundo con la página congelada). Usa métodos internos de three.js (r186): si
  * cambian, el entorno igual se genera, sólo que sin esta preparación.
  */
@@ -131,7 +167,7 @@ export async function createRackScene(host: HTMLElement, overlay: HTMLElement, o
   renderer.setPixelRatio(dpr)
   renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.toneMapping = THREE.ACESFilmicToneMapping
-  renderer.toneMappingExposure = 0.88
+  renderer.toneMappingExposure = 0.96
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFShadowMap
   renderer.shadowMap.autoUpdate = false // la escena es estática: las sombras se calculan una vez
@@ -161,7 +197,7 @@ export async function createRackScene(host: HTMLElement, overlay: HTMLElement, o
   key.shadow.bias = -0.0004
   key.shadow.normalBias = 0.025
   scene.add(key, key.target)
-  const fill = new THREE.HemisphereLight(0xb7c8dc, 0x0a121c, 0.28); scene.add(fill)
+  const fill = new THREE.HemisphereLight(0xb7c8dc, 0x0a121c, 0.36); scene.add(fill)
   const rim = new THREE.DirectionalLight(0x4d95d8, 0.9); rim.position.set(-3.5, 1.8, -3.6); scene.add(rim)
   for (const z of [0.75, -1.25]) {
     const s = new THREE.SpotLight(0xe9f1ff, 6.5, 7.5, 0.95, 1, 1.7)
@@ -200,6 +236,9 @@ export async function createRackScene(host: HTMLElement, overlay: HTMLElement, o
   // organizadores verticales con su haz de cables. Frente hacia +Z (rotación de -90° en Y).
   const row = new THREE.Group()
   scene.add(row)
+  await prepareRackTextures([{ layout: MAIN, seed: 2 }, { layout: SIDE, seed: 5 }, { layout: SIDE, seed: 9 }], breathe, signal)
+  if (signal?.aborted) return abandon()
+  mark('texturas')
   const main = buildRack(MAIN, { seed: 2, cordColor: 0x1f6fd1 })
   await breathe(); if (signal?.aborted) return abandon()
   const left = buildRack(SIDE, { seed: 5, cordColor: 0x1f6fd1, door: true })
@@ -209,6 +248,10 @@ export async function createRackScene(host: HTMLElement, overlay: HTMLElement, o
   row.add(buildVerticalManager(-0.375, { seed: 3 }), buildVerticalManager(0.375, { seed: 4 }))
   // La fila sigue a ambos lados (copias que comparten geometría y materiales: casi no cuestan).
   for (const [src, x] of [[left.group, -1.5], [right.group, 1.5]] as const) { const c = src.clone(); c.position.x = x; row.add(c) }
+  // Placa de identificación en el travesaño superior de cada rack (R-01 a R-05; el que se explora es R-03).
+  ;[-1.5, -0.75, 0, 0.75, 1.5].forEach((x, i) => { const plate = buildNameplate(`R-0${i + 1}`); plate.position.set(x - 0.17, 1.965, 0.002); row.add(plate) })
+  // Tierra física: del rack que se explora, por arriba, hasta la barra de tierra del muro.
+  row.add(buildGround([[0.24, 1.99, -0.92], [0.24, 2.3, -0.95], [0.2, 2.46, -1.3], [-0.3, 2.46, -1.76], [-1.1, 2.42, -1.8], [-1.42, 2.27, -1.82]]))
   mark('racks')
   await breathe(); if (signal?.aborted) return abandon()
 
@@ -225,21 +268,24 @@ export async function createRackScene(host: HTMLElement, overlay: HTMLElement, o
   await breathe(); if (signal?.aborted) return abandon()
   if (new URLSearchParams(location.search).get('entorno') !== '0') {
     pmrem = new THREE.PMREMGenerator(renderer)
-    const room = new RoomEnvironment()
+    const room = buildEnvScene()
     await compileEnvironment(pmrem, room)
-    if (signal?.aborted) { room.dispose(); return abandon() }
-    envTex = pmrem.fromScene(room, 0.04, 0.1, 100, { size: 128 }).texture
-    room.dispose()
+    if (signal?.aborted) { disposeScene(room); return abandon() }
+    envTex = pmrem.fromScene(room, 0.03, 0.1, 100, { size: 128, position: new THREE.Vector3(0, 1.3, -0.2) }).texture
+    disposeScene(room)
     scene.environment = envTex
-    scene.environmentIntensity = 0.45
+    scene.environmentIntensity = 0.72
   }
   mark('entorno')
 
-  // Postproceso: MSAA, brillo sutil (sólo lo muy luminoso: LED, pantallas, luminarias) y salida con ACES.
-  const target = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 })
+  // Postproceso: MSAA (con la profundidad resuelta para el desenfoque), profundidad de campo, brillo sutil (sólo lo
+  // muy luminoso: LED, pantallas, luminarias), salida con ACES y acabado fotográfico.
+  const target = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4, depthTexture: new THREE.DepthTexture(1, 1) })
   const composer = new EffectComposer(renderer, target)
   composer.setPixelRatio(dpr)
   composer.addPass(new RenderPass(scene, camera))
+  const dof = new DofPass(camera)
+  composer.addPass(dof)
   // Umbral alto: sólo brilla lo que emite luz (LED, pantallas, luminarias), no las superficies iluminadas.
   const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.38, 0.45, 1.15)
   composer.addPass(bloom)
@@ -252,6 +298,8 @@ export async function createRackScene(host: HTMLElement, overlay: HTMLElement, o
   outPriv._toneMapping = renderer.toneMapping
   output.material.defines = { SRGB_TRANSFER: '', ACES_FILMIC_TONE_MAPPING: '' }
   output.material.needsUpdate = true
+  const finish = new FinishPass()
+  composer.addPass(finish)
 
   // Anclas y cajas de cada parte (para la cámara, las marcas y el marco de enfoque).
   scene.updateMatrixWorld(true)
@@ -271,6 +319,9 @@ export async function createRackScene(host: HTMLElement, overlay: HTMLElement, o
   frame.innerHTML = '<i></i><i></i><i></i><i></i><span class="rack-focus-label"></span>'
   overlay.appendChild(frame)
   const frameLabel = frame.querySelector('span')!
+  const hoverFrame = document.createElement('div'); hoverFrame.className = 'rack-focus is-hover'
+  hoverFrame.innerHTML = '<i></i><i></i><i></i><i></i>'
+  overlay.appendChild(hoverFrame)
   const markers = new Map<Part, HTMLButtonElement>()
   PARTS.forEach((part, i) => {
     const b = document.createElement('button')
@@ -283,7 +334,11 @@ export async function createRackScene(host: HTMLElement, overlay: HTMLElement, o
 
   // Cámara: órbita limitada alrededor del objetivo.
   const DEFAULT: View = { target: new THREE.Vector3(0.05, 1.3, -0.4), theta: 0.48, phi: 1.5, radius: 4.6 }
-  const view: View = { target: DEFAULT.target.clone(), theta: DEFAULT.theta, phi: DEFAULT.phi, radius: DEFAULT.radius }
+  // Entrada: plano abierto y más alto, desde el pasillo; la cámara llega a la vista general al entrar en pantalla.
+  const INTRO: View = { target: new THREE.Vector3(0.1, 1.42, -0.5), theta: 0.92, phi: 1.38, radius: 6.3 }
+  let introPending = !opts.reduced
+  const start = introPending ? INTRO : DEFAULT
+  const view: View = { target: start.target.clone(), theta: start.theta, phi: start.phi, radius: start.radius }
   const LIMITS = { theta: [-0.7, 0.95], phi: [1.2, 1.72] } as const
   let drift = { theta: 0, phi: 0 }
   const applyCamera = () => {
@@ -293,7 +348,8 @@ export async function createRackScene(host: HTMLElement, overlay: HTMLElement, o
   const viewFor = (part: Part | null): View => {
     if (!part) return { ...DEFAULT, target: DEFAULT.target.clone() }
     const a = parts.get(part)!.anchor
-    if (part === 'tray') return { target: new THREE.Vector3(0.1, 2.36, -0.36), theta: 0.48, phi: 1.68, radius: 2.7 }
+    // Escalerilla: desde arriba y de frente, para ver los haces sobre los peldaños (la canaleta queda delante).
+    if (part === 'tray') return { target: new THREE.Vector3(0.2, 2.4, -0.4), theta: 0.55, phi: 1.4, radius: 2.1 }
     if (part === 'ups') return { target: new THREE.Vector3(0, a.y + 0.05, 0), theta: 0.36, phi: 1.36, radius: 2.0 }
     return { target: new THREE.Vector3(0, a.y, 0), theta: 0.32, phi: 1.47, radius: 1.55 }
   }
@@ -306,14 +362,26 @@ export async function createRackScene(host: HTMLElement, overlay: HTMLElement, o
   let selected: Part | null = null
   let tween: { from: View; to: View; t0: number; dur: number } | null = null
   let lastFrame = 0
+  let hovered: Part | null = null
+  // Lente: el foco sigue al objetivo de la cámara; la apertura es mínima en la vista general y amplia al inspeccionar.
+  const APERTURE = { overview: 7, part: 24 }
+  let aperture = { from: APERTURE.overview, to: APERTURE.overview }
+  const lens = (k: number) => {
+    const h = composer.readBuffer.height || 1
+    const u = dof.material.uniforms
+    u.focus.value = view.radius
+    u.aperture.value = (aperture.from + (aperture.to - aperture.from) * k) * (h / 1000)
+    u.maxBlur.value = 16 * (h / 1000)
+  }
   const loop = (now: number) => {
     raf = 0
     const idle = !tween && !dragging
     if (idle && !opts.reduced && now - lastFrame < 31) { raf = requestAnimationFrame(loop); return }
     lastFrame = now
+    let e = 1
     if (tween) {
       const k = Math.min(1, (now - tween.t0) / tween.dur)
-      const e = easeInOut(k)
+      e = easeInOut(k)
       view.target.lerpVectors(tween.from.target, tween.to.target, e)
       view.theta = tween.from.theta + (tween.to.theta - tween.from.theta) * e
       view.phi = tween.from.phi + (tween.to.phi - tween.from.phi) * e
@@ -322,6 +390,8 @@ export async function createRackScene(host: HTMLElement, overlay: HTMLElement, o
     }
     if (!opts.reduced) drift = { theta: 0.028 * Math.sin(now / 3400), phi: 0.012 * Math.sin(now / 4300) }
     applyCamera()
+    lens(e)
+    finish.material.uniforms.seed.value = (now % 1000) / 7
     composer.render()
     placeOverlay()
     if (visible && (!opts.reduced || tween || dragging)) raf = requestAnimationFrame(loop)
@@ -331,6 +401,21 @@ export async function createRackScene(host: HTMLElement, overlay: HTMLElement, o
   const v = new THREE.Vector3()
   const toScreen = (p: THREE.Vector3, w: number, h: number) => { v.copy(p).project(camera); return { x: ((v.x + 1) / 2) * w, y: ((1 - v.y) / 2) * h, z: v.z } }
   const corners = Array.from({ length: 8 }, () => new THREE.Vector3())
+  /** Rectángulo en pantalla de la caja de una pieza (con margen y dentro del escenario). */
+  const rectOf = (part: Part, w: number, h: number) => {
+    const b = parts.get(part)!.box
+    let i = 0
+    for (const x of [b.min.x, b.max.x]) for (const y of [b.min.y, b.max.y]) for (const z of [b.min.z, b.max.z]) corners[i++].set(x, y, z)
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity
+    for (const c of corners) { const p = toScreen(c, w, h); x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y) }
+    const pad = 10
+    return { x0: Math.max(6, x0 - pad), y0: Math.max(6, y0 - pad), x1: Math.min(w - 6, x1 + pad), y1: Math.min(h - 6, y1 + pad) }
+  }
+  const place = (el: HTMLElement, r: { x0: number; y0: number; x1: number; y1: number }) => {
+    el.style.transform = `translate(${r.x0.toFixed(1)}px, ${r.y0.toFixed(1)}px)`
+    el.style.width = `${Math.max(24, r.x1 - r.x0).toFixed(1)}px`
+    el.style.height = `${Math.max(18, r.y1 - r.y0).toFixed(1)}px`
+  }
   const placeOverlay = () => {
     const w = host.clientWidth, h = host.clientHeight
     // Marcas: al borde derecho de cada pieza; si dos quedan a menos de 28 px se muestra una (la elegida si es una).
@@ -350,18 +435,14 @@ export async function createRackScene(host: HTMLElement, overlay: HTMLElement, o
       m.el.style.pointerEvents = ok ? 'auto' : 'none'
       m.el.classList.toggle('is-active', m.part === selected)
     }
+    // Marco tenue sobre la pieza bajo el mouse (si no es la elegida).
+    for (const m of markers.values()) m.classList.toggle('is-hover', m.dataset.part === hovered && hovered !== selected)
+    if (hovered && hovered !== selected) { const r = rectOf(hovered, w, h); place(hoverFrame, r); hoverFrame.classList.add('is-on') }
+    else hoverFrame.classList.remove('is-on')
     // Marco de enfoque y viñeta alrededor de la pieza elegida.
     if (!selected) { frame.classList.remove('is-on'); vignette.classList.remove('is-on'); return }
-    const b = parts.get(selected)!.box
-    let i = 0
-    for (const x of [b.min.x, b.max.x]) for (const y of [b.min.y, b.max.y]) for (const z of [b.min.z, b.max.z]) corners[i++].set(x, y, z)
-    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity
-    for (const c of corners) { const s = toScreen(c, w, h); x0 = Math.min(x0, s.x); y0 = Math.min(y0, s.y); x1 = Math.max(x1, s.x); y1 = Math.max(y1, s.y) }
-    const pad = 10
-    x0 = Math.max(6, x0 - pad); y0 = Math.max(6, y0 - pad); x1 = Math.min(w - 6, x1 + pad); y1 = Math.min(h - 6, y1 + pad)
-    frame.style.transform = `translate(${x0.toFixed(1)}px, ${y0.toFixed(1)}px)`
-    frame.style.width = `${Math.max(24, x1 - x0).toFixed(1)}px`
-    frame.style.height = `${Math.max(18, y1 - y0).toFixed(1)}px`
+    const { x0, y0, x1, y1 } = rectOf(selected, w, h)
+    place(frame, { x0, y0, x1, y1 })
     frame.classList.toggle('label-below', y0 < 44)
     frame.classList.add('is-on')
     vignette.style.setProperty('--fx', `${((((x0 + x1) / 2) / w) * 100).toFixed(1)}%`)
@@ -372,10 +453,20 @@ export async function createRackScene(host: HTMLElement, overlay: HTMLElement, o
 
   function focus(part: Part | null) {
     selected = part
+    introPending = false
     frameLabel.textContent = part ? opts.labels[part] : ''
     const to = viewFor(part)
-    if (opts.reduced) { Object.assign(view, { ...to, target: to.target }); tween = null }
+    const current = dof.material.uniforms.aperture.value / ((composer.readBuffer.height || 1) / 1000)
+    aperture = { from: current, to: part ? APERTURE.part : APERTURE.overview }
+    if (opts.reduced) { Object.assign(view, { ...to, target: to.target }); tween = null; aperture.from = aperture.to }
     else tween = { from: { ...view, target: view.target.clone() }, to, t0: performance.now(), dur: 1300 }
+    request()
+  }
+  /** Llegada a la vista general (una vez, al entrar el escenario en pantalla). */
+  const intro = () => {
+    if (!introPending || !ready) return
+    introPending = false
+    tween = { from: { ...view, target: view.target.clone() }, to: viewFor(null), t0: performance.now(), dur: 2600 }
     request()
   }
 
@@ -394,19 +485,47 @@ export async function createRackScene(host: HTMLElement, overlay: HTMLElement, o
     view.phi = THREE.MathUtils.clamp(view.phi - dy * 0.0035, LIMITS.phi[0], LIMITS.phi[1])
   }
   const raycaster = new THREE.Raycaster()
+  const hit = new THREE.Vector3()
+  /** Pieza bajo el puntero: el rayo contra la caja de cada pieza (barato y estable, sin recorrer los cables). */
+  const pick = (cx: number, cy: number): Part | null => {
+    const r = canvas.getBoundingClientRect()
+    raycaster.setFromCamera(new THREE.Vector2(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1), camera)
+    let best: Part | null = null, bestD = Infinity
+    for (const [part, { box }] of parts) {
+      if (!raycaster.ray.intersectBox(box, hit)) continue
+      const d = hit.distanceTo(raycaster.ray.origin)
+      if (d < bestD) { bestD = d; best = part }
+    }
+    return best
+  }
+  let hoverRaf = 0, hx = 0, hy = 0
+  const hoverAt = () => {
+    hoverRaf = 0
+    const p = ready && !dragging ? pick(hx, hy) : null
+    if (p === hovered) return
+    hovered = p
+    canvas.style.cursor = p ? 'pointer' : ''
+    placeOverlay()
+  }
+  const hoverMove = (e: PointerEvent) => {
+    if (e.pointerType !== 'mouse' || last) return
+    hx = e.clientX; hy = e.clientY
+    hoverRaf ||= requestAnimationFrame(hoverAt)
+  }
+  const hoverLeave = () => { hx = -1e5; hy = -1e5; hoverRaf ||= requestAnimationFrame(hoverAt) }
   const up = (e: PointerEvent) => {
     if (!last) return
     last = null; dragging = false; host.classList.remove('is-dragging')
     if (moved < 6) {
-      const r = canvas.getBoundingClientRect()
-      raycaster.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera)
-      const hit = raycaster.intersectObjects([main.group, ladder, duct, drops], true).find((h) => h.object.userData.part)
-      if (hit) { const part = hit.object.userData.part as Part; opts.onSelect(part); focus(part) }
+      const part = pick(e.clientX, e.clientY)
+      if (part) { opts.onSelect(part); focus(part) }
     }
     request()
   }
   canvas.addEventListener('pointerdown', down)
   canvas.addEventListener('pointermove', move)
+  canvas.addEventListener('pointermove', hoverMove)
+  canvas.addEventListener('pointerleave', hoverLeave)
   canvas.addEventListener('pointerup', up)
   canvas.addEventListener('pointercancel', up)
 
@@ -416,15 +535,21 @@ export async function createRackScene(host: HTMLElement, overlay: HTMLElement, o
     renderer.setSize(w, h, false)
     composer.setSize(w, h)
     camera.aspect = w / h
-    // En escritorio la lista ocupa el borde izquierdo del escenario: el encuadre se corre a la derecha.
-    if (w >= 900) camera.setViewOffset(w, h, -Math.round(w * 0.09), 0, w, h)
+    // Con la lista sobre el borde izquierdo del escenario (≥ 1024 px), el encuadre se corre a la derecha.
+    if (w >= 1024) camera.setViewOffset(w, h, -Math.round(w * 0.07), 0, w, h)
     else camera.clearViewOffset()
     camera.updateProjectionMatrix()
     request()
   }
   const ro = new ResizeObserver(resize)
   ro.observe(host)
-  const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting && !document.hidden; if (visible) request() })
+  let onScreen = 0
+  const io = new IntersectionObserver(([e]) => {
+    visible = e.isIntersecting && !document.hidden
+    onScreen = e.intersectionRatio
+    if (visible) request()
+    if (onScreen >= 0.3) intro()
+  }, { threshold: [0, 0.3] })
   io.observe(host)
   const onVis = () => { visible = !document.hidden; if (visible) request() }
   document.addEventListener('visibilitychange', onVis)
@@ -518,10 +643,13 @@ export async function createRackScene(host: HTMLElement, overlay: HTMLElement, o
       document.removeEventListener('visibilitychange', onVis)
       canvas.removeEventListener('pointerdown', down)
       canvas.removeEventListener('pointermove', move)
+      canvas.removeEventListener('pointermove', hoverMove)
+      canvas.removeEventListener('pointerleave', hoverLeave)
+      cancelAnimationFrame(hoverRaf)
       canvas.removeEventListener('pointerup', up)
       canvas.removeEventListener('pointercancel', up)
       markers.forEach((m) => m.remove())
-      frame.remove(); vignette.remove()
+      frame.remove(); hoverFrame.remove(); vignette.remove()
       composer.dispose(); target.dispose()
       disposeDeep(scene)
       envTex?.dispose(); pmrem?.dispose()
@@ -557,6 +685,7 @@ export async function createRackScene(host: HTMLElement, overlay: HTMLElement, o
   placeOverlay()
   opts.onReady()
   request()
+  if (onScreen >= 0.3) intro()
   return api
 }
 
