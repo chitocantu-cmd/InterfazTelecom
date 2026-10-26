@@ -1,6 +1,6 @@
 import { ArrowRight, Box, RotateCcw } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { IMG } from '../../data/media'
+import { SITE3D_STILLS } from '../../data/site3d'
 import { useI18n } from '../../i18n'
 import { Link } from '../../i18n/Link'
 import { cn } from '../../lib/utils'
@@ -9,8 +9,9 @@ import { SplitWords, useReveal } from '../../motion/primitives'
 import type { Part, RackScene } from '../../three/rackScene'
 
 const PARTS: Part[] = ['tray', 'fiber', 'patch', 'organizer', 'switch', 'nvr', 'ups']
-/** Servicios de Interfaz que intervienen en cada componente. */
-const RELATED: Record<Part, string[]> = {
+/** Servicios de Interfaz que intervienen en cada componente (y en la vista general). */
+const RELATED: Record<Part | 'overview', string[]> = {
+  overview: ['racks-y-site', 'cableado-estructurado', 'fibra-optica'],
   tray: ['cableado-estructurado', 'racks-y-site'],
   fiber: ['fibra-optica', 'certificacion-y-pruebas'],
   patch: ['cableado-estructurado', 'certificacion-y-pruebas'],
@@ -21,27 +22,30 @@ const RELATED: Record<Part, string[]> = {
 }
 
 /**
- * «Explora una instalación». La lista de componentes es el control (teclado, lector de pantalla, teléfono); en
- * escritorio con WebGL, la escena 3D (three.js, descargada al acercarse a la sección) enfoca y resalta el componente
- * elegido y deja girar el rack. Sin WebGL, en el teléfono o con «reducir movimiento», la misma sección funciona con
- * una fotografía y la ficha de cada componente.
+ * «Un site de telecomunicaciones, pieza por pieza». Escenario a todo el ancho con la lista de componentes y la ficha
+ * como paneles sobre la escena (en el teléfono, debajo). La lista es el control accesible (teclado, lector de
+ * pantalla, toque). En escritorio con WebGL, la escena 3D (three.js, descargada al acercarse) enfoca e inspecciona
+ * cada pieza; sin WebGL, en el teléfono o con «reducir movimiento», la misma sección usa vistas fijas de la escena.
  */
 export function RackExplorer() {
   const { t, c } = useI18n()
   const tier = useExperience()
-  const [selected, setSelected] = useState<Part>('patch')
+  const [selected, setSelected] = useState<Part | null>(null)
   const [status, setStatus] = useState<'off' | 'loading' | 'ready' | 'failed'>('off')
   const host = useRef<HTMLDivElement>(null)
   const overlay = useRef<HTMLDivElement>(null)
   const scene = useRef<RackScene | null>(null)
   const root = useReveal<HTMLElement>()
   const use3d = tier === 'full' && status !== 'failed'
+  // La escena puede terminar de armarse después de que la persona eligió un componente: enfoca el vigente.
+  const selectedRef = useRef<Part | null>(selected)
+  selectedRef.current = selected
+  const labelsRef = useRef(Object.fromEntries(PARTS.map((p) => [p, t.rack3d.parts[p].name])) as Record<Part, string>)
 
   useEffect(() => {
     const el = host.current
     if (tier !== 'full' || !el || !overlay.current || !hasWebGL()) return
     const abort = new AbortController()
-    // La escena se descarga cuando la sección está a una pantalla de distancia y se arma por pasos (rackScene.ts).
     const io = new IntersectionObserver(([e]) => {
       if (!e.isIntersecting) return
       io.disconnect()
@@ -52,12 +56,13 @@ export function RackExplorer() {
           return createRackScene(host.current, overlay.current, {
             onSelect: (p) => setSelected(p),
             onReady: () => setStatus('ready'),
+            labels: labelsRef.current,
           }, abort.signal)
         })
         .then((created) => {
           if (!created) return
           scene.current = created
-          created.focus(selectedRef.current)
+          if (selectedRef.current) created.focus(selectedRef.current)
         })
         .catch(() => setStatus('failed'))
     }, { rootMargin: '900px 0px' })
@@ -73,85 +78,92 @@ export function RackExplorer() {
     }
   }, [tier])
 
-  // La escena puede terminar de armarse después de que la persona eligió otro componente: enfoca el vigente.
-  const selectedRef = useRef<Part>(selected)
-  selectedRef.current = selected
-  const choose = (p: Part) => { setSelected(p); scene.current?.focus(p) }
-  const part = t.rack3d.parts[selected]
+  const choose = (p: Part | null) => { setSelected(p); scene.current?.focus(p) }
+  const info = selected ? t.rack3d.parts[selected] : t.rack3d.overview
+  const still = SITE3D_STILLS[selected ?? 'overview']
+
+  // En el teléfono, a dos columnas: la imagen sigue a la vista mientras se elige.
+  const list = (compact: boolean) => (
+    <ol aria-label={t.rack3d.listLabel} className={cn('grid gap-1', compact && 'grid-cols-2 md:grid-cols-1')}>
+      {PARTS.map((p, i) => {
+        const on = selected === p
+        return (
+          <li key={p}>
+            <button type="button" aria-pressed={on} onClick={() => choose(on ? null : p)} className={cn('group flex h-full w-full items-center gap-2.5 rounded-[2px] px-2.5 py-2.5 text-left text-small leading-snug transition-colors sm:gap-3 sm:px-3', on ? 'bg-white/[0.1] text-white' : 'text-white/70 hover:bg-white/[0.05] hover:text-white')}>
+              <span className={cn('grid h-6 w-6 shrink-0 place-items-center rounded-full font-mono text-[0.66rem] transition-colors', on ? 'bg-lumen text-night' : 'border border-white/25 text-white/60 group-hover:border-white/50')}>{i + 1}</span>
+              <span className="flex-1">{t.rack3d.parts[p].name}</span>
+              <span aria-hidden className={cn('hidden h-px w-4 bg-lumen transition-transform duration-300 md:block', on ? 'scale-x-100' : 'scale-x-0')} />
+            </button>
+          </li>
+        )
+      })}
+    </ol>
+  )
+  const card = (
+    <div aria-live="polite">
+      <div key={selected ?? 'overview'} className="sv-fade">
+        <p className="font-mono text-[0.68rem] uppercase tracking-[0.12em] text-lumen">{selected ? String(PARTS.indexOf(selected) + 1).padStart(2, '0') : '00'} · {info.name}</p>
+        <p className="mt-2.5 text-[0.98rem] leading-relaxed text-white/85">{info.text}</p>
+      </div>
+      <p className="mt-5 text-label text-white/50">{t.rack3d.related}</p>
+      <ul className="mt-2 flex flex-wrap gap-2">
+        {RELATED[selected ?? 'overview'].map((slug) => {
+          const s = c.serviceBySlug(slug)
+          return s && (
+            <li key={slug}>
+              <Link to={`/soluciones/${slug}`} className="group inline-flex items-center gap-1.5 rounded-[2px] border border-white/20 px-3 py-1.5 text-[0.85rem] text-white transition-colors hover:border-lumen hover:bg-white/[0.04]">
+                {s.name}<ArrowRight aria-hidden className="arrow-nudge h-3.5 w-3.5 text-lumen" strokeWidth={1.75} />
+              </Link>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  )
 
   return (
     <section ref={root} aria-labelledby="instalacion-title" className="relative overflow-hidden bg-night py-20 text-white md:py-28">
-      <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_55%_at_70%_45%,rgb(23_105_200/0.28),transparent_70%)]" />
-      <div className="container relative grid gap-10 lg:grid-cols-12 lg:gap-12">
-        <div className="min-w-0 lg:col-span-4">
-          <p data-reveal="rise" className="flex items-center gap-3 font-mono text-[0.72rem] uppercase tracking-[0.12em] text-lumen">
-            <span aria-hidden className="h-px w-8 bg-lumen" />{t.rack3d.eyebrow}
-          </p>
-          <h2 id="instalacion-title" data-reveal="words" className="mt-5 text-h2 !text-white"><SplitWords text={t.rack3d.title} mode="view" /></h2>
-          <p data-reveal="rise" className="mt-5 text-white/70">{t.rack3d.lede}</p>
-
-          <ol aria-label={t.rack3d.listLabel} className="mt-8 grid grid-cols-2 gap-px border border-white/10 bg-white/10 sm:grid-cols-3 lg:grid-cols-1">
-            {PARTS.map((p, i) => (
-              <li key={p} className="bg-night">
-                <button type="button" aria-pressed={selected === p} onClick={() => choose(p)} className={cn('flex w-full items-center gap-3 px-4 py-3 text-left text-small transition-colors', selected === p ? 'bg-white/[0.07] text-white' : 'text-white/65 hover:bg-white/[0.04] hover:text-white')}>
-                  <span className={cn('grid h-6 w-6 shrink-0 place-items-center rounded-full font-mono text-[0.68rem]', selected === p ? 'bg-lumen text-night' : 'border border-white/25 text-white/60')}>{i + 1}</span>
-                  {t.rack3d.parts[p].name}
-                </button>
-              </li>
-            ))}
-          </ol>
+      <div className="container">
+        <div className="grid gap-6 lg:grid-cols-12 lg:items-end">
+          <div className="lg:col-span-7">
+            <p data-reveal="rise" className="flex items-center gap-3 font-mono text-[0.72rem] uppercase tracking-[0.12em] text-lumen">
+              <span aria-hidden className="h-px w-8 bg-lumen" />{t.rack3d.eyebrow}
+            </p>
+            <h2 id="instalacion-title" data-reveal="words" className="mt-5 max-w-[18ch] text-h1 !text-white"><SplitWords text={t.rack3d.title} mode="view" /></h2>
+          </div>
+          <p data-reveal="rise" className="max-w-[30rem] text-white/70 lg:col-span-5 lg:justify-self-end">{t.rack3d.lede}</p>
         </div>
 
-        <div className="min-w-0 lg:col-span-8">
-          <div className="relative overflow-hidden border border-white/10 bg-[radial-gradient(70%_70%_at_50%_40%,#102036,#050d18)]">
-            <div className={cn('relative', use3d ? 'aspect-[4/3] xl:aspect-[16/11]' : 'aspect-[4/3]')}>
-              {/* Escena 3D o, sin ella, la fotografía */}
-              <div ref={host} className={cn('rack-host absolute inset-0', use3d ? 'cursor-grab' : 'hidden')} role={use3d ? 'img' : undefined} aria-label={use3d ? t.rack3d.canvasLabel : undefined} />
-              <div ref={overlay} aria-hidden className={cn('pointer-events-none absolute inset-0', !use3d && 'hidden')} />
-              {!use3d && (
-                <img src={IMG.rack.src} srcSet={IMG.rack.srcSet} sizes="(min-width: 1024px) 60vw, 100vw" alt={IMG.rack.alt} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: IMG.rack.pos }} />
-              )}
-              {use3d && status !== 'ready' && (
-                <div className="absolute inset-0 grid place-items-center">
-                  <p className="flex items-center gap-3 font-mono text-[0.72rem] uppercase tracking-[0.12em] text-white/60"><Box aria-hidden className="h-4 w-4 animate-pulse text-lumen" strokeWidth={1.5} />{t.rack3d.loading}</p>
-                </div>
-              )}
-              {use3d && status === 'ready' && (
-                <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between bg-gradient-to-b from-night/85 to-transparent p-4 pb-8 font-mono text-[0.68rem] uppercase tracking-[0.12em] text-white/55">
-                  <span>{t.rack3d.hint}</span>
-                  <button type="button" onClick={() => { scene.current?.focus(null) }} className="pointer-events-auto inline-flex items-center gap-2 border border-white/20 px-3 py-1.5 text-white/80 transition-colors hover:border-lumen hover:text-white">
-                    <RotateCcw aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} />{t.rack3d.reset}
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Ficha del componente */}
-            <div className="relative border-t border-white/10 bg-night/80 p-5 md:p-6" aria-live="polite">
-              <div className="grid gap-5 md:grid-cols-[1fr_auto] md:items-end">
-                <div key={selected} className="sv-fade">
-                  <p className="font-mono text-[0.68rem] uppercase tracking-[0.12em] text-lumen">{String(PARTS.indexOf(selected) + 1).padStart(2, '0')} · {part.name}</p>
-                  <p className="mt-2 max-w-[38rem] text-white/80">{part.text}</p>
-                </div>
-                <div>
-                  <p className="text-label text-white/50">{t.rack3d.related}</p>
-                  <ul className="mt-2 flex flex-wrap gap-2">
-                    {RELATED[selected].map((slug) => {
-                      const s = c.serviceBySlug(slug)
-                      return s && (
-                        <li key={slug}>
-                          <Link to={`/soluciones/${slug}`} className="group inline-flex items-center gap-1.5 border border-white/20 px-3 py-1.5 text-[0.85rem] text-white transition-colors hover:border-lumen">
-                            {s.name}<ArrowRight aria-hidden className="arrow-nudge h-3.5 w-3.5 text-lumen" strokeWidth={1.75} />
-                          </Link>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                </div>
+        {/* Escenario */}
+        <div data-reveal="mask" className="rack-stage relative mt-12 overflow-hidden rounded-[2px] border border-white/10 bg-[#060d17]">
+          <div className="relative aspect-[4/3] sm:aspect-[16/10] lg:aspect-[16/9]">
+            <div ref={host} className={cn('rack-host absolute inset-0', use3d ? 'cursor-grab' : 'hidden')} role={use3d ? 'img' : undefined} aria-label={use3d ? t.rack3d.canvasLabel : undefined} />
+            <div ref={overlay} aria-hidden className={cn('pointer-events-none absolute inset-0 overflow-hidden', !use3d && 'hidden')} />
+            {!use3d && (
+              // Vistas fijas de la misma escena (teléfono, equipos sin WebGL, «reducir movimiento»).
+              <img key={selected ?? 'overview'} src={still.src} srcSet={still.srcSet} sizes="(min-width: 1024px) 90vw, 100vw" alt={t.rack3d.canvasLabel} loading="lazy" decoding="async" className="rack-still absolute inset-0 h-full w-full object-cover" />
+            )}
+            {use3d && status !== 'ready' && (
+              <div className="absolute inset-0 grid place-items-center">
+                <p className="flex items-center gap-3 font-mono text-[0.72rem] uppercase tracking-[0.12em] text-white/60"><Box aria-hidden className="h-4 w-4 animate-pulse text-lumen" strokeWidth={1.5} />{t.rack3d.loading}</p>
               </div>
+            )}
+            <div className="rack-toolbar pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between gap-4 bg-gradient-to-b from-night/80 to-transparent p-3 pb-8 font-mono text-[0.68rem] uppercase tracking-[0.12em] text-white/60 sm:p-4 sm:pb-10">
+              {use3d && <span className="min-w-0 truncate">{t.rack3d.hint}</span>}
+              <button type="button" onClick={() => choose(null)} disabled={!selected} className="pointer-events-auto ml-auto inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-[2px] border border-white/20 bg-night/50 px-3 py-1.5 text-white/85 backdrop-blur-sm transition-[color,border-color,opacity] hover:border-lumen hover:text-white disabled:opacity-40">
+                <RotateCcw aria-hidden className="h-3.5 w-3.5" strokeWidth={1.75} />{t.rack3d.reset}
+              </button>
             </div>
+            {/* Paneles sobre la escena (escritorio) */}
+            <div className="rack-panel absolute left-4 top-16 hidden max-h-[calc(100%-5rem)] w-[16.5rem] overflow-y-auto p-3 lg:block">{list(false)}</div>
+            <div className="rack-panel absolute bottom-4 right-4 hidden w-[24rem] p-5 lg:block">{card}</div>
           </div>
-          <p className="mt-4 text-label text-white/45">{t.rack3d.note}{!use3d && IMG.rack.ref ? ` ${t.common.referenceImage}.` : ''}</p>
+        </div>
+
+        {/* Teléfono y tableta: lista y ficha debajo del escenario */}
+        <div className="mt-4 grid gap-4 md:mt-6 md:grid-cols-2 md:gap-6 lg:hidden">
+          <div className="rack-panel p-2 sm:p-3">{list(true)}</div>
+          <div className="rack-panel p-5">{card}</div>
         </div>
       </div>
     </section>

@@ -61,7 +61,6 @@ export default function ServiceDetail() {
           {s.img ? (
             <>
               <img src={IMG[s.img].src} srcSet={IMG[s.img].srcSet} sizes="(min-width: 1024px) 48vw, 100vw" alt={IMG[s.img].alt} className="enter-reveal absolute inset-0 h-full w-full object-cover" style={{ objectPosition: IMG[s.img].pos }} {...{ fetchpriority: 'high' }} />
-              {IMG[s.img].ref && <p className="img-caption">{t.common.referenceImage}</p>}
             </>
           ) : (
             <div className="absolute inset-0"><Media plate={s.plate} ratio="h-full w-full" /></div>

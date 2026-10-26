@@ -316,6 +316,7 @@ export const SERVICES: Service[] = [
   },
   {
     slug: 'wifi-empresarial',
+    seoDescription: 'WiFi empresarial en Monterrey: site survey, diseño de cobertura según materiales y densidad de usuarios, y access points con gestión centralizada.',
     code: 'CON-02',
     img: 'wifi',
     name: 'WiFi empresarial',

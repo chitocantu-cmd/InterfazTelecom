@@ -12,8 +12,6 @@ const messages: Messages = {
   },
   common: {
     skipToContent: 'Skip to content',
-    referenceImage: 'Reference image',
-    referenceImageNotCase: 'Reference image, not from this case',
     home: 'Home',
     breadcrumbs: 'Breadcrumb',
     currentSection: ' (current section)',
@@ -76,7 +74,6 @@ const messages: Messages = {
     companyNav: 'Company',
     privacy: 'Privacy notice',
     rights: (year: number, name: string) => `© ${year} ${name} · REPSE registration with Mexico's Ministry of Labor (STPS)`,
-    disclaimer: 'The 3D visualizations on this site are reference images and the project cases are illustrative; they do not depict completed projects.',
     languages: 'Languages',
   },
   hero: {
@@ -123,13 +120,13 @@ const messages: Messages = {
     ],
     closing: 'We design, deploy and maintain the infrastructure behind your operation.',
     cta: 'Explore our solutions',
-    note: 'Reference images. The annotations point to typical components of each solution.',
+    note: 'The annotations point to typical components of each solution.',
   },
   rack3d: {
     eyebrow: 'Explore an installation',
     title: 'A telecom room, piece by piece.',
     lede: 'Select a component to see what it does and which Interfaz service is involved.',
-    note: 'Illustrative representation: it does not correspond to a project or to any specific manufacturer’s equipment.',
+    overview: { name: 'Overview', text: 'A complete telecom room: racks, cable managers, ladder rack and duct working together. Choose a component to inspect it up close.' },
     hint: 'Drag to rotate the rack',
     reset: 'Reset view',
     loading: 'Preparing the 3D scene',
@@ -253,7 +250,7 @@ const messages: Messages = {
     wan: 'WAN',
     selected: 'Selected device',
     related: 'View related service',
-    note: 'Reference diagram. Every network is designed from the on-site assessment.',
+    note: 'Every network is designed from the on-site assessment.',
     swipe: 'Swipe the diagram sideways to see all of it.',
   },
   service: {

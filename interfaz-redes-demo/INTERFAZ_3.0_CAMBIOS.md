@@ -69,7 +69,7 @@ anterior (`home/Explorer.tsx`, reemplazado por `ServicesStage`). `QUOTE_FOR` pas
 
 ## Pendientes y decisiones de la empresa
 
-- Fotografía real de instalaciones para el recorrido y el hero (hoy son renders marcados «Imagen de referencia»).
+- Fotografía real de instalaciones para el recorrido y el hero (hoy son renders; desde 3.1 sin leyenda visible).
 - La escena 3D es ilustrativa; un modelo hecho en Blender con fotos de un site real de Interfaz la mejoraría.
 - Revisión lingüística de los textos nuevos en inglés, coreano y chino.
 - Lo pendiente de 2.0 sigue igual (`PROGRESO_INTERFAZ_2.0.md`).

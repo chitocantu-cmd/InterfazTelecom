@@ -110,8 +110,13 @@ pantallas de alta densidad conviene el doble). Para convertir una JPG o PNG: ins
 CSS `object-position`, por ejemplo `'50% 40%'`), y úsela con su clave (`img: 'rack'`) en los datos. Después corra
 `python tools/variantes.py`: genera las versiones de 640 y 1024 px que los celulares y las tarjetas descargan en
 lugar del original.
-En `media.ts`, `ref: true` marca las visualizaciones 3D (muestran la leyenda "Imagen de referencia") y `ref: false`
-las fotografías reales del equipo (`src/assets/img/campo/`, tomadas de interfaz.com.mx).
+En `media.ts`, `ref: true` marca las visualizaciones generadas (renders) y `ref: false` las fotografías reales del
+equipo (`src/assets/img/campo/`, tomadas de interfaz.com.mx). Es un dato interno: desde 3.1 el sitio no muestra
+leyendas sobre las imágenes (ver `MEJORAS_SITE_3D_Y_AUDITORIA.md`); los renders no se usan como evidencia de obra.
+
+Las vistas fijas de la escena 3D (`src/assets/img/site3d/`) se generan desde la escena real:
+`npx vite build && npx vite preview --port 4173`, luego `node tools/site3d-stills.mjs http://localhost:4173/` y
+`python tools/variantes.py`.
 
 El cotizador envía la solicitud a `/api/cotizacion` cuando la recepción automática está configurada (ver
 "Recepción de cotizaciones"); si no, la abre en WhatsApp o en el correo del usuario con el mensaje escrito.

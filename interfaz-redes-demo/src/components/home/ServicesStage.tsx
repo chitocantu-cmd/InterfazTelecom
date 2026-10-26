@@ -127,7 +127,6 @@ export function ServicesStage() {
                 )
               })}
               <div aria-hidden className="pointer-events-none absolute inset-0 z-[4] bg-[linear-gradient(0deg,rgb(5_13_24/0.9)_0%,rgb(5_13_24/0.55)_38%,transparent_70%)]" />
-              {IMG[item.img].ref && <p className="img-caption !bottom-auto top-4 z-[5]">{t.common.referenceImage}</p>}
               <div className="absolute inset-x-0 bottom-0 z-[5] p-6 text-white md:p-10">
                 <p className="font-mono text-[0.7rem] uppercase tracking-[0.12em] text-lumen">{String(active + 1).padStart(2, '0')} / {String(items.length).padStart(2, '0')}</p>
                 <h3 key={item.key} className="mt-3 max-w-[18ch] text-[clamp(1.8rem,1.2rem+1.9vw,3rem)] font-semibold leading-[1.04] tracking-[-0.026em] !text-white">

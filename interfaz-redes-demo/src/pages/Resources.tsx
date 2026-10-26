@@ -37,11 +37,16 @@ export function Resources() {
       <PageHero crumbs={[{ label: T.title }]} title={T.title} lede={T.lede} />
       <section className="pb-28">
         <div className="container">
-          <div className="flex flex-wrap gap-2 border-y border-line py-6" role="group" aria-label={T.categoriesLabel}>
-            <Chip active={cat === 'todas'} onClick={() => setCat('todas')} controls="lista-recursos" count={list.length}>{T.all}</Chip>
-            {RESOURCE_CATEGORIES.map((k) => <Chip key={k} active={cat === k} onClick={() => setCat(k)} controls="lista-recursos" count={list.filter((r) => r.category === k).length}>{T.categories[k]}</Chip>)}
-          </div>
-          <div id="lista-recursos" className="mt-12">
+          {/* Filtros sólo con artículos visibles y sólo las categorías que tienen alguno (nada de chips en cero). */}
+          {list.length > 0 && (
+            <div className="flex flex-wrap gap-2 border-y border-line py-6" role="group" aria-label={T.categoriesLabel}>
+              <Chip active={cat === 'todas'} onClick={() => setCat('todas')} controls="lista-recursos" count={list.length}>{T.all}</Chip>
+              {RESOURCE_CATEGORIES.map((k) => [k, list.filter((r) => r.category === k).length] as const).filter(([, n]) => n > 0).map(([k, n]) => (
+                <Chip key={k} active={cat === k} onClick={() => setCat(k)} controls="lista-recursos" count={n}>{T.categories[k]}</Chip>
+              ))}
+            </div>
+          )}
+          <div id="lista-recursos" className={list.length > 0 ? 'mt-12' : 'border-t border-line pt-12'}>
             {shown.length === 0 ? (
               <div className="grid gap-10 bg-mist p-8 md:p-12 lg:grid-cols-12">
                 <p className="text-lead text-body lg:col-span-7">{T.empty}</p>

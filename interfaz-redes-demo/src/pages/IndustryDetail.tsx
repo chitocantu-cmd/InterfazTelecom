@@ -48,7 +48,6 @@ export default function IndustryDetail() {
           {img ? (
             <>
               <img src={img.src} srcSet={img.srcSet} sizes="(min-width: 1024px) 48vw, 100vw" alt={img.alt} className="enter-reveal absolute inset-0 h-full w-full object-cover" style={{ objectPosition: img.pos }} {...{ fetchpriority: 'high' }} />
-              {img.ref && <p className="img-caption">{t.common.referenceImage}</p>}
             </>
           ) : <div className="absolute inset-0"><Media plate={ind.plate} ratio="h-full w-full" /></div>}
         </div>

@@ -12,7 +12,8 @@ function pic(name: string, width: number) {
   return { src, srcSet: set.length ? [...set, `${src} ${width}w`].join(', ') : undefined }
 }
 
-// ref: true  → visualización 3D de referencia (muestra la leyenda "Imagen de referencia").
+// ref: true  → visualización de referencia (render, no fotografía de un proyecto). Es un dato interno: no se muestra
+//              leyenda en el sitio (ver MEJORAS_SITE_3D_Y_AUDITORIA.md). No usar estas imágenes como evidencia de obra.
 // ref: false → fotografía real del equipo de Interfaz en campo (publicada en interfaz.com.mx).
 //              Muestra trabajos del equipo, no un proyecto o cliente en particular.
 export const IMG = {

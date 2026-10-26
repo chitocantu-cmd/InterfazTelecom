@@ -11,8 +11,6 @@ const messages: Messages = {
   },
   common: {
     skipToContent: '跳至正文',
-    referenceImage: '参考图片',
-    referenceImageNotCase: '参考图片，非本案例实拍',
     home: '首页',
     breadcrumbs: '当前位置',
     currentSection: '（当前栏目）',
@@ -75,7 +73,6 @@ const messages: Messages = {
     companyNav: '公司',
     privacy: '隐私声明',
     rights: (year: number, name: string) => `© ${year} ${name} · 已在墨西哥劳动部（STPS）进行 REPSE 登记`,
-    disclaimer: '本网站的 3D 图像为参考图片，项目案例为示例，并非已完成的实际项目。',
     languages: '语言',
   },
   hero: {
@@ -122,13 +119,13 @@ const messages: Messages = {
     ],
     closing: '我们设计、实施并维护支撑您运营的基础设施。',
     cta: '了解我们的解决方案',
-    note: '参考图片。标注指出各解决方案的典型组件。',
+    note: '标注指出各解决方案的典型组件。',
   },
   rack3d: {
     eyebrow: '探索一处设施',
     title: '逐一了解电信机房的每个部件。',
     lede: '选择一个组件，查看它的作用以及涉及的 Interfaz 服务。',
-    note: '示意性展示：不对应任何项目或特定制造商的设备。',
+    overview: { name: '总览', text: '一个完整的电信机房：机柜、理线器、走线架和线槽协同工作。选择一个组件，近距离查看。' },
     hint: '拖动以旋转机柜',
     reset: '重置视图',
     loading: '正在准备 3D 场景',
@@ -252,7 +249,7 @@ const messages: Messages = {
     wan: 'WAN',
     selected: '已选设备',
     related: '查看相关服务',
-    note: '参考示意图。每张网络均根据现场勘察进行设计。',
+    note: '每个网络均根据现场勘察进行设计。',
     swipe: '左右滑动示意图查看全部内容。',
   },
   service: {

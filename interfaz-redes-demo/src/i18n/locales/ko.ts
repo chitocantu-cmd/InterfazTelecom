@@ -11,8 +11,6 @@ const messages: Messages = {
   },
   common: {
     skipToContent: '본문으로 건너뛰기',
-    referenceImage: '참고 이미지',
-    referenceImageNotCase: '참고 이미지이며 이 사례의 사진이 아닙니다',
     home: '홈',
     breadcrumbs: '현재 위치',
     currentSection: ' (현재 섹션)',
@@ -75,7 +73,6 @@ const messages: Messages = {
     companyNav: '회사',
     privacy: '개인정보 처리방침',
     rights: (year: number, name: string) => `© ${year} ${name} · 멕시코 노동부(STPS) REPSE 등록`,
-    disclaimer: '사이트의 3D 이미지는 참고용이며, 프로젝트 사례는 예시로서 실제 수행한 프로젝트가 아닙니다.',
     languages: '언어',
   },
   hero: {
@@ -122,13 +119,13 @@ const messages: Messages = {
     ],
     closing: '운영을 뒷받침하는 인프라를 설계하고, 구축하고, 유지보수합니다.',
     cta: '솔루션 살펴보기',
-    note: '참고 이미지입니다. 주석은 각 솔루션의 일반적인 구성 요소를 가리킵니다.',
+    note: '주석은 각 솔루션의 일반적인 구성 요소를 가리킵니다.',
   },
   rack3d: {
     eyebrow: '설비 둘러보기',
     title: '통신실을 하나하나 살펴보세요.',
     lede: '구성 요소를 선택하면 어떤 역할을 하는지, Interfaz의 어떤 서비스가 관련되는지 볼 수 있습니다.',
-    note: '예시용 표현입니다. 특정 프로젝트나 특정 제조사의 장비가 아닙니다.',
+    overview: { name: '전체 보기', text: '랙, 케이블 정리대, 케이블 래더, 덕트가 함께 동작하는 하나의 통신실입니다. 구성 요소를 선택해 가까이에서 살펴보세요.' },
     hint: '드래그하여 랙 회전',
     reset: '보기 초기화',
     loading: '3D 장면 준비 중',
@@ -252,7 +249,7 @@ const messages: Messages = {
     wan: 'WAN',
     selected: '선택한 장비',
     related: '관련 서비스 보기',
-    note: '참고 다이어그램입니다. 모든 네트워크는 현장 조사를 바탕으로 설계합니다.',
+    note: '모든 네트워크는 현장 조사를 바탕으로 설계합니다.',
     swipe: '다이어그램을 좌우로 밀어 전체를 확인하세요.',
   },
   service: {

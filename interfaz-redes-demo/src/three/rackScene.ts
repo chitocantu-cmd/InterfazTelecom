@@ -1,20 +1,30 @@
 /**
- * Escena 3D «Explora una instalación»: un rack de telecomunicaciones entre otros dos, escalerilla con cableado,
- * canaleta de fibra y piso técnico. Se descarga aparte (three.js) y sólo en el nivel «full» con WebGL.
+ * Escena 3D «Un site de telecomunicaciones, pieza por pieza»: tres racks con organizadores verticales, escalerilla,
+ * canaleta y bajadas de cable, en un cuarto con piso técnico, muro, plafón y luminarias. Se descarga aparte
+ * (three.js) y sólo en el nivel «full» con WebGL.
  *
- * Rendimiento: se arma por pasos que ceden el hilo principal; materiales Phong (compilan rápido también en
- * Windows/Direct3D) y sin mapa de entorno PMREM (bloqueaba más de medio segundo); se dibuja bajo demanda (sólo mientras la cámara se mueve, se arrastra o parpadea un LED, y nunca
- * fuera de pantalla o con la pestaña oculta); DPR limitado a 1.75; texturas procedurales pequeñas; cordones unidos
- * en una geometría por rack. Control: arrastrar gira la cámara dentro de un rango (la rueda del mouse sigue
- * desplazando la página); seleccionar un componente acerca la cámara y lo resalta.
+ * Imagen: materiales físicos (PBR) con un entorno de reflejos suave, sombras estáticas (se calculan una vez),
+ * luz cenital de luminarias, contraluz, niebla que funde el fondo y un brillo sutil (bloom) sólo en LED y luminarias.
+ * Inspección: al elegir un componente la cámara se acerca, aparece un marco de enfoque con su nombre y una viñeta
+ * que aísla la pieza; «Restablecer vista» vuelve a la vista general. En reposo la cámara respira apenas.
+ *
+ * Rendimiento (medido con la GPU de un equipo de oficina, Intel UHD / Direct3D 11): el armado se hace por pasos que
+ * ceden el hilo principal; nada se dibuja hasta terminar; los shaders se compilan en paralelo (también los del
+ * postproceso) y se calientan por material; se espera a la GPU con un fence de WebGL2; DPR ≤ 1.5; sombras estáticas;
+ * dibujo sólo en pantalla y con la pestaña visible (30 cuadros por segundo en reposo, 60 al moverse).
  */
 import * as THREE from 'three'
-import { buildDrops, buildDuct, buildLadder, buildRack, disposeDeep, tex, U, type LayoutItem } from './rackKit'
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
+import { buildDrops, buildDuct, buildLadder, buildRack, buildRods, buildVerticalManager, disposeDeep, MAT, tex, U, type LayoutItem } from './rackKit'
 
 export const PARTS = ['tray', 'fiber', 'patch', 'organizer', 'switch', 'nvr', 'ups'] as const
 export type Part = (typeof PARTS)[number]
 
-/** Completa con tapas hasta 42U, antes de las UPS (sin huecos abiertos que dejen ver el interior). */
+/** Completa con tapas hasta 42U, antes de las UPS (sin huecos abiertos). */
 const fill42 = (items: LayoutItem[]): LayoutItem[] => {
   const used = items.reduce((s, i) => s + i.u, 0)
   return used < 42 ? [...items.slice(0, -2), { t: 'bl', u: 42 - used }, ...items.slice(-2)] : items
@@ -39,6 +49,8 @@ const SIDE = fill42([
 export interface RackSceneOptions {
   onSelect: (part: Part) => void
   onReady: () => void
+  /** Nombre de cada componente (para la etiqueta del marco de enfoque). */
+  labels: Record<Part, string>
   reduced?: boolean
 }
 
@@ -49,99 +61,216 @@ export interface RackScene {
 
 interface View { target: THREE.Vector3; theta: number; phi: number; radius: number }
 const easeInOut = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2)
-
-/** Cede el hilo principal entre pasos del armado: el navegador puede pintar y responder a la persona. */
 const breathe = () => new Promise<void>((resolve) => setTimeout(resolve, 0))
 const mark = (step: string) => performance.mark(`rack:${step}`)
 
 /**
- * Arma la escena por pasos (renderer y luces → cada rack → escalerilla → entorno → shaders) cediendo el hilo principal
- * entre uno y otro: ninguna tarea larga bloquea el desplazamiento ni los clics. Si `signal` se cancela a medio camino
- * (la persona salió de la página), libera lo creado y devuelve null.
+ * Espera, sin bloquear, a que la GPU termine lo encolado. En Windows (ANGLE/Direct3D) el proceso de la GPU sigue
+ * creando los shaders aunque la compilación en paralelo ya se dio por terminada; la primera consulta síncrona que
+ * llegue mientras tanto (los uniformes de un programa nuevo) congela la página hasta que acabe. Con esta espera entre
+ * compilar y usar, esa consulta ya no encuentra nada pendiente.
+ */
+async function waitForGpu(renderer: THREE.WebGLRenderer, signal?: AbortSignal) {
+  const gl = renderer.getContext()
+  if (!(gl instanceof WebGL2RenderingContext)) return
+  const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0)
+  if (!sync) return
+  gl.flush()
+  const t0 = performance.now()
+  while (gl.getSyncParameter(sync, gl.SYNC_STATUS) !== gl.SIGNALED && performance.now() - t0 < 4000 && !signal?.aborted) {
+    await new Promise((resolve) => setTimeout(resolve, 16))
+  }
+  gl.deleteSync(sync)
+}
+
+/**
+ * Compila en paralelo (sin bloquear) los shaders que usa PMREMGenerator.fromScene: los materiales del cuarto de
+ * RoomEnvironment, la caja de fondo y los filtros de desenfoque y GGX. Sin esto, generar el entorno compilaba todo de
+ * golpe en Windows (más de medio segundo con la página congelada). Usa métodos internos de three.js (r186): si
+ * cambian, el entorno igual se genera, sólo que sin esta preparación.
+ */
+async function compileEnvironment(pmrem: THREE.PMREMGenerator, room: THREE.Scene) {
+  const renderer = (pmrem as unknown as { _renderer: THREE.WebGLRenderer })._renderer
+  const pm = pmrem as unknown as { _setSize?: (n: number) => void; _allocateTargets?: () => THREE.WebGLRenderTarget; _blurMaterial?: THREE.Material; _ggxMaterial?: THREE.Material }
+  if (!renderer || !pm._setSize || !pm._allocateTargets) return
+  pm._setSize(128)
+  const target = pm._allocateTargets()
+  const camera = new THREE.PerspectiveCamera(90, 1, 0.1, 100)
+  const quad = new THREE.PlaneGeometry(2, 2)
+  const box = new THREE.BoxGeometry()
+  const extra = new THREE.Scene()
+  for (const m of [pm._blurMaterial, pm._ggxMaterial]) if (m) extra.add(new THREE.Mesh(quad, m))
+  const background = new THREE.MeshBasicMaterial({ side: THREE.BackSide, depthWrite: false, depthTest: false })
+  extra.add(new THREE.Mesh(box, background))
+  const previous = renderer.getRenderTarget()
+  renderer.setRenderTarget(target)
+  await Promise.all([renderer.compileAsync(room, camera), renderer.compileAsync(extra, camera)]).catch(() => {})
+  // Primer uso de cada programa en un destino de 1 × 1 px, uno por uno y con la GPU libre.
+  const tiny = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType })
+  await waitForGpu(renderer)
+  renderer.setRenderTarget(tiny)
+  renderer.render(room, camera)
+  await waitForGpu(renderer)
+  for (const mesh of [...extra.children]) {
+    const solo = new THREE.Scene(); solo.add(mesh)
+    renderer.setRenderTarget(tiny); renderer.render(solo, camera)
+    await waitForGpu(renderer)
+  }
+  renderer.setRenderTarget(previous)
+  tiny.dispose(); target.dispose(); quad.dispose(); box.dispose(); background.dispose()
+}
+
+/**
+ * Arma la escena por pasos cediendo el hilo principal entre uno y otro. Si `signal` se cancela a medio camino (la
+ * persona salió de la página), libera lo creado y devuelve null.
  */
 export async function createRackScene(host: HTMLElement, overlay: HTMLElement, opts: RackSceneOptions, signal?: AbortSignal): Promise<RackScene | null> {
   mark('inicio')
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' })
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75))
+  const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false, powerPreference: 'high-performance' })
+  const dpr = Math.min(window.devicePixelRatio, 1.5)
+  renderer.setPixelRatio(dpr)
   renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.toneMapping = THREE.ACESFilmicToneMapping
-  renderer.toneMappingExposure = 1.05
-  // Sin revisar el registro de cada shader al usarlo por primera vez: en Windows esa consulta obliga a terminar la
-  // compilación de golpe (~0.4 s de bloqueo). Los shaders son los de three.js; en desarrollo se siguen revisando.
+  renderer.toneMappingExposure = 0.88
+  renderer.shadowMap.enabled = true
+  renderer.shadowMap.type = THREE.PCFShadowMap
+  renderer.shadowMap.autoUpdate = false // la escena es estática: las sombras se calculan una vez
+  // Consultar el registro de cada shader fuerza en Windows a terminar la compilación de golpe; sólo en desarrollo.
   renderer.debug.checkShaderErrors = import.meta.env.DEV
   renderer.domElement.className = 'block h-full w-full'
   host.appendChild(renderer.domElement)
 
   const scene = new THREE.Scene()
-  scene.fog = new THREE.Fog(0x050d18, 5.5, 12)
-  const abandon = () => { disposeDeep(scene); renderer.dispose(); renderer.forceContextLoss(); renderer.domElement.remove(); return null }
+  const BG = 0x060d17
+  scene.background = new THREE.Color(BG)
+  scene.fog = new THREE.Fog(BG, 6.5, 13)
+  let pmrem: THREE.PMREMGenerator | null = null
+  let envTex: THREE.Texture | null = null
+  const abandon = () => { disposeDeep(scene); envTex?.dispose(); pmrem?.dispose(); renderer.dispose(); renderer.forceContextLoss(); renderer.domElement.remove(); return null }
 
-  const camera = new THREE.PerspectiveCamera(32, 1, 0.05, 40)
+  const camera = new THREE.PerspectiveCamera(30, 1, 0.05, 40)
 
-  // Luz de producto: principal desde el frente derecho, un cono desde el plafón que ilumina el pasillo, y un
-  // contraluz azul (el color de Interfaz) casi horizontal que dibuja los costados sin teñir los techos.
-  const key = new THREE.DirectionalLight(0xf3f7ff, 2.3); key.position.set(2.5, 3.2, 4.5); scene.add(key)
-  const rim = new THREE.DirectionalLight(0x26a5dc, 1.8); rim.position.set(-4.5, 1.1, -2.5); scene.add(rim)
-  const fill = new THREE.HemisphereLight(0x7f9fc3, 0x0a1626, 0.75); scene.add(fill)
-  const pool = new THREE.SpotLight(0xe4f1ff, 22, 9, 0.6, 0.65, 1.4); pool.position.set(0.4, 4.4, 2.4); pool.target.position.set(0, 0, 0.3); scene.add(pool, pool.target)
+  // Luz: cenital fría de luminarias (con sombras suaves), relleno muy bajo y un contraluz azul que separa los racks
+  // del fondo. Sin luces de colores de ciencia ficción.
+  const key = new THREE.DirectionalLight(0xf2f6ff, 1.25)
+  key.position.set(1.6, 4.2, 3.2)
+  key.target.position.set(0, 0.8, -0.4)
+  key.castShadow = true
+  key.shadow.mapSize.set(2048, 2048)
+  Object.assign(key.shadow.camera, { left: -2.6, right: 2.6, top: 3.2, bottom: -1.2, near: 0.5, far: 9 })
+  key.shadow.bias = -0.0004
+  key.shadow.normalBias = 0.025
+  scene.add(key, key.target)
+  const fill = new THREE.HemisphereLight(0xb7c8dc, 0x0a121c, 0.28); scene.add(fill)
+  const rim = new THREE.DirectionalLight(0x4d95d8, 0.9); rim.position.set(-3.5, 1.8, -3.6); scene.add(rim)
+  for (const z of [0.75, -1.25]) {
+    const s = new THREE.SpotLight(0xe9f1ff, 6.5, 7.5, 0.95, 1, 1.7)
+    s.position.set(0, 2.94, z); s.target.position.set(0, 0, z * 0.6)
+    scene.add(s, s.target)
+  }
 
-  // Piso técnico oscuro con retícula y sombra de contacto bajo los racks.
-  const floorTex = tex.floor()
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), new THREE.MeshPhongMaterial({ map: floorTex, shininess: 12, specular: 0x10202c }))
-  floor.rotation.x = -Math.PI / 2
+  // Cuarto: piso técnico (losetas perforadas en el pasillo frío), muro, plafón y luminarias lineales.
+  const floorTex = tex.floor(false); floorTex.repeat.set(20, 12)
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(12, 7.2), new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.62, metalness: 0.06 }))
+  floor.rotation.x = -Math.PI / 2; floor.position.set(0, 0, -0.4); floor.receiveShadow = true
   scene.add(floor)
-  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 1.9), new THREE.MeshBasicMaterial({ map: tex.contact(), transparent: true, depthWrite: false }))
-  shadow.rotation.x = -Math.PI / 2; shadow.position.set(0, 0.002, -0.45)
-  scene.add(shadow)
+  const perfTex = tex.floor(true); perfTex.repeat.set(4, 1)
+  const perf = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.6), new THREE.MeshStandardMaterial({ map: perfTex, roughness: 0.6, metalness: 0.12 }))
+  perf.rotation.x = -Math.PI / 2; perf.position.set(0, 0.002, 0.45); perf.receiveShadow = true
+  scene.add(perf)
+  const wallTex = tex.wall(); wallTex.repeat.set(6, 1.6)
+  const wall = new THREE.Mesh(new THREE.PlaneGeometry(12, 3.2), new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.9, metalness: 0 }))
+  wall.position.set(0, 1.6, -1.85); wall.receiveShadow = true
+  scene.add(wall)
+  const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(12, 7.2), new THREE.MeshStandardMaterial({ color: 0x10161d, roughness: 1 }))
+  ceiling.rotation.x = Math.PI / 2; ceiling.position.set(0, 3.0, -0.4)
+  scene.add(ceiling)
+  const lampMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xeaf3ff, emissiveIntensity: 5, roughness: 1 })
+  for (const z of [0.75, -1.25]) {
+    const housing = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.035, 0.16), MAT.coatEdge); housing.position.set(0, 2.98, z); scene.add(housing)
+    const lens = new THREE.Mesh(new THREE.PlaneGeometry(2.1, 0.11), lampMat); lens.rotation.x = Math.PI / 2; lens.position.set(0, 2.96, z); scene.add(lens)
+  }
+  // Barra de tierra en el muro (detalle de un site real).
+  const bus = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.06, 0.012), MAT.copper); bus.position.set(-1.55, 2.25, -1.83); scene.add(bus)
 
-  // Tres racks en línea; el del centro es el que se explora. Frente hacia +Z (rotación de -90° en Y).
   await breathe(); if (signal?.aborted) return abandon()
+  mark('cuarto')
+
+  // Fila de racks: el del centro (abierto) es el que se explora; los vecinos llevan puerta perforada. Entre racks,
+  // organizadores verticales con su haz de cables. Frente hacia +Z (rotación de -90° en Y).
   const row = new THREE.Group()
   scene.add(row)
-  mark('base')
   const main = buildRack(MAIN, { seed: 2, cordColor: 0x1f6fd1 })
-  mark('rack-principal')
   await breathe(); if (signal?.aborted) return abandon()
-  const left = buildRack(SIDE, { seed: 5, cordColor: 0x1f6fd1 })
+  const left = buildRack(SIDE, { seed: 5, cordColor: 0x1f6fd1, door: true })
   await breathe(); if (signal?.aborted) return abandon()
-  const right = buildRack(SIDE, { seed: 9, cordColor: 0xe9eef2 })
-  mark('racks-laterales')
-  for (const [r, x] of [[left.group, -0.62], [main.group, 0], [right.group, 0.62]] as const) { r.rotation.y = -Math.PI / 2; r.position.x = x; row.add(r) }
+  const right = buildRack(SIDE, { seed: 9, cordColor: 0xe9eef2, door: true })
+  for (const [r, x] of [[left.group, -0.75], [main.group, 0], [right.group, 0.75]] as const) { r.rotation.y = -Math.PI / 2; r.position.x = x; row.add(r) }
+  row.add(buildVerticalManager(-0.375, { seed: 3 }), buildVerticalManager(0.375, { seed: 4 }))
+  // La fila sigue a ambos lados (copias que comparten geometría y materiales: casi no cuestan).
+  for (const [src, x] of [[left.group, -1.5], [right.group, 1.5]] as const) { const c = src.clone(); c.position.x = x; row.add(c) }
+  mark('racks')
   await breathe(); if (signal?.aborted) return abandon()
 
-  // Escalerilla con cableado azul y canaleta de fibra, a lo largo de la fila; bajada de cable al rack principal.
-  const ladder = buildLadder({ length: 5, y: 2.34, z0: 2.5, bundles: [{ offset: -0.1, color: 0x1f6fd1, count: 18 }, { offset: 0.08, color: 0x2d7fe0, count: 14 }] })
-  ladder.rotation.y = Math.PI / 2; ladder.position.z = -0.45
-  ladder.userData.part = 'tray'
-  ladder.traverse((o) => { o.userData.part = 'tray' })
-  scene.add(ladder)
-  const duct = buildDuct({ length: 5, y: 2.52, z0: 2.5 })
-  duct.rotation.y = Math.PI / 2; duct.position.z = -0.2
-  duct.traverse((o) => { o.userData.part = 'tray' })
-  scene.add(duct)
-  // Bajadas de cable de la escalerilla al techo de cada rack (por la parte trasera).
-  const drops = buildDrops([-0.62, 0, 0.62])
-  drops.traverse((o) => { o.userData.part = 'tray' })
-  scene.add(drops)
-
+  // Escalerilla con cableado, canaleta de fibra, bajadas a cada organizador y varillas al plafón.
+  const ladder = buildLadder({ length: 6, y: 2.34, z: -0.42, bundles: [{ offset: -0.1, color: 0x1f6fd1, count: 22 }, { offset: 0.09, color: 0x2d7fe0, count: 16 }] })
+  const duct = buildDuct({ length: 6, y: 2.58, z: -0.1 })
+  const drops = buildDrops([-0.375, 0.375], { yTop: 2.36, z: -0.42 })
+  const rods = buildRods([-2.2, -1.1, 0, 1.1, 2.2].flatMap((x) => [[x, -0.65, 2.3, 3.0], [x, -0.19, 2.3, 3.0], [x + 0.3, -0.17, 2.56, 3.0], [x + 0.3, -0.03, 2.56, 3.0]] as [number, number, number, number][]))
+  for (const o of [ladder, duct, drops]) o.traverse((c) => { c.userData.part = 'tray' })
+  scene.add(ladder, duct, drops, rods)
   mark('escalerilla')
 
-  // Anclas de cada parte (centro del frente) y su caja de resaltado.
-  const anchors = new Map<Part, { pos: THREE.Vector3; size: THREE.Vector3 }>()
+  // Reflejos suaves del entorno (PMREM de 128 px). Prueba: ?entorno=0 lo omite.
+  await breathe(); if (signal?.aborted) return abandon()
+  if (new URLSearchParams(location.search).get('entorno') !== '0') {
+    pmrem = new THREE.PMREMGenerator(renderer)
+    const room = new RoomEnvironment()
+    await compileEnvironment(pmrem, room)
+    if (signal?.aborted) { room.dispose(); return abandon() }
+    envTex = pmrem.fromScene(room, 0.04, 0.1, 100, { size: 128 }).texture
+    room.dispose()
+    scene.environment = envTex
+    scene.environmentIntensity = 0.45
+  }
+  mark('entorno')
+
+  // Postproceso: MSAA, brillo sutil (sólo lo muy luminoso: LED, pantallas, luminarias) y salida con ACES.
+  const target = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 })
+  const composer = new EffectComposer(renderer, target)
+  composer.setPixelRatio(dpr)
+  composer.addPass(new RenderPass(scene, camera))
+  // Umbral alto: sólo brilla lo que emite luz (LED, pantallas, luminarias), no las superficies iluminadas.
+  const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.38, 0.45, 1.15)
+  composer.addPass(bloom)
+  const output = new OutputPass()
+  composer.addPass(output)
+  // OutputPass arma sus definiciones (tono y espacio de color) en su primer cuadro y ahí recompilaría su shader:
+  // se fijan antes, iguales, para compilarlo en paralelo con lo demás.
+  const outPriv = output as unknown as { _outputColorSpace: string; _toneMapping: number }
+  outPriv._outputColorSpace = renderer.outputColorSpace
+  outPriv._toneMapping = renderer.toneMapping
+  output.material.defines = { SRGB_TRANSFER: '', ACES_FILMIC_TONE_MAPPING: '' }
+  output.material.needsUpdate = true
+
+  // Anclas y cajas de cada parte (para la cámara, las marcas y el marco de enfoque).
   scene.updateMatrixWorld(true)
+  const parts = new Map<Part, { anchor: THREE.Vector3; box: THREE.Box3 }>()
   for (const unit of main.units) {
     if (!unit.part) continue
-    const p = new THREE.Vector3(0, unit.y, 0)
-    main.group.localToWorld(p)
-    p.z = 0.02
-    anchors.set(unit.part as Part, { pos: p, size: new THREE.Vector3(0.5, unit.h + 0.012, 0.05) })
+    const box = new THREE.Box3().setFromObject(unit.mesh)
+    const anchor = box.getCenter(new THREE.Vector3()); anchor.z = box.max.z
+    parts.set(unit.part as Part, { anchor, box })
   }
-  anchors.set('tray', { pos: new THREE.Vector3(0, 2.5, -0.35), size: new THREE.Vector3(1.6, 0.32, 0.6) })
-  const highlight = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1)), new THREE.LineBasicMaterial({ color: 0x4cc3f0, transparent: true, opacity: 0.95 }))
-  highlight.visible = false
-  scene.add(highlight)
+  parts.set('tray', { anchor: new THREE.Vector3(0.15, 2.3, -0.2), box: new THREE.Box3(new THREE.Vector3(-0.75, 2.28, -0.66), new THREE.Vector3(0.75, 2.66, -0.03)) })
 
-  // Marcas numeradas sobre cada parte (decorativas: la lista de la sección es el control accesible).
+  // Superposición: marcas numeradas, marco de enfoque con etiqueta y viñeta (DOM, decorativos: la lista de la
+  // sección es el control accesible).
+  const vignette = document.createElement('div'); vignette.className = 'rack-vignette'; overlay.appendChild(vignette)
+  const frame = document.createElement('div'); frame.className = 'rack-focus'
+  frame.innerHTML = '<i></i><i></i><i></i><i></i><span class="rack-focus-label"></span>'
+  overlay.appendChild(frame)
+  const frameLabel = frame.querySelector('span')!
   const markers = new Map<Part, HTMLButtonElement>()
   PARTS.forEach((part, i) => {
     const b = document.createElement('button')
@@ -153,33 +282,35 @@ export async function createRackScene(host: HTMLElement, overlay: HTMLElement, o
   })
 
   // Cámara: órbita limitada alrededor del objetivo.
-  const DEFAULT: View = { target: new THREE.Vector3(0.05, 1.34, -0.25), theta: 0.52, phi: 1.47, radius: 4.7 }
+  const DEFAULT: View = { target: new THREE.Vector3(0.05, 1.3, -0.4), theta: 0.48, phi: 1.5, radius: 4.6 }
   const view: View = { target: DEFAULT.target.clone(), theta: DEFAULT.theta, phi: DEFAULT.phi, radius: DEFAULT.radius }
-  const LIMITS = { theta: [-0.75, 0.9], phi: [1.12, 1.66] } as const
+  const LIMITS = { theta: [-0.7, 0.95], phi: [1.2, 1.72] } as const
+  let drift = { theta: 0, phi: 0 }
   const applyCamera = () => {
-    const s = new THREE.Spherical(view.radius, view.phi, view.theta)
-    camera.position.setFromSpherical(s).add(view.target)
+    camera.position.setFromSpherical(new THREE.Spherical(view.radius, view.phi + drift.phi, view.theta + drift.theta)).add(view.target)
     camera.lookAt(view.target)
   }
-
-  let tween: { from: View; to: View; t0: number; dur: number } | null = null
   const viewFor = (part: Part | null): View => {
     if (!part) return { ...DEFAULT, target: DEFAULT.target.clone() }
-    const a = anchors.get(part)!
-    if (part === 'tray') return { target: new THREE.Vector3(0, 2.2, -0.4), theta: 0.55, phi: 1.62, radius: 2.9 }
-    const near = part === 'ups' ? 2.2 : 1.65
-    return { target: a.pos.clone().setZ(0), theta: 0.4, phi: part === 'ups' ? 1.36 : 1.45, radius: near }
+    const a = parts.get(part)!.anchor
+    if (part === 'tray') return { target: new THREE.Vector3(0.1, 2.36, -0.36), theta: 0.48, phi: 1.68, radius: 2.7 }
+    if (part === 'ups') return { target: new THREE.Vector3(0, a.y + 0.05, 0), theta: 0.36, phi: 1.36, radius: 2.0 }
+    return { target: new THREE.Vector3(0, a.y, 0), theta: 0.32, phi: 1.47, radius: 1.55 }
   }
 
-  // Dibujo bajo demanda.
+  // Dibujo bajo demanda: 60 cps al moverse; en reposo, la cámara respira a 30 cps; nada fuera de pantalla.
+  let ready = false
   let visible = true
   let raf = 0
   let dragging = false
   let selected: Part | null = null
-  let blinkUntil = 0
+  let tween: { from: View; to: View; t0: number; dur: number } | null = null
+  let lastFrame = 0
   const loop = (now: number) => {
     raf = 0
-    let more = false
+    const idle = !tween && !dragging
+    if (idle && !opts.reduced && now - lastFrame < 31) { raf = requestAnimationFrame(loop); return }
+    lastFrame = now
     if (tween) {
       const k = Math.min(1, (now - tween.t0) / tween.dur)
       const e = easeInOut(k)
@@ -187,63 +318,68 @@ export async function createRackScene(host: HTMLElement, overlay: HTMLElement, o
       view.theta = tween.from.theta + (tween.to.theta - tween.from.theta) * e
       view.phi = tween.from.phi + (tween.to.phi - tween.from.phi) * e
       view.radius = tween.from.radius + (tween.to.radius - tween.from.radius) * e
-      if (k < 1) more = true; else tween = null
+      if (k >= 1) tween = null
     }
-    if (selected) {
-      const pulse = 0.65 + 0.35 * Math.sin(now / 260)
-      ;(highlight.material as THREE.LineBasicMaterial).opacity = pulse
-      more = more || now < blinkUntil
-    }
+    if (!opts.reduced) drift = { theta: 0.028 * Math.sin(now / 3400), phi: 0.012 * Math.sin(now / 4300) }
     applyCamera()
-    renderer.render(scene, camera)
-    placeMarkers()
-    if ((more || dragging) && visible) raf = requestAnimationFrame(loop)
+    composer.render()
+    placeOverlay()
+    if (visible && (!opts.reduced || tween || dragging)) raf = requestAnimationFrame(loop)
   }
-  // Nada se dibuja hasta terminar el armado: un cuadro adelantado (lo pedían los observadores de tamaño y visibilidad)
-  // compilaba todos los shaders de golpe, antes de la compilación en paralelo.
-  let ready = false
   const request = () => { if (ready && !raf && visible) raf = requestAnimationFrame(loop) }
 
-  const placeMarkers = () => {
+  const v = new THREE.Vector3()
+  const toScreen = (p: THREE.Vector3, w: number, h: number) => { v.copy(p).project(camera); return { x: ((v.x + 1) / 2) * w, y: ((1 - v.y) / 2) * h, z: v.z } }
+  const corners = Array.from({ length: 8 }, () => new THREE.Vector3())
+  const placeOverlay = () => {
     const w = host.clientWidth, h = host.clientHeight
-    const v = new THREE.Vector3()
+    // Marcas: al borde derecho de cada pieza; si dos quedan a menos de 28 px se muestra una (la elegida si es una).
     const placed: { part: Part; el: HTMLButtonElement; x: number; y: number; inside: boolean }[] = []
     for (const [part, el] of markers) {
-      v.copy(anchors.get(part)!.pos)
-      if (part !== 'tray') v.x = 0.31 // al borde derecho del rack, sin tapar el equipo
-      v.project(camera)
-      const x = ((v.x + 1) / 2) * w, y = ((1 - v.y) / 2) * h
-      placed.push({ part, el, x, y, inside: v.z < 1 && x > 8 && x < w - 8 && y > 8 && y < h - 8 })
+      const p = parts.get(part)!.anchor.clone()
+      if (part !== 'tray') p.x = 0.31
+      const s = toScreen(p, w, h)
+      placed.push({ part, el, x: s.x, y: s.y, inside: s.z < 1 && s.x > 10 && s.x < w - 10 && s.y > 10 && s.y < h - 10 })
     }
-    // Componentes contiguos (1U cada uno) quedan a pocos píxeles: se muestra una sola marca, la elegida si es una.
     const shown: { x: number; y: number }[] = []
     for (const m of [...placed].sort((a, b) => Number(b.part === selected) - Number(a.part === selected))) {
-      const crowded = shown.some((s) => Math.hypot(s.x - m.x, s.y - m.y) < 28)
-      const visible = m.inside && !crowded
-      if (visible) shown.push(m)
+      const ok = m.inside && !shown.some((s) => Math.hypot(s.x - m.x, s.y - m.y) < 28)
+      if (ok) shown.push(m)
       m.el.style.transform = `translate(${m.x.toFixed(1)}px, ${m.y.toFixed(1)}px)`
-      m.el.style.opacity = visible ? '1' : '0'
-      m.el.style.pointerEvents = visible ? 'auto' : 'none'
+      m.el.style.opacity = ok ? '1' : '0'
+      m.el.style.pointerEvents = ok ? 'auto' : 'none'
       m.el.classList.toggle('is-active', m.part === selected)
     }
+    // Marco de enfoque y viñeta alrededor de la pieza elegida.
+    if (!selected) { frame.classList.remove('is-on'); vignette.classList.remove('is-on'); return }
+    const b = parts.get(selected)!.box
+    let i = 0
+    for (const x of [b.min.x, b.max.x]) for (const y of [b.min.y, b.max.y]) for (const z of [b.min.z, b.max.z]) corners[i++].set(x, y, z)
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity
+    for (const c of corners) { const s = toScreen(c, w, h); x0 = Math.min(x0, s.x); y0 = Math.min(y0, s.y); x1 = Math.max(x1, s.x); y1 = Math.max(y1, s.y) }
+    const pad = 10
+    x0 = Math.max(6, x0 - pad); y0 = Math.max(6, y0 - pad); x1 = Math.min(w - 6, x1 + pad); y1 = Math.min(h - 6, y1 + pad)
+    frame.style.transform = `translate(${x0.toFixed(1)}px, ${y0.toFixed(1)}px)`
+    frame.style.width = `${Math.max(24, x1 - x0).toFixed(1)}px`
+    frame.style.height = `${Math.max(18, y1 - y0).toFixed(1)}px`
+    frame.classList.toggle('label-below', y0 < 44)
+    frame.classList.add('is-on')
+    vignette.style.setProperty('--fx', `${((((x0 + x1) / 2) / w) * 100).toFixed(1)}%`)
+    vignette.style.setProperty('--fy', `${((((y0 + y1) / 2) / h) * 100).toFixed(1)}%`)
+    vignette.style.setProperty('--fr', `${Math.max(x1 - x0, y1 - y0).toFixed(0)}px`)
+    vignette.classList.add('is-on')
   }
 
   function focus(part: Part | null) {
     selected = part
-    if (part) {
-      const a = anchors.get(part)!
-      highlight.position.copy(a.pos)
-      highlight.scale.copy(a.size)
-      highlight.visible = true
-      blinkUntil = performance.now() + 2600
-    } else highlight.visible = false
+    frameLabel.textContent = part ? opts.labels[part] : ''
     const to = viewFor(part)
     if (opts.reduced) { Object.assign(view, { ...to, target: to.target }); tween = null }
-    else tween = { from: { ...view, target: view.target.clone() }, to, t0: performance.now(), dur: 1100 }
+    else tween = { from: { ...view, target: view.target.clone() }, to, t0: performance.now(), dur: 1300 }
     request()
   }
 
-  // Arrastre (mouse o lápiz); la rueda del mouse no se captura: la página sigue desplazándose.
+  // Arrastre (mouse o lápiz) dentro de un rango; la rueda del mouse no se captura: la página sigue desplazándose.
   let last: { x: number; y: number } | null = null
   let moved = 0
   const canvas = renderer.domElement
@@ -254,18 +390,17 @@ export async function createRackScene(host: HTMLElement, overlay: HTMLElement, o
     const dx = e.clientX - last.x, dy = e.clientY - last.y
     moved += Math.abs(dx) + Math.abs(dy)
     last = { x: e.clientX, y: e.clientY }
-    view.theta = THREE.MathUtils.clamp(view.theta - dx * 0.0055, LIMITS.theta[0], LIMITS.theta[1])
-    view.phi = THREE.MathUtils.clamp(view.phi - dy * 0.004, LIMITS.phi[0], LIMITS.phi[1])
+    view.theta = THREE.MathUtils.clamp(view.theta - dx * 0.005, LIMITS.theta[0], LIMITS.theta[1])
+    view.phi = THREE.MathUtils.clamp(view.phi - dy * 0.0035, LIMITS.phi[0], LIMITS.phi[1])
   }
   const raycaster = new THREE.Raycaster()
   const up = (e: PointerEvent) => {
     if (!last) return
     last = null; dragging = false; host.classList.remove('is-dragging')
     if (moved < 6) {
-      // Clic sin arrastre: ¿qué parte se tocó?
       const r = canvas.getBoundingClientRect()
       raycaster.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera)
-      const hit = raycaster.intersectObjects([main.group, ladder, duct], true).find((h) => h.object.userData.part)
+      const hit = raycaster.intersectObjects([main.group, ladder, duct, drops], true).find((h) => h.object.userData.part)
       if (hit) { const part = hit.object.userData.part as Part; opts.onSelect(part); focus(part) }
     }
     request()
@@ -275,12 +410,15 @@ export async function createRackScene(host: HTMLElement, overlay: HTMLElement, o
   canvas.addEventListener('pointerup', up)
   canvas.addEventListener('pointercancel', up)
 
-  // Tamaño, visibilidad y pestaña oculta.
   const resize = () => {
     const w = host.clientWidth, h = host.clientHeight
     if (!w || !h) return
     renderer.setSize(w, h, false)
+    composer.setSize(w, h)
     camera.aspect = w / h
+    // En escritorio la lista ocupa el borde izquierdo del escenario: el encuadre se corre a la derecha.
+    if (w >= 900) camera.setViewOffset(w, h, -Math.round(w * 0.09), 0, w, h)
+    else camera.clearViewOffset()
     camera.updateProjectionMatrix()
     request()
   }
@@ -291,68 +429,84 @@ export async function createRackScene(host: HTMLElement, overlay: HTMLElement, o
   const onVis = () => { visible = !document.hidden; if (visible) request() }
   document.addEventListener('visibilitychange', onVis)
 
-  // Indicadores: un LED cambia de vez en cuando (un solo cuadro, no una animación continua).
+  // Indicadores: algunos LED cambian de vez en cuando (se ve en el siguiente cuadro).
   const leds = main.units.filter((u) => u.emissive).map((u) => u.emissive!)
   const blink = window.setInterval(() => {
     if (!visible || opts.reduced || leds.length === 0) return
     const m = leds[Math.floor(Math.random() * leds.length)]
-    m.emissiveIntensity = m.emissiveIntensity > 1.3 ? 0.9 : 1.5
+    m.emissiveIntensity = m.emissiveIntensity > 2 ? 1.5 : 2.3
     request()
-  }, 900)
+  }, 700)
 
   /**
-   * En Windows (ANGLE sobre Direct3D) cada shader se termina de crear la primera vez que dibuja algo: con toda la
-   * escena a la vez eran ~0.5 s de bloqueo. Se dibuja un objeto de cada tipo de material por turno, cediendo el hilo
-   * entre uno y otro, así ninguna tarea es larga. En otros sistemas cuesta casi nada.
+   * Primer uso de cada shader, uno por turno y con la GPU libre entre uno y otro: un objeto por programa de la escena,
+   * luego la escena completa en 1 × 1 px (sombras incluidas) y al final cada material del postproceso.
    */
   async function warmUp() {
     const drawables: THREE.Object3D[] = []
     scene.traverse((o) => { if ((o as THREE.Mesh).isMesh || (o as THREE.LineSegments).isLineSegments) drawables.push(o) })
+    const textures = new Set<THREE.Texture>()
     const kinds = new Map<string, THREE.Object3D>()
     for (const o of drawables) {
       const m = (o as THREE.Mesh).material
       for (const mt of Array.isArray(m) ? m : [m]) {
-        const k = `${mt.type}:${'map' in mt && mt.map ? 'm' : ''}${'emissiveMap' in mt && mt.emissiveMap ? 'e' : ''}${mt.transparent ? 't' : ''}`
+        for (const val of Object.values(mt)) if (val instanceof THREE.Texture) textures.add(val)
+        const program = (renderer.properties.get(mt) as { currentProgram?: { id: number } }).currentProgram
+        const k = program ? `p${program.id}` : mt.type
         if (!kinds.has(k)) kinds.set(k, o)
       }
     }
-    // Texturas: se suben a la GPU de a pocas (subir las ~30 de golpe en el primer cuadro bloqueaba ~0.4 s).
-    const textures = new Set<THREE.Texture>()
-    for (const o of drawables) {
-      const m = (o as THREE.Mesh).material
-      for (const mt of Array.isArray(m) ? m : [m]) for (const v of Object.values(mt)) if (v instanceof THREE.Texture) textures.add(v)
-    }
     let n = 0
-    for (const tx of textures) {
-      if (signal?.aborted) return
-      renderer.initTexture(tx)
-      if (++n % 3 === 0) await breathe()
-    }
+    for (const tx of textures) { if (signal?.aborted) return; renderer.initTexture(tx); if (++n % 3 === 0) await breathe() }
     const before = drawables.map((o) => [o.visible, o.frustumCulled] as const)
+    // El mapa de sombras debe existir antes de dibujar materiales que lo leen (si no, WebGL marca el tipo de textura).
+    renderer.shadowMap.needsUpdate = true
     for (const rep of new Set(kinds.values())) {
       if (signal?.aborted) break
       drawables.forEach((o) => { o.visible = o === rep; o.frustumCulled = o !== rep })
+      renderer.setRenderTarget(composer.readBuffer) // la misma variante de shader que usa el postproceso
       renderer.render(scene, camera)
-      await breathe()
+      renderer.setRenderTarget(null)
+      await waitForGpu(renderer, signal)
     }
     drawables.forEach((o, i) => { o.visible = before[i][0]; o.frustumCulled = before[i][1] })
+    if (signal?.aborted) return
+    // Escena completa en un destino diminuto: sombras de todos los objetos (y sus materiales de profundidad).
+    const tiny = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType })
+    renderer.shadowMap.needsUpdate = true
+    renderer.setRenderTarget(tiny)
+    renderer.render(scene, camera)
+    await waitForGpu(renderer, signal)
+    // Postproceso: cada material de pase en un plano, hacia el mismo tipo de destino que usará (el último, a pantalla).
+    const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2))
+    quad.frustumCulled = false
+    const enabled = composer.passes.filter((p) => p.enabled)
+    for (const pass of enabled) {
+      for (const val of Object.values(pass)) {
+        for (const m of Array.isArray(val) ? val : [val]) {
+          if (!(m instanceof THREE.Material) || signal?.aborted) continue
+          quad.material = m
+          renderer.setRenderTarget(pass === enabled[enabled.length - 1] ? null : tiny)
+          renderer.render(quad, camera)
+          await waitForGpu(renderer, signal)
+        }
+      }
+    }
+    renderer.setRenderTarget(null)
+    quad.geometry.dispose(); tiny.dispose()
   }
 
-  /**
-   * Espera, sin bloquear, a que la GPU termine lo encolado por el primer cuadro (en Windows ahí se crean los shaders
-   * de Direct3D). Sin esto, la siguiente consulta de WebGL del primer clic esperaba ~0.4 s con la página congelada.
-   */
-  async function settleGpu() {
-    const gl = renderer.getContext()
-    if (!(gl instanceof WebGL2RenderingContext)) return
-    const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0)
-    if (!sync) return
-    gl.flush()
-    const t0 = performance.now()
-    while (gl.getSyncParameter(sync, gl.SYNC_STATUS) !== gl.SIGNALED && performance.now() - t0 < 4000 && !signal?.aborted) {
-      await new Promise((resolve) => setTimeout(resolve, 32))
+  /** Compila en paralelo también los shaders del postproceso (cada material de pase como un plano aparte). */
+  async function compilePasses() {
+    const quad = new THREE.PlaneGeometry(2, 2)
+    const passScene = new THREE.Scene()
+    for (const pass of composer.passes) {
+      for (const val of Object.values(pass)) {
+        for (const m of Array.isArray(val) ? val : [val]) if (m instanceof THREE.Material) passScene.add(new THREE.Mesh(quad, m))
+      }
     }
-    gl.deleteSync(sync)
+    await renderer.compileAsync(passScene, camera).catch(() => {})
+    quad.dispose()
   }
 
   const api: RackScene = {
@@ -367,7 +521,10 @@ export async function createRackScene(host: HTMLElement, overlay: HTMLElement, o
       canvas.removeEventListener('pointerup', up)
       canvas.removeEventListener('pointercancel', up)
       markers.forEach((m) => m.remove())
+      frame.remove(); vignette.remove()
+      composer.dispose(); target.dispose()
       disposeDeep(scene)
+      envTex?.dispose(); pmrem?.dispose()
       renderer.dispose()
       renderer.forceContextLoss()
       canvas.remove()
@@ -376,25 +533,30 @@ export async function createRackScene(host: HTMLElement, overlay: HTMLElement, o
 
   resize()
   applyCamera()
-  // Los shaders se compilan en paralelo cuando el navegador lo permite; el primer cuadro ya no se traba.
   await breathe()
-  // El contorno de resaltado se compila con todo lo demás (si no, su shader se compilaría al primer clic).
-  highlight.visible = true
+  // La escena se dibuja en el búfer del postproceso (sin tono ni espacio de color: eso lo hace OutputPass), así que
+  // sus shaders se compilan para ese destino; los de los pases, para ambos (búfer intermedio y pantalla).
+  renderer.setRenderTarget(composer.readBuffer)
   if (!signal?.aborted) await renderer.compileAsync(scene, camera).catch(() => {})
-  highlight.visible = false
   mark('shaders')
+  if (!signal?.aborted) await compilePasses()
+  renderer.setRenderTarget(null)
+  if (!signal?.aborted) await compilePasses()
+  mark('postproceso')
   if (signal?.aborted) { api.dispose(); return null }
+  await waitForGpu(renderer, signal)
   await warmUp()
   mark('calentamiento')
   if (signal?.aborted) { api.dispose(); return null }
-  renderer.render(scene, camera)
+  composer.render()
   mark('primer-cuadro')
-  await settleGpu()
+  await waitForGpu(renderer, signal)
   mark('gpu-lista')
   if (signal?.aborted) { api.dispose(); return null }
   ready = true
-  placeMarkers()
+  placeOverlay()
   opts.onReady()
+  request()
   return api
 }
 

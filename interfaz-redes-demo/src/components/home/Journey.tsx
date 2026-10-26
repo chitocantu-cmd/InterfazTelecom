@@ -81,7 +81,6 @@ export function Journey() {
                     </div>
                   </CoverBox>
                   <div aria-hidden className="jc-shade" />
-                  {img.ref && <p className="img-caption z-[2]">{t.common.referenceImage}</p>}
                 </div>
                 <ol className="jc-legend container mt-4 grid gap-1.5 text-small text-white/70 md:hidden">
                   {ch.callouts.map((l, k) => (

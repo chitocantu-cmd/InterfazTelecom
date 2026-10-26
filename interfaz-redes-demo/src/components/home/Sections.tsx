@@ -221,7 +221,6 @@ export function IndustriesIndex() {
                     <ArrowRight aria-hidden className="arrow-nudge h-4 w-4 text-lumen" strokeWidth={1.75} />
                   </Link>
                 </div>
-                {img?.ref && on && <p className="img-caption !bottom-auto top-4 z-[3]">{t.common.referenceImage}</p>}
               </li>
             )
           })}

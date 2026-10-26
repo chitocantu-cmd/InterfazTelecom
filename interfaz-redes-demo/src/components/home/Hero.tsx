@@ -107,7 +107,6 @@ export function Hero() {
               </span>
             </div>
           </nav>
-          {IMG.aisle.ref && <p className="img-caption !bottom-auto top-4 z-10">{t.common.referenceImage}</p>}
         </div>
       </div>
     </section>

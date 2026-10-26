@@ -87,6 +87,7 @@ test.describe('acomodo en otros anchos', () => {
   }
 
   test('el header completo cabe en laptops', async ({ page }) => {
+    test.slow() // 20 cargas de página: con todas las pruebas en paralelo, el servidor de desarrollo tarda más
     for (const width of [1024, 1180, 1280, 1366, 1440]) {
       await page.setViewportSize({ width, height: 800 })
       for (const route of ['/', '/en', '/ko', '/zh-CN']) {
@@ -368,7 +369,7 @@ test.describe('explorador de soluciones', () => {
     const main = page.locator('main')
     const next = main.getByRole('button', { name: 'Continuar' })
     await next.click()
-    await expect(main.getByRole('alert')).toHaveText('Elija una opción para continuar.')
+    await expect(main.getByRole('alert')).toHaveText('Elige una opción para continuar.')
     await main.getByText('Nueva planta industrial', { exact: true }).click()
     await next.click()
     await main.getByText('Planta industrial', { exact: true }).click()
@@ -954,11 +955,31 @@ test.describe('Interfaz 3.0', () => {
       await page.goto(url)
       const sec = page.locator('section[aria-labelledby="instalacion-title"]')
       await sec.scrollIntoViewIfNeeded()
+      // Empieza en la vista general: nada que restablecer.
+      const reset = sec.getByRole('button', { name: 'Restablecer vista' })
+      await expect(reset).toBeDisabled()
+      await expect(sec.getByText('Un cuarto de telecomunicaciones completo').filter({ visible: true })).toBeVisible()
       await sec.getByRole('button', { name: 'UPS' }).click()
       await expect(sec.getByRole('button', { name: 'UPS' })).toHaveAttribute('aria-pressed', 'true')
-      await expect(sec.getByText('Mantiene encendido el equipo crítico')).toBeVisible()
+      await expect(sec.getByText('Mantiene encendido el equipo crítico').filter({ visible: true })).toBeVisible()
       await expect(sec.getByRole('link', { name: /Energía y respaldo/ })).toHaveAttribute('href', '/soluciones/calidad-de-energia')
-      if (url.includes('lite')) await expect(sec.locator('canvas')).toHaveCount(0)
+      if (url.includes('lite')) {
+        await expect(sec.locator('canvas')).toHaveCount(0)
+        // Sin 3D, la vista fija de la misma escena cambia con la pieza elegida.
+        await expect(sec.locator('img.rack-still')).toHaveAttribute('src', /ups/)
+      }
+      // Restablecer vuelve a la vista general.
+      await reset.click()
+      await expect(sec.getByRole('button', { name: 'UPS' })).toHaveAttribute('aria-pressed', 'false')
+      await expect(sec.getByText('Un cuarto de telecomunicaciones completo').filter({ visible: true })).toBeVisible()
+      await expect(reset).toBeDisabled()
+    }
+  })
+
+  test('el sitio no muestra leyendas de «imagen de referencia»', async ({ page }) => {
+    for (const path of ['/', '/soluciones/cableado-estructurado', '/proyectos']) {
+      await page.goto(path)
+      await expect(page.getByText(/imagen de referencia|representación ilustrativa/i)).toHaveCount(0)
     }
   })
 

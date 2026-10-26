@@ -78,7 +78,6 @@ export function Footer() {
           </nav>
         </div>
         <p className="mt-6 text-label text-muted">{t.footer.rights(new Date().getFullYear(), COMPANY.name)}</p>
-        <p className="mt-2 text-label text-muted">{t.footer.disclaimer}</p>
         {!meta.reviewed && <p className="mt-2 text-label text-muted">{t.common.translationReview}</p>}
       </div>
     </footer>

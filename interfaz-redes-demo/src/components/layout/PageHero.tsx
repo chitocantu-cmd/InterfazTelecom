@@ -32,7 +32,6 @@ export function PageHero({ crumbs, title, lede, img, pos, children, aside }: {
   children?: ReactNode
   aside?: ReactNode
 }) {
-  const t = useT()
   return (
     <section className="bg-white">
       <div className="container pb-14 pt-10 md:pb-16 md:pt-12">
@@ -51,7 +50,6 @@ export function PageHero({ crumbs, title, lede, img, pos, children, aside }: {
       {img && (
         <div className="relative mx-auto h-[300px] max-w-frame overflow-hidden md:h-[440px] lg:h-[520px]">
           <img src={IMG[img].src} srcSet={IMG[img].srcSet} sizes="(min-width: 1600px) 1600px, 100vw" alt={IMG[img].alt} className="enter-reveal absolute inset-0 h-full w-full object-cover" style={{ objectPosition: pos ?? IMG[img].pos }} {...{ fetchpriority: 'high' }} />
-          {IMG[img].ref && <p className="img-caption">{t.common.referenceImage}</p>}
         </div>
       )}
     </section>

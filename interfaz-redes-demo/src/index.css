@@ -94,7 +94,6 @@
   /* Etiqueta técnica en IBM Plex Mono (códigos, capas, etapas). */
   .mono-tag { font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-size: 0.72rem; letter-spacing: 0.08em; }
   /* Leyenda sobre fotografía: legible sobre zonas claras y oscuras */
-  .img-caption { position: absolute; bottom: 1rem; right: 1.25rem; font-size: 0.72rem; color: rgb(255 255 255 / 0.85); text-shadow: 0 1px 3px rgb(0 0 0 / 0.65); }
   /* Flecha que avanza al pasar el cursor por el enlace o botón que la contiene. */
   .arrow-nudge { transition: transform var(--dur-base) var(--ease-out); }
   :is(a, button):hover > .arrow-nudge, :is(a, button):focus-visible > .arrow-nudge, .group:hover .arrow-nudge { transform: translateX(3px); }
@@ -258,7 +257,6 @@ html[data-nav] .page-enter { animation: page-in 0.55s var(--ease-emph) both; }
 .journey-stage .jc.is-active .jc-copy { opacity: 1; transform: none; pointer-events: auto; transition-delay: 0.1s; }
 .journey-stage .jc:not(.is-active) .jc-copy { visibility: hidden; transition: opacity 0.3s var(--ease-out), transform 0.5s var(--ease-out), visibility 0s linear 0.45s; }
 .journey-stage .journey-rail { display: block; position: absolute; right: var(--gutter); bottom: 10vh; z-index: 4; }
-.journey-stage .img-caption { top: calc(84px + 1rem); bottom: auto; }
 .journey-rail-line { position: absolute; left: 4px; top: 6px; bottom: 6px; width: 1px; background: rgb(255 255 255 / 0.2); }
 .journey-rail-fill { position: absolute; inset: 0; background: #26a5dc; transform-origin: top; transform: scaleY(var(--p, 0)); }
 .journey-rail-item { color: rgb(255 255 255 / 0.5); transition: color var(--dur-base) var(--ease-out); }
@@ -313,7 +311,30 @@ html[data-nav] .page-enter { animation: page-in 0.55s var(--ease-emph) both; }
 .pj-preview-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; clip-path: inset(100% 0 0 0); transition: clip-path 0.7s var(--ease-emph); }
 .pj-preview-img.is-current { clip-path: inset(0); }
 
-/* Escena 3D (RackExplorer + three/rackScene.ts): marcas numeradas sobre cada componente. */
+/* Escena 3D (RackExplorer + three/rackScene.ts): paneles translúcidos sobre la escena, marco de enfoque con etiqueta,
+   viñeta que aísla la pieza elegida y marcas numeradas. */
+.rack-panel { background: rgb(6 13 23 / 0.74); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border: 1px solid rgb(255 255 255 / 0.1); border-radius: 2px; }
+.rack-focus { position: absolute; left: 0; top: 0; opacity: 0; pointer-events: none; transition: opacity 0.35s var(--ease-out); }
+.rack-focus.is-on { opacity: 1; }
+.rack-focus i { position: absolute; width: 18px; height: 18px; border: 0 solid #4cc3f0; filter: drop-shadow(0 0 6px rgb(76 195 240 / 0.65)); }
+.rack-focus i:nth-child(1) { left: 0; top: 0; border-left-width: 2px; border-top-width: 2px; }
+.rack-focus i:nth-child(2) { right: 0; top: 0; border-right-width: 2px; border-top-width: 2px; }
+.rack-focus i:nth-child(3) { left: 0; bottom: 0; border-left-width: 2px; border-bottom-width: 2px; }
+.rack-focus i:nth-child(4) { right: 0; bottom: 0; border-right-width: 2px; border-bottom-width: 2px; }
+.rack-focus-label {
+  position: absolute; left: -2px; top: -30px; white-space: nowrap; padding: 0.32rem 0.55rem; border-radius: 2px;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-size: 0.68rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase;
+  color: #04121f; background: #4cc3f0;
+}
+.rack-focus.label-below .rack-focus-label { top: auto; bottom: -30px; }
+.rack-focus.is-on .rack-focus-label { animation: label-in 0.5s var(--ease-emph) 0.25s both; }
+.rack-vignette {
+  position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity 0.7s var(--ease-out);
+  background: radial-gradient(circle at var(--fx, 50%) var(--fy, 50%), transparent calc(var(--fr, 240px) * 0.5), rgb(3 8 15 / 0.62) calc(var(--fr, 240px) * 1.35));
+}
+.rack-vignette.is-on { opacity: 1; }
+@keyframes still-in { from { opacity: 0; transform: scale(1.035); } to { opacity: 1; transform: none; } }
+.rack-still { animation: still-in 0.9s var(--ease-emph) both; }
 .rack-host.is-dragging { cursor: grabbing; }
 .rack-marker {
   position: absolute; left: 0; top: 0; margin: -12px 0 0 -12px; width: 24px; height: 24px; border-radius: 9999px;
