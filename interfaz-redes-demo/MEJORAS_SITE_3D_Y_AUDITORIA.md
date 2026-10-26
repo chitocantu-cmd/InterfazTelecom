@@ -1,6 +1,6 @@
 # Mejora del apartado 3D y auditoría global (Interfaz 3.1)
 
-Rama: `interfaz-3.1`. Nada de esto está publicado: la publicación a producción (fusión con `main`) espera autorización.
+Rama: `interfaz-3.1`. **Publicado en producción el 26 de octubre de 2026** (https://interfaztelecom.com.mx, `main` = 62df1ba). Las pruebas de navegador contra el sitio publicado pasan (183, sin fallos). Para volver a la versión anterior: etiqueta local `punto-recuperacion-3.1` (= 7168525, la 3.0) o el regreso instantáneo de Vercel.
 
 El trabajo se hizo en dos vueltas: la primera reconstruyó la escena 3D y quitó las leyendas de imagen; la segunda
 (después de una nueva revisión) llevó la escena a un acabado fotográfico, rediseñó «Tipos de proyecto que ejecutamos»
@@ -125,7 +125,6 @@ Se mantienen, porque no son leyendas de imagen sino información útil o necesar
 
 ## 5. Pendiente
 
-- **Publicar** (fusión de `interfaz-3.1` con `main`): requiere autorización.
 - **Decisión global tú/usted** (pendiente con la empresa desde 2.0). Portada y explorador ya están en «tú»; cotizador, contacto, servicios, nosotros, aviso de privacidad y 404 siguen en «usted». Unificar es un cambio de textos acotado (`src/i18n/messages/es.ts`).
 - **Fotografías reales de proyectos** (con permiso del cliente) para publicar proyectos «autorizados» con cliente, datos y resultados, y para sustituir los renders de proyectos e industrias.
 - **Revisión lingüística** de inglés, coreano y chino (siguen sin indexar), incluidas las fichas «En la escena».
