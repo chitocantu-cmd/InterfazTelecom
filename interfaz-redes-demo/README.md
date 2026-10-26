@@ -368,7 +368,8 @@ automáticas usan este modo). Con `RESEND_API_KEY` en `.env.local` y sin `COTIZA
 Con `VITE_GA_ID` configurado, los eventos van a GA4; sin él quedan en `window.dataLayer` (listos para Google Tag
 Manager) y no se descarga ningún script. Ningún evento lleva datos personales. Lista completa en
 `ARQUITECTURA_INTERFAZ.md` («Medición»); los principales:
-- `page_view` en cada cambio de página (con el idioma).
+- `page_view`: lo registra GA4 (el de entrada con `config`; los cambios de ruta, con la medición mejorada «cambios de
+  página según el historial del navegador», que debe seguir activa en el flujo web). El idioma va en la ruta.
 - `quote_cta` en cada botón que lleva al cotizador (atributo `data-track-cta` con su ubicación).
 - `quote_start`, `quote_step`, `quote_error` y `generate_lead` (`method`: `formulario`, `whatsapp` o `email`; tipo,
   idioma y si vino del explorador).

@@ -3,7 +3,6 @@
 // Regla: ningún evento lleva datos personales (nombre, correo, teléfono, empresa ni texto escrito por el usuario);
 // sólo ids de servicio, escenario, idioma, página y estado. La lista completa está en ARQUITECTURA_INTERFAZ.md.
 import { useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
 import { splitLocale } from '../i18n/config'
 
 const GA_ID = import.meta.env.VITE_GA_ID as string | undefined
@@ -51,7 +50,7 @@ function load() {
   window.dataLayer = window.dataLayer || []
   window.gtag = function gtag() { window.dataLayer!.push(arguments) } // eslint-disable-line prefer-rest-params
   window.gtag('js', new Date())
-  window.gtag('config', GA_ID, { send_page_view: false })
+  window.gtag('config', GA_ID)
 }
 
 const lang = () => (typeof window === 'undefined' ? 'es' : splitLocale(window.location.pathname).locale)
@@ -69,14 +68,13 @@ export function track<K extends keyof Events>(event: K, params: Events[K]) {
   window.gtag?.('event', event, data)
 }
 
-/** Registra page_view en cada cambio de ruta. */
+/**
+ * Carga GA4 al abrir el sitio. Las páginas vistas las registra GA4: la de entrada, con `config`; cada cambio de ruta,
+ * con la medición mejorada («cambios de página según el historial del navegador», activa por defecto), que toma la URL
+ * y el título ya actualizados. Mandarlas también desde aquí las duplicaba y llevaban el título de la página anterior.
+ */
 export function usePageViews() {
-  const { pathname, search } = useLocation()
-  useEffect(() => {
-    if (!GA_ID) return
-    load()
-    window.gtag?.('event', 'page_view', { page_path: pathname + search, page_location: window.location.href, page_title: document.title, idioma_sitio: lang() })
-  }, [pathname, search])
+  useEffect(() => { load() }, [])
 }
 
 /**
