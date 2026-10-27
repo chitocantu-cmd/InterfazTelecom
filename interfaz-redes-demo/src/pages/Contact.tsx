@@ -78,6 +78,7 @@ export default function Contact() {
               initialSite={initialSite}
               summary={summary}
               origin={summary ? 'explorador' : 'contacto'}
+              service={service?.slug}
             />
           </div>
           <aside className="lg:col-span-4">

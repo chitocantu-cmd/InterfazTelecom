@@ -1,9 +1,10 @@
-import { ArrowRight, Minus, Plus } from 'lucide-react'
+import { ArrowRight, FileText, MapPin, Minus, Plus } from 'lucide-react'
 import { lazy, Suspense, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { Breadcrumbs } from '../components/layout/PageHero'
 import { Media } from '../components/plates'
 import { Button, Reveal, Tag } from '../components/ui'
+import { publishedResources } from '../content/recursos'
 import { IMG } from '../data/media'
 import { serviceSeo } from '../data/seo'
 import { serviceBySlug as baseService } from '../data/solutions'
@@ -28,6 +29,8 @@ export default function ServiceDetail() {
   const cat = c.categoryById(s.category)
   const sameName = cat.name === s.name
   const industries = s.industries.map((id) => c.industryById(id)).filter((x): x is NonNullable<typeof x> => Boolean(x))
+  // Guías del centro técnico sobre este servicio: sólo las publicadas (los borradores no se enlazan).
+  const guides = publishedResources().filter((r) => r.services.includes(s.slug))
 
   return (
     <>
@@ -230,14 +233,41 @@ export default function ServiceDetail() {
           <div className="lg:col-span-4">
             <h2 className="text-h2">{T.proposal}</h2>
             <p className="mt-5 text-body">{T.proposalLede(s.name)}</p>
+            <p className="mt-6 flex gap-2.5 border-t border-line pt-5 text-small text-body">
+              <MapPin aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-corp" strokeWidth={1.75} />
+              <span><span className="font-medium text-ink">{t.contact.coverage}:</span> {t.company.areaServed}.</span>
+            </p>
           </div>
           <div className="lg:col-span-8">
             <Suspense fallback={<div className="min-h-[640px]" aria-busy="true" />}>
-              <QuoteWizard key={s.slug} initialTypes={[s.quoteType]} context={s.name} contextValue={baseService(s.slug)?.name} origin={`servicio:${s.slug}`} />
+              <QuoteWizard key={s.slug} initialTypes={[s.quoteType]} context={s.name} contextValue={baseService(s.slug)?.name} origin={`servicio:${s.slug}`} service={s.slug} />
             </Suspense>
           </div>
         </div>
       </section>
+
+      {/* guías técnicas relacionadas */}
+      {guides.length > 0 && (
+        <section className="pt-24" aria-labelledby="guias-servicio">
+          <div className="container grid gap-8 lg:grid-cols-12">
+            <h2 id="guias-servicio" className="text-h3 lg:col-span-4">{T.guides}</h2>
+            <ul className="divide-y divide-line border-y border-line lg:col-span-8">
+              {guides.map((r) => (
+                <li key={r.slug}>
+                  <Link to={`/recursos/${r.slug}`} className="group flex items-start gap-4 py-5">
+                    <FileText aria-hidden className="mt-1 h-4 w-4 shrink-0 text-corp" strokeWidth={1.6} />
+                    <span className="flex-1">
+                      <span className="block font-display text-[1.1rem] font-medium text-ink transition-colors group-hover:text-corp">{r.title}</span>
+                      <span className="mt-1 block text-small text-body">{r.summary}</span>
+                    </span>
+                    <ArrowRight aria-hidden className="arrow-nudge mt-1.5 h-4 w-4 shrink-0 text-faint group-hover:text-corp" strokeWidth={1.75} />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
 
       {/* complementarios */}
       <section className="py-24">

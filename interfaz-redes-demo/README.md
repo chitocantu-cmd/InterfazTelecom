@@ -368,15 +368,22 @@ automáticas usan este modo). Con `RESEND_API_KEY` en `.env.local` y sin `COTIZA
 Con `VITE_GA_ID` configurado, los eventos van a GA4; sin él quedan en `window.dataLayer` (listos para Google Tag
 Manager) y no se descarga ningún script. Ningún evento lleva datos personales. Lista completa en
 `ARQUITECTURA_INTERFAZ.md` («Medición»); los principales:
-- `page_view`: lo registra GA4 (el de entrada con `config`; los cambios de ruta, con la medición mejorada «cambios de
-  página según el historial del navegador», que debe seguir activa en el flujo web). El idioma va en la ruta.
+- `page_view`: la de entrada la registra el sitio al abrir (con su URL y título); los cambios de ruta, la medición
+  mejorada de GA4 («cambios de página según el historial del navegador», que debe seguir activa en el flujo web). El
+  script de Google se descarga cuando la página terminó de cargar, para no competir con la imagen principal.
 - `quote_cta` en cada botón que lleva al cotizador (atributo `data-track-cta` con su ubicación).
-- `quote_start`, `quote_step`, `quote_error` y `generate_lead` (`method`: `formulario`, `whatsapp` o `email`; tipo,
-  idioma y si vino del explorador).
+- `quote_start`, `quote_step` y `quote_error`.
+- `generate_lead`: **sólo** cuando el servidor acepta la solicitud y le asigna folio, una vez por folio. Lleva `folio`,
+  `tipos`, `servicio`, `origen` (contacto, `servicio:<slug>`, `industria:<id>`, explorador, `zona:<slug>`),
+  `municipio` (el reconocido en «Ubicación» con `src/data/municipios.ts`; nunca el texto escrito), idioma y si vino del
+  explorador.
+- `quote_handoff`: el visitante abrió WhatsApp o su correo con la solicitud escrita. No es una cotización recibida.
 - `service_view`, `project_view`, `explorer_step`, `explorer_complete` y `language_change`.
 - `contact_whatsapp`, `contact_email` y `contact_phone` en cualquier enlace de contacto del sitio.
 
-Marca `generate_lead` como evento clave (conversión) en GA4.
+Marca `generate_lead` como evento clave (conversión) en GA4 y registra como dimensiones personalizadas (ámbito de
+evento) los parámetros que se quieran ver en informes: `servicio`, `origen`, `municipio`, `tipos`, `idioma_sitio`,
+`ubicacion`, `method` y `folio`.
 
 ## Dependencias
 

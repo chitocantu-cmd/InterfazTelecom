@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { expect, test, type Page } from '@playwright/test'
 import { fullTitle, pagesFor } from '../src/data/seo'
 import { PROJECTS } from '../src/data/content'
+import { municipioDe } from '../src/data/municipios'
 import { buildContent } from '../src/i18n/content'
 import es from '../src/i18n/messages/es'
 
@@ -1005,5 +1006,89 @@ test.describe('Interfaz 3.0', () => {
       await expect(cta.getByRole('heading', { level: 2 })).toHaveText('Hablemos de tu próximo proyecto.')
       await expect(cta.getByRole('link', { name: 'Solicitar cotización' })).toHaveAttribute('href', '/contacto')
     }
+  })
+})
+
+// Operación SEO Monterrey: medición de cotizaciones, datos estructurados y páginas municipales (borradores).
+test.describe('medición y SEO local', () => {
+  test('el municipio se reconoce en «Ubicación» sin enviar el texto escrito', () => {
+    expect(municipioDe('Apodaca, N.L.')).toBe('Apodaca')
+    expect(municipioDe('Parque industrial en San Pedro Garza García')).toBe('San Pedro Garza García')
+    expect(municipioDe('García, NL')).toBe('García')
+    expect(municipioDe('Escobedo, cerca de Monterrey')).toBe('General Escobedo')
+    expect(municipioDe('Cd. Juárez, Chihuahua')).toBe('otro')
+    expect(municipioDe('Saltillo, Coahuila')).toBe('otro')
+    expect(municipioDe('   ')).toBe('no_indicado')
+  })
+
+  test('generate_lead sólo cuando el servidor recibe la solicitud; el envío manual no cuenta', async ({ page }) => {
+    await page.route('**/api/cotizacion*', (r) => (r.request().method() === 'GET'
+      ? r.fulfill({ json: { recepcion: true, whatsapp: true } })
+      : r.fulfill({ json: { ok: true, folio: 'COT-261027-LEADOK', fecha: 'hoy', estados: { correo: 'enviado', whatsapp: 'enviado', acuse: 'enviado' } } })))
+    await page.goto('/contacto?servicio=fibra-optica')
+    const form = page.locator('main')
+    await expect(form.getByRole('checkbox', { name: /Fibra óptica/ })).toBeChecked()
+    await form.getByRole('button', { name: 'Continuar' }).click()
+    await form.getByRole('textbox', { name: 'Ciudad o ubicación general' }).fill('Apodaca, N.L.')
+    await form.getByRole('textbox', { name: 'Describa la necesidad' }).fill('Enlace de fibra entre dos naves a 180 m.')
+    await form.getByRole('button', { name: 'Continuar' }).click()
+    await form.getByRole('textbox', { name: 'Nombre' }).fill('Ana López')
+    await form.getByRole('textbox', { name: 'Empresa' }).fill('Empresa de Prueba')
+    await form.getByRole('textbox', { name: 'Correo corporativo' }).fill('ana@empresa.mx')
+    await form.getByRole('textbox', { name: 'WhatsApp' }).fill('81 1234 5678')
+    await form.getByRole('button', { name: 'Revisar solicitud' }).click()
+    const events = () => page.evaluate(() => ((window as unknown as { dataLayer?: unknown[] }).dataLayer ?? []).filter((e): e is Record<string, unknown> => typeof e === 'object' && e !== null && 'event' in e))
+
+    // Abrir WhatsApp con la solicitud escrita no confirma que se haya enviado (se evita abrir la ventana en la prueba).
+    await page.evaluate(() => window.addEventListener('click', (e) => e.preventDefault()))
+    await form.getByRole('link', { name: 'Enviar por WhatsApp' }).first().click()
+    expect((await events()).filter((e) => e.event === 'quote_handoff')).toEqual([expect.objectContaining({ method: 'whatsapp', tipos: 'fibra' })])
+    expect((await events()).some((e) => e.event === 'generate_lead')).toBe(false)
+
+    await form.getByRole('button', { name: 'Enviar solicitud' }).click()
+    await expect(form.getByRole('heading', { name: 'Solicitud recibida' })).toBeVisible()
+    const leads = (await events()).filter((e) => e.event === 'generate_lead')
+    expect(leads).toEqual([expect.objectContaining({ method: 'formulario', folio: 'COT-261027-LEADOK', tipos: 'fibra', servicio: 'fibra-optica', origen: 'contacto', municipio: 'Apodaca', idioma: 'es' })])
+    // Sin datos personales ni texto escrito por el cliente.
+    const sent = JSON.stringify(await events())
+    for (const pii of ['Ana', 'ana@empresa.mx', '1234 5678', 'Empresa de Prueba', 'Enlace de fibra', 'N.L.']) expect(sent).not.toContain(pii)
+    expect(await page.evaluate(() => sessionStorage.getItem('cotizacion-medidas'))).toContain('COT-261027-LEADOK')
+  })
+
+  test('datos estructurados: cobertura como lugares, contacto comercial y temas', async ({ request }) => {
+    test.skip(!process.env.BASE_URL, 'el JSON-LD lo escribe el prerender: sólo contra un build (BASE_URL)')
+    const html = await (await request.get('/')).text()
+    const graph = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)![1])['@graph'] as Record<string, unknown>[]
+    const business = graph.find((n) => n['@type'] === 'LocalBusiness')!
+    expect(business.areaServed).toEqual([{ '@type': 'City', name: 'Monterrey' }, { '@type': 'AdministrativeArea', name: 'Área metropolitana de Monterrey' }])
+    expect(business.contactPoint).toMatchObject({ '@type': 'ContactPoint', contactType: 'sales', availableLanguage: ['es'] })
+    expect(business.knowsAbout).toEqual(expect.arrayContaining(['Cableado estructurado', 'Fibra óptica']))
+    expect((business.address as Record<string, string>).postalCode).toBe('64440')
+    // Los borradores del centro técnico no llevan Article.
+    expect(graph.some((n) => n['@type'] === 'Article')).toBe(false)
+  })
+
+  test('servicios y Nosotros muestran la cobertura confirmada', async ({ page }) => {
+    await page.goto('/soluciones/fibra-optica')
+    await expect(page.locator('#cotizar').getByText('Monterrey y área metropolitana, Nuevo León.')).toBeVisible()
+    await page.goto('/nosotros')
+    const where = page.locator('section[aria-labelledby="donde-trabajamos"]')
+    await expect(where.getByRole('heading', { name: 'Dónde trabajamos' })).toBeVisible()
+    await expect(where.getByText('Av. 8 Norte #1750, Col. Industrial, C.P. 64440, Monterrey, N.L.')).toBeVisible()
+  })
+
+  test('páginas municipales: borradores sin indexar, fuera del sitemap y nunca en producción', async ({ page, request }) => {
+    const sitemap = await (await request.get('/sitemap.xml')).text()
+    expect(sitemap).not.toContain('/zonas/')
+    if (process.env.BASE_URL) {
+      expect((await request.get('/zonas/apodaca')).status()).toBe(404)
+      return
+    }
+    await page.goto('/zonas/apodaca')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Redes, fibra óptica y videovigilancia para empresas en Apodaca')
+    await expect(page.getByRole('note')).toContainText('no se publica ni se indexa')
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex')
+    await expect(page.locator('link[rel="canonical"]')).toHaveCount(0)
+    await expect(page.locator('#cotizar').getByRole('button', { name: 'Continuar' })).toBeVisible()
   })
 })

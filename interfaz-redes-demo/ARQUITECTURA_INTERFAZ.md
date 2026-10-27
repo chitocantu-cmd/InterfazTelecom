@@ -193,10 +193,11 @@ van a GA4. **Ningún evento lleva datos personales.**
 
 | Evento | Parámetros |
 | --- | --- |
-| `page_view` | ruta y título; lo envía GA4 (entrada + medición mejorada del historial), no el sitio |
+| `page_view` | ruta y título: la de entrada la manda el sitio; los cambios de ruta, la medición mejorada de GA4 |
 | `quote_cta` | ubicación del botón (`data-track-cta`) |
 | `quote_start`, `quote_step` | origen y tipos / número de paso |
-| `generate_lead` | método (formulario, whatsapp, email), tipos, idioma, si vino del explorador |
+| `generate_lead` | sólo solicitud aceptada por el servidor, una vez por folio: folio, tipos, servicio, origen, municipio (normalizado), idioma, explorador |
+| `quote_handoff` | envío manual abierto (whatsapp o email), tipos, origen; no es una cotización recibida |
 | `quote_error` | código de error |
 | `service_view` | servicio |
 | `explorer_step`, `explorer_complete` | escenario, paso, número de servicios (el paso al cotizador es `quote_cta` con ubicación `explorador-resultado`) |

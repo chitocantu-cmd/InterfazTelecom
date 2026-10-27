@@ -19,8 +19,17 @@ export interface Events {
   quote_start: { origen: string; tipos: string }
   /** Avanzó de paso en el cotizador. */
   quote_step: { paso: number }
-  /** Solicitud enviada: `formulario` (recibida por el servidor), `whatsapp` o `email` (envío manual). */
-  generate_lead: { method: 'formulario' | 'whatsapp' | 'email'; need: string; idioma: string; explorador: boolean }
+  /**
+   * Cotización recibida y registrada: sólo cuando el servidor la acepta y le asigna folio (una vez por folio). El folio
+   * permite cruzar el contacto con lo que pasó después en ventas. `servicio`: el servicio desde el que se pidió (si
+   * hubo uno); `origen`: dónde estaba el cotizador; `municipio`: el reconocido en «Ubicación» (src/data/municipios.ts).
+   */
+  generate_lead: { method: 'formulario'; folio: string; tipos: string; servicio: string; origen: string; municipio: string; idioma: string; explorador: boolean }
+  /**
+   * El visitante abrió WhatsApp o su correo con la solicitud ya escrita (envío manual). No es una cotización recibida:
+   * no se sabe si la envió.
+   */
+  quote_handoff: { method: 'whatsapp' | 'email'; tipos: string; origen: string }
   /** El servidor rechazó o no pudo entregar la solicitud. */
   quote_error: { codigo: string }
   /** Visita a la página de un servicio. */
@@ -40,17 +49,33 @@ export interface Events {
 }
 
 let loaded = false
+/**
+ * Prepara GA4 y registra la página de entrada con su URL y título de este momento. El script de Google (≈175 KB) se
+ * descarga después, cuando la página terminó de cargar y el navegador está libre, para que no compita con la imagen
+ * principal ni con la hidratación; mientras, los eventos esperan en dataLayer. Los cambios de página siguientes los
+ * registra la medición mejorada de GA4 (ver usePageViews).
+ */
 function load() {
   if (loaded || !GA_ID || typeof window === 'undefined') return
   loaded = true
-  const s = document.createElement('script')
-  s.async = true
-  s.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`
-  document.head.appendChild(s)
   window.dataLayer = window.dataLayer || []
   window.gtag = function gtag() { window.dataLayer!.push(arguments) } // eslint-disable-line prefer-rest-params
   window.gtag('js', new Date())
-  window.gtag('config', GA_ID)
+  window.gtag('config', GA_ID, { send_page_view: false })
+  const landing = window.location.href
+  window.gtag('event', 'page_view', { page_location: landing, page_title: document.title })
+  const add = () => {
+    // Si ya cambió de página, ese cambio pasó antes de que GA4 escuchara el historial: se registra aquí.
+    if (window.location.href !== landing) window.gtag?.('event', 'page_view', { page_location: window.location.href, page_title: document.title })
+    const s = document.createElement('script')
+    s.async = true
+    s.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`
+    document.head.appendChild(s)
+  }
+  // Safari no tiene requestIdleCallback.
+  const idle = () => (typeof window.requestIdleCallback === 'function' ? window.requestIdleCallback(add, { timeout: 2000 }) : window.setTimeout(add, 600))
+  if (document.readyState === 'complete') idle()
+  else window.addEventListener('load', idle, { once: true })
 }
 
 const lang = () => (typeof window === 'undefined' ? 'es' : splitLocale(window.location.pathname).locale)
@@ -69,9 +94,10 @@ export function track<K extends keyof Events>(event: K, params: Events[K]) {
 }
 
 /**
- * Carga GA4 al abrir el sitio. Las páginas vistas las registra GA4: la de entrada, con `config`; cada cambio de ruta,
- * con la medición mejorada («cambios de página según el historial del navegador», activa por defecto), que toma la URL
- * y el título ya actualizados. Mandarlas también desde aquí las duplicaba y llevaban el título de la página anterior.
+ * Prepara GA4 al abrir el sitio. Páginas vistas: la de entrada, en load(); cada cambio de ruta, la medición mejorada
+ * de GA4 («cambios de página según el historial del navegador», activa por defecto), que toma la URL y el título ya
+ * actualizados. Mandarlas también desde aquí las duplicaba y llevaban el título de la página anterior. De los cambios
+ * de página anteriores a que llegue el script de Google (primeros segundos) sólo se registra el último.
  */
 export function usePageViews() {
   useEffect(() => { load() }, [])

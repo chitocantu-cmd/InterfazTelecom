@@ -26,6 +26,7 @@ const load = {
   service: () => import('./pages/ServiceDetail'),
   privacy: () => import('./pages/Privacy'),
   solutions: () => import('./pages/Solutions'),
+  zone: () => import('./pages/ZoneDetail'),
 }
 const About = lazy(load.about)
 const Contact = lazy(load.contact)
@@ -39,6 +40,7 @@ const Article = lazy(() => load.resources().then((m) => ({ default: m.Article })
 const ServiceDetail = lazy(load.service)
 const Privacy = lazy(load.privacy)
 const Solutions = lazy(load.solutions)
+const ZoneDetail = lazy(load.zone)
 
 const LOAD_BY_PATH: Record<string, () => Promise<unknown>> = {
   '/soluciones': load.solutions,
@@ -50,7 +52,7 @@ const LOAD_BY_PATH: Record<string, () => Promise<unknown>> = {
   '/contacto': load.contact,
   '/aviso-de-privacidad': load.privacy,
 }
-const PREFIX_LOADERS: [string, () => Promise<unknown>][] = [['/soluciones/', load.service], ['/industrias/', load.industry], ['/proyectos/', load.projects], ['/recursos/', load.resources]]
+const PREFIX_LOADERS: [string, () => Promise<unknown>][] = [['/soluciones/', load.service], ['/industrias/', load.industry], ['/proyectos/', load.projects], ['/recursos/', load.resources], ['/zonas/', load.zone]]
 const loaderFor = (pathname: string) => {
   const { path } = splitLocale(pathname)
   return PREFIX_LOADERS.find(([p]) => path.startsWith(p))?.[1] ?? LOAD_BY_PATH[path]
@@ -169,6 +171,7 @@ const localeRoutes = (prefix: string) => (
     <Route path="nosotros" element={<About />} />
     <Route path="contacto" element={<Contact />} />
     <Route path="aviso-de-privacidad" element={<Privacy />} />
+    <Route path="zonas/:slug" element={<ZoneDetail />} />
     <Route path="*" element={<NotFound />} />
   </Route>
 )

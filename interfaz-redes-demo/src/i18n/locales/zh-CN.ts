@@ -268,6 +268,7 @@ const messages: Messages = {
     proposal: '申请方案',
     proposalLede: (name: string) => `申请中已包含${name}。请补充地点、大致范围和联系方式。`,
     related: '配套服务',
+    guides: '相关技术指南',
     seoTitle: (name: string) => `蒙特雷${name}`,
   },
   industries: {
@@ -357,6 +358,9 @@ const messages: Messages = {
     brandsNote: '项目中使用的设备品牌，不代表合作、认证或官方代理关系。',
     brandsNetwork: '网络与基础设施',
     brandsSecurity: '安防系统',
+    whereTitle: '服务区域',
+    whereText: '我们的办公室位于蒙特雷工业区（Colonia Industrial），承接蒙特雷及其都市区的企业和工业项目。',
+    whereOutside: '如果项目位于都市区以外，请在需求中注明地点，我们会确认能否承接。',
   },
   contact: {
     title: '为您的项目申请报价',

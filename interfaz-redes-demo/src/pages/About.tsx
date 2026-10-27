@@ -1,7 +1,7 @@
 import { FieldGallery, FinalCTA, ProcessLine } from '../components/home/Sections'
 import { PageHero } from '../components/layout/PageHero'
 import { Media } from '../components/plates'
-import { BRANDS_NETWORK, BRANDS_SECURITY } from '../data/company'
+import { BRANDS_NETWORK, BRANDS_SECURITY, COMPANY } from '../data/company'
 import { useT } from '../i18n'
 import { useSeo } from '../lib/seo'
 
@@ -60,6 +60,34 @@ export default function About() {
                 <p className="mt-3 font-display text-[clamp(1.25rem,1.1rem+0.6vw,1.6rem)] font-medium leading-relaxed tracking-[-0.01em] text-ink">{list.join(' · ')}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Dónde trabajamos: la misma dirección, horario y cobertura que en Contacto y en los datos estructurados. */}
+      <section className="border-t border-line py-24 md:py-28" aria-labelledby="donde-trabajamos">
+        <div className="container grid gap-12 lg:grid-cols-12">
+          <div className="lg:col-span-4">
+            <h2 id="donde-trabajamos" className="text-h2">{T.whereTitle}</h2>
+            <p className="mt-5 max-w-measure text-body">{T.whereText}</p>
+          </div>
+          <div className="lg:col-span-7 lg:col-start-6">
+            <dl className="grid gap-x-10 gap-y-8 border-t border-ink/80 pt-6 sm:grid-cols-3">
+              <div>
+                <dt className="text-small text-muted">{t.contact.office}</dt>
+                <dd className="mt-2 text-body text-ink">{COMPANY.address}</dd>
+                <dd className="mt-2"><a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(COMPANY.address)}`} target="_blank" rel="noopener noreferrer" className="text-small font-medium text-corp link-line">{t.contact.map}</a></dd>
+              </div>
+              <div>
+                <dt className="text-small text-muted">{t.contact.hours}</dt>
+                <dd className="mt-2 text-body text-ink">{t.company.hours}</dd>
+              </div>
+              <div>
+                <dt className="text-small text-muted">{t.contact.coverage}</dt>
+                <dd className="mt-2 text-body text-ink">{t.company.areaServed}</dd>
+              </div>
+            </dl>
+            <p className="mt-8 text-small text-body">{T.whereOutside}</p>
           </div>
         </div>
       </section>

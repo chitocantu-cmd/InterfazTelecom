@@ -269,6 +269,7 @@ const messages: Messages = {
     proposal: 'Request a proposal',
     proposalLede: (name: string) => `The request already includes ${lowerFirst(name)}. Add the location, approximate scope and your contact details.`,
     related: 'Complementary services',
+    guides: 'Related technical guides',
     seoTitle: (name: string) => `${name} in Monterrey, Mexico`,
   },
   industries: {
@@ -358,6 +359,9 @@ const messages: Messages = {
     brandsNote: 'Equipment brands handled in projects. This does not imply a partnership, certification or official distribution.',
     brandsNetwork: 'Networks and infrastructure',
     brandsSecurity: 'Electronic security',
+    whereTitle: 'Where we work',
+    whereText: 'We serve business and industrial projects in Monterrey and its metropolitan area from our office in Colonia Industrial, Monterrey.',
+    whereOutside: 'If your project is outside the metropolitan area, include its location in your request and we will confirm whether we can take it on.',
   },
   contact: {
     title: 'Request a quote for your project',

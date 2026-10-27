@@ -268,6 +268,7 @@ const messages: Messages = {
     proposal: '제안서 요청',
     proposalLede: (name: string) => `요청서에 ${name} 항목이 이미 포함되어 있습니다. 위치, 대략적인 범위, 연락처를 추가해 주세요.`,
     related: '연계 서비스',
+    guides: '관련 기술 가이드',
     seoTitle: (name: string) => `몬테레이 ${name}`,
   },
   industries: {
@@ -357,6 +358,9 @@ const messages: Messages = {
     brandsNote: '프로젝트에서 다루는 장비 브랜드입니다. 제휴, 인증 또는 공식 대리점 관계를 의미하지 않습니다.',
     brandsNetwork: '네트워크 및 인프라',
     brandsSecurity: '보안 시스템',
+    whereTitle: '서비스 지역',
+    whereText: '몬테레이 콜로니아 인두스트리알(Colonia Industrial)에 있는 사무실에서 몬테레이와 대도시권의 기업·산업 프로젝트를 지원합니다.',
+    whereOutside: '대도시권 밖의 프로젝트라면 요청서에 위치를 적어 주세요. 진행 가능 여부를 확인해 드립니다.',
   },
   contact: {
     title: '프로젝트 견적 요청',

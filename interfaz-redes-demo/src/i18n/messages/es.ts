@@ -267,6 +267,7 @@ const es = {
     proposal: 'Solicite una propuesta',
     proposalLede: (name: string) => `La solicitud ya incluye ${lowerFirst(name)}. Agregue la ubicación, el alcance aproximado y sus datos de contacto.`,
     related: 'Servicios complementarios',
+    guides: 'Guías técnicas relacionadas',
     seoTitle: (name: string) => `${name} en Monterrey`,
   },
   industries: {
@@ -356,6 +357,9 @@ const es = {
     brandsNote: 'Marcas de equipo que se manejan en proyectos. No representa alianza, certificación ni distribución oficial.',
     brandsNetwork: 'Redes e infraestructura',
     brandsSecurity: 'Seguridad electrónica',
+    whereTitle: 'Dónde trabajamos',
+    whereText: 'Atendemos proyectos de empresas e industria en Monterrey y su área metropolitana desde nuestra oficina en la colonia Industrial de Monterrey.',
+    whereOutside: 'Si el proyecto está fuera del área metropolitana, indique la ubicación en la solicitud y le confirmamos si podemos atenderlo.',
   },
   contact: {
     title: 'Cotice su proyecto',

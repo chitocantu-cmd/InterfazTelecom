@@ -51,6 +51,7 @@ const PAGE_MODULE = [
   [/^\/nosotros$/, 'src/pages/About.tsx'],
   [/^\/contacto$/, 'src/pages/Contact.tsx'],
   [/^\/aviso-de-privacidad$/, 'src/pages/Privacy.tsx'],
+  [/^\/zonas\/./, 'src/pages/ZoneDetail.tsx'],
 ]
 function chunkFiles(key) {
   if (!manifest[key]) throw new Error(`prerender: el manifiesto no tiene ${key}`)

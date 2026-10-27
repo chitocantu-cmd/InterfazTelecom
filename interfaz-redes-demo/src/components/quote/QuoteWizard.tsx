@@ -2,6 +2,7 @@ import { AnimatePresence, m } from 'motion/react'
 import { ArrowLeft, Cable, Cctv, Check, Compass, Copy, DoorClosed, FileText, Mail, MessageCircle, Paperclip, Pencil, Plus, RotateCcw, Send, Server, Spline, X } from 'lucide-react'
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { COMPANY } from '../../data/company'
+import { municipioDe } from '../../data/municipios'
 import { quoteTypesFor, type QuoteType } from '../../data/quote-types'
 import { useI18n } from '../../i18n'
 import { Link } from '../../i18n/Link'
@@ -87,6 +88,20 @@ const writeDraft = (draft: Draft | null) => {
   } catch { /* almacenamiento bloqueado: el formulario sigue funcionando sin borrador */ }
 }
 
+/** Folios ya medidos en esta pestaña: generate_lead se manda una sola vez por folio (aunque se reintente o se recargue). */
+const LEADS_KEY = 'cotizacion-medidas'
+const measured = new Set<string>()
+const firstTime = (folio: string) => {
+  if (measured.has(folio)) return false
+  measured.add(folio)
+  try {
+    const seen = JSON.parse(sessionStorage.getItem(LEADS_KEY) ?? '[]') as string[]
+    if (seen.includes(folio)) return false
+    sessionStorage.setItem(LEADS_KEY, JSON.stringify([...seen, folio].slice(-20)))
+  } catch { /* sin almacenamiento basta el control en memoria */ }
+  return true
+}
+
 export interface QuoteWizardProps {
   initialTypes?: QuoteType[]
   /** Desde dónde se abrió (en el idioma de la página, se muestra al usuario). */
@@ -99,9 +114,11 @@ export interface QuoteWizardProps {
   summary?: { lines: string[]; value: string }
   /** Origen para la medición (servicio, industria, contacto…). */
   origin?: string
+  /** Servicio desde el que se pide la cotización (slug), para la medición. */
+  service?: string
 }
 
-export function QuoteWizard({ initialTypes, context, contextValue, initialDescription, initialSite, summary, origin = 'contacto' }: QuoteWizardProps) {
+export function QuoteWizard({ initialTypes, context, contextValue, initialDescription, initialSite, summary, origin = 'contacto', service }: QuoteWizardProps) {
   const { t, locale } = useI18n()
   const T = t.quote
   const uid = useId().replace(/:/g, '')
@@ -239,7 +256,8 @@ export function QuoteWizard({ initialTypes, context, contextValue, initialDescri
     if (api && files.length) setFileError(checkFiles(files))
   }, [api]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const lead = (method: 'formulario' | 'whatsapp' | 'email') => track('generate_lead', { method, need: d.types.join(','), idioma: locale, explorador: Boolean(summary) })
+  // Abrir WhatsApp o el correo con la solicitud no confirma que se haya enviado: no cuenta como cotización recibida.
+  const handoff = (method: 'whatsapp' | 'email') => track('quote_handoff', { method, tipos: d.types.join(','), origen: origin })
 
   const submit = async () => {
     if (send.state === 'sending') return
@@ -270,7 +288,10 @@ export function QuoteWizard({ initialTypes, context, contextValue, initialDescri
         setStep(3)
         setSend({ state: 'done', folio: json.folio, fecha: json.fecha, estados: json.estados, sent: sentCopy })
         writeDraft(null)
-        lead('formulario')
+        // Cotización recibida y registrada (con folio): la única que cuenta como lead.
+        if (firstTime(json.folio)) {
+          track('generate_lead', { method: 'formulario', folio: json.folio, tipos: d.types.join(','), servicio: service ?? '', origen: origin, municipio: municipioDe(d.location), idioma: locale, explorador: Boolean(summary) })
+        }
         return
       }
       track('quote_error', { codigo: json?.codigo ?? `http_${res.status}` })
@@ -538,18 +559,18 @@ export function QuoteWizard({ initialTypes, context, contextValue, initialDescri
                     <p className="mt-3 text-[0.82rem] text-muted">{T.privacyPre} <Link to="/aviso-de-privacidad" className="text-ink link-line">{T.privacyLink}</Link>.</p>
                     <p className="mt-4 text-[0.85rem] text-muted">
                       {T.preferManual}{' '}
-                      <a href={waLink(message)} onClick={() => lead('whatsapp')} target="_blank" rel="noopener noreferrer" aria-disabled={sending || undefined} tabIndex={sending ? -1 : undefined} className={cn('font-medium text-ink link-line', sending && 'pointer-events-none opacity-50')}>{T.sendWhatsapp}</a>
+                      <a href={waLink(message)} onClick={() => handoff('whatsapp')} target="_blank" rel="noopener noreferrer" aria-disabled={sending || undefined} tabIndex={sending ? -1 : undefined} className={cn('font-medium text-ink link-line', sending && 'pointer-events-none opacity-50')}>{T.sendWhatsapp}</a>
                       {' · '}
-                      <a href={mailLink(subject, message)} onClick={() => lead('email')} aria-disabled={sending || undefined} tabIndex={sending ? -1 : undefined} className={cn('font-medium text-ink link-line', sending && 'pointer-events-none opacity-50')}>{T.sendEmail}</a>
+                      <a href={mailLink(subject, message)} onClick={() => handoff('email')} aria-disabled={sending || undefined} tabIndex={sending ? -1 : undefined} className={cn('font-medium text-ink link-line', sending && 'pointer-events-none opacity-50')}>{T.sendEmail}</a>
                     </p>
                   </>
                 ) : (
                 <>
                 <div className="mt-6 grid gap-2.5 sm:grid-cols-2">
-                  <a href={waLink(message)} onClick={() => lead('whatsapp')} target="_blank" rel="noopener noreferrer" className="group inline-flex items-center justify-center gap-2.5 rounded-[2px] bg-corp px-5 py-3.5 font-medium text-white transition-colors hover:bg-navy">
+                  <a href={waLink(message)} onClick={() => handoff('whatsapp')} target="_blank" rel="noopener noreferrer" className="group inline-flex items-center justify-center gap-2.5 rounded-[2px] bg-corp px-5 py-3.5 font-medium text-white transition-colors hover:bg-navy">
                     <MessageCircle aria-hidden className="h-4 w-4" /> {T.sendWhatsapp}
                   </a>
-                  <a href={mailLink(subject, message)} onClick={() => lead('email')} className="inline-flex items-center justify-center gap-2.5 rounded-[2px] border border-navy px-5 py-3.5 font-medium text-ink transition-colors hover:bg-navy hover:text-white">
+                  <a href={mailLink(subject, message)} onClick={() => handoff('email')} className="inline-flex items-center justify-center gap-2.5 rounded-[2px] border border-navy px-5 py-3.5 font-medium text-ink transition-colors hover:bg-navy hover:text-white">
                     <Mail aria-hidden className="h-4 w-4" /> {T.sendEmail}
                   </a>
                 </div>
