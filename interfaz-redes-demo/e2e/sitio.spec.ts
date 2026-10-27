@@ -1064,17 +1064,24 @@ test.describe('medición y SEO local', () => {
     expect(business.contactPoint).toMatchObject({ '@type': 'ContactPoint', contactType: 'sales', availableLanguage: ['es'] })
     expect(business.knowsAbout).toEqual(expect.arrayContaining(['Cableado estructurado', 'Fibra óptica']))
     expect((business.address as Record<string, string>).postalCode).toBe('64440')
+    expect(business.parentOrganization).toMatchObject({ '@type': 'Organization', name: 'Interfaz de Monterrey, S.A. de C.V.', url: 'https://www.interfaz.com.mx/' })
     // Los borradores del centro técnico no llevan Article.
     expect(graph.some((n) => n['@type'] === 'Article')).toBe(false)
   })
 
-  test('servicios y Nosotros muestran la cobertura confirmada', async ({ page }) => {
+  test('servicios y Nosotros muestran la cobertura y la división; el aviso nombra a la razón social', async ({ page }) => {
     await page.goto('/soluciones/fibra-optica')
     await expect(page.locator('#cotizar').getByText('Monterrey y área metropolitana, Nuevo León.')).toBeVisible()
     await page.goto('/nosotros')
     const where = page.locator('section[aria-labelledby="donde-trabajamos"]')
     await expect(where.getByRole('heading', { name: 'Dónde trabajamos' })).toBeVisible()
     await expect(where.getByText('Av. 8 Norte #1750, Col. Industrial, C.P. 64440, Monterrey, N.L.')).toBeVisible()
+    // División de redes del grupo: enlace al sitio general.
+    await expect(page.getByText('Interfaz Redes y Telecomunicaciones es la división de redes de Interfaz de Monterrey.')).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Conoce Interfaz de Monterrey' })).toHaveAttribute('href', 'https://www.interfaz.com.mx/')
+    // El responsable del aviso de privacidad es la razón social.
+    await page.goto('/aviso-de-privacidad')
+    await expect(page.getByText(/^Interfaz de Monterrey, S\.A\. de C\.V\., que opera comercialmente como Interfaz Redes y Telecomunicaciones/)).toBeVisible()
   })
 
   test('páginas municipales: borradores sin indexar, fuera del sitemap y nunca en producción', async ({ page, request }) => {

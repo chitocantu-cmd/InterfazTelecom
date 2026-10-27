@@ -6,9 +6,9 @@ import { useSeo } from '../lib/seo'
 
 // Aviso de privacidad integral, en español (es la versión vigente; en los otros idiomas se muestra un aviso en ese
 // idioma y este mismo texto). Conviene que lo revise un asesor legal.
-// Por ahora el responsable se identifica con el nombre comercial; al escribir la razón social
-// aquí, el texto pasa a decir "<razón social>, que opera comercialmente como Interfaz Redes…".
-const RAZON_SOCIAL = ''
+// Responsable: la razón social (COMPANY.legalName); el texto dice "<razón social>, que opera comercialmente como
+// Interfaz Redes…". Sin razón social se identifica con el nombre comercial.
+const RAZON_SOCIAL: string = COMPANY.legalName
 const ACTUALIZADO = 'Octubre de 2026'
 
 function Block({ title, children }: { title: string; children: ReactNode }) {

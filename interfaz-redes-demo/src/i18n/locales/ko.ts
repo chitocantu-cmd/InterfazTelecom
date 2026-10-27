@@ -358,6 +358,8 @@ const messages: Messages = {
     brandsNote: '프로젝트에서 다루는 장비 브랜드입니다. 제휴, 인증 또는 공식 대리점 관계를 의미하지 않습니다.',
     brandsNetwork: '네트워크 및 인프라',
     brandsSecurity: '보안 시스템',
+    division: 'Interfaz Redes y Telecomunicaciones는 Interfaz de Monterrey의 네트워크 사업부입니다.',
+    divisionLink: 'Interfaz de Monterrey 알아보기',
     whereTitle: '서비스 지역',
     whereText: '몬테레이 콜로니아 인두스트리알(Colonia Industrial)에 있는 사무실에서 몬테레이와 대도시권의 기업·산업 프로젝트를 지원합니다.',
     whereOutside: '대도시권 밖의 프로젝트라면 요청서에 위치를 적어 주세요. 진행 가능 여부를 확인해 드립니다.',

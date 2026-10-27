@@ -357,6 +357,8 @@ const es = {
     brandsNote: 'Marcas de equipo que se manejan en proyectos. No representa alianza, certificación ni distribución oficial.',
     brandsNetwork: 'Redes e infraestructura',
     brandsSecurity: 'Seguridad electrónica',
+    division: 'Interfaz Redes y Telecomunicaciones es la división de redes de Interfaz de Monterrey.',
+    divisionLink: 'Conoce Interfaz de Monterrey',
     whereTitle: 'Dónde trabajamos',
     whereText: 'Atendemos proyectos de empresas e industria en Monterrey y su área metropolitana desde nuestra oficina en la colonia Industrial de Monterrey.',
     whereOutside: 'Si el proyecto está fuera del área metropolitana, indique la ubicación en la solicitud y le confirmamos si podemos atenderlo.',

@@ -358,6 +358,8 @@ const messages: Messages = {
     brandsNote: '项目中使用的设备品牌，不代表合作、认证或官方代理关系。',
     brandsNetwork: '网络与基础设施',
     brandsSecurity: '安防系统',
+    division: 'Interfaz Redes y Telecomunicaciones 是 Interfaz de Monterrey 的网络事业部。',
+    divisionLink: '了解 Interfaz de Monterrey',
     whereTitle: '服务区域',
     whereText: '我们的办公室位于蒙特雷工业区（Colonia Industrial），承接蒙特雷及其都市区的企业和工业项目。',
     whereOutside: '如果项目位于都市区以外，请在需求中注明地点，我们会确认能否承接。',

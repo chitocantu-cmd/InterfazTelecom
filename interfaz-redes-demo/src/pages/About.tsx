@@ -20,6 +20,11 @@ export default function About() {
             <h2 className="font-display text-[clamp(1.6rem,1.2rem+1.6vw,2.4rem)] font-medium leading-[1.2] tracking-[-0.02em] text-ink">{T.mission}</h2>
             <div className="mt-8 max-w-measure space-y-5 text-body">
               {T.paragraphs.map((p) => <p key={p}>{p}</p>)}
+              {/* El grupo (interfaz.com.mx) es el sitio general; éste, el especializado en redes. */}
+              <p>
+                {T.division}{' '}
+                <a href={COMPANY.parent.url} target="_blank" rel="noopener noreferrer" className="font-medium text-corp link-line">{T.divisionLink}</a>
+              </p>
             </div>
             <dl className="mt-14 grid gap-8 border-t border-ink/80 pt-8 sm:grid-cols-3">
               {T.stats.map((s) => (

@@ -27,6 +27,10 @@ export const COMPANY = {
   hoursSchema: 'Mo-Fr 08:00-18:00',
   areaServed: 'Monterrey y área metropolitana, Nuevo León',
   years: '+15',
+  /** Interfaz Redes es la división de redes de Interfaz de Monterrey (confirmado por la empresa el 2026-10-27): la
+   *  razón social responsable del aviso de privacidad y la organización madre en los datos estructurados. */
+  legalName: 'Interfaz de Monterrey, S.A. de C.V.',
+  parent: { name: 'Interfaz de Monterrey', url: 'https://www.interfaz.com.mx/' },
   facebook: 'https://www.facebook.com/interfazredes',
 } as const
 

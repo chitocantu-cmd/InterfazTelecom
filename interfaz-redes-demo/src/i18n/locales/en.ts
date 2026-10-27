@@ -359,6 +359,8 @@ const messages: Messages = {
     brandsNote: 'Equipment brands handled in projects. This does not imply a partnership, certification or official distribution.',
     brandsNetwork: 'Networks and infrastructure',
     brandsSecurity: 'Electronic security',
+    division: 'Interfaz Redes y Telecomunicaciones is the networks division of Interfaz de Monterrey.',
+    divisionLink: 'Visit Interfaz de Monterrey',
     whereTitle: 'Where we work',
     whereText: 'We serve business and industrial projects in Monterrey and its metropolitan area from our office in Colonia Industrial, Monterrey.',
     whereOutside: 'If your project is outside the metropolitan area, include its location in your request and we will confirm whether we can take it on.',

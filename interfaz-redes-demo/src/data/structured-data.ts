@@ -43,6 +43,8 @@ export function structuredData(site: string, page: Page, t: Messages): string {
       // Atención comercial en español (la página en inglés lo aclara: el equipo trabaja principalmente en español).
       contactPoint: { '@type': 'ContactPoint', contactType: 'sales', telephone: COMPANY.phoneIntl, email: COMPANY.email, areaServed: 'MX', availableLanguage: ['es'] },
       knowsAbout: SERVICES.map((s) => s.name),
+      // División de redes de Interfaz de Monterrey (sitio del grupo: interfaz.com.mx).
+      parentOrganization: { '@type': 'Organization', name: COMPANY.legalName, alternateName: COMPANY.parent.name, url: COMPANY.parent.url },
       sameAs: [COMPANY.facebook],
     },
     { '@type': 'WebSite', '@id': `${site}/#sitio`, url: `${site}/`, name: COMPANY.name, alternateName: COMPANY.shortName, inLanguage: 'es-MX', publisher: { '@id': business } },
