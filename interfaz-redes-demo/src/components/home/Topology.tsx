@@ -44,6 +44,26 @@ const EDGES: Edge[] = [
   { a: 'idfb', b: 'cas', type: 'inalambrico', label: 'PtP' },
 ]
 
+/**
+ * La misma red acomodada de arriba abajo para el teléfono: en horizontal habría que deslizar un diagrama de 720 px con
+ * texto de 9 px. Entrada, site principal, cuartos de distribución y, debajo de cada uno, lo que conecta.
+ */
+const TALL: Record<NodeId, { x: number; y: number; w: number }> = {
+  isp: { x: 92, y: 30, w: 164 },
+  fw: { x: 268, y: 30, w: 164 },
+  srv: { x: 60, y: 140, w: 104 },
+  core: { x: 180, y: 140, w: 116 },
+  nvr: { x: 300, y: 140, w: 104 },
+  idfa: { x: 92, y: 250, w: 164 },
+  idfb: { x: 268, y: 250, w: 164 },
+  ap: { x: 92, y: 325, w: 164 },
+  pc: { x: 92, y: 385, w: 164 },
+  tel: { x: 92, y: 445, w: 164 },
+  cam: { x: 268, y: 325, w: 164 },
+  acc: { x: 268, y: 385, w: 164 },
+  cas: { x: 268, y: 445, w: 164 },
+}
+
 const LAYERS: Layer[] = ['todo', 'fisica', 'conectividad', 'seguridad']
 
 const byId = (id: string) => NODES.find((n) => n.id === id)!
@@ -71,10 +91,10 @@ export function Topology() {
   const text = T.nodes[sel]
 
   return (
-    <section className="bg-mist py-24 md:py-28" aria-labelledby="topologia-title">
+    <section className="bg-mist py-sec md:py-28" aria-labelledby="topologia-title">
       <div className="container">
         <SectionHead id="topologia-title" title={T.title} lede={T.lede} />
-        <div className="mt-10 flex flex-wrap gap-2" role="group" aria-label={T.layersLabel}>
+        <div className="m-rail mt-8 flex flex-wrap gap-2 [--card:auto] [--rail-gap:0.5rem] md:mt-10" role="group" aria-label={T.layersLabel}>
           {LAYERS.map((l) => (
             <Chip key={l} active={layer === l} onClick={() => setLayer(l)} controls="diagrama-red">{T.layers[l].label}</Chip>
           ))}
@@ -83,7 +103,40 @@ export function Topology() {
 
         <div ref={ref} className={cn('mt-8 grid gap-0 border border-line lg:grid-cols-12', live && 'topo-live')}>
           <div className="overflow-x-auto bg-[#EEF4F8] lg:col-span-9" id="diagrama-red">
-            <svg viewBox="0 0 960 520" className="block w-full min-w-[720px]" role="group" aria-label={T.diagramLabel}>
+            {/* Teléfono: de arriba abajo. */}
+            <svg viewBox="0 0 360 530" className="block w-full md:hidden" role="group" aria-label={T.diagramLabel}>
+              <rect width="360" height="530" fill={C.bg} />
+              <rect x="1" y="96" width="358" height="88" fill="none" stroke={C.line} strokeDasharray="4 4" />
+              <text x="8" y="90" fontFamily={MONO} fontSize="10" fill={C.muted} letterSpacing="1">{T.site}</text>
+              {EDGES.map((e, i) => {
+                const a = TALL[e.a as NodeId], b = TALL[e.b as NodeId]
+                const my = (a.y + b.y) / 2
+                const d = a.y === b.y ? `M${a.x} ${a.y} H${b.x}` : a.x === b.x ? `M${a.x} ${a.y} V${b.y}` : `M${a.x} ${a.y} V${my} H${b.x} V${b.y}`
+                const color = e.type === 'fibra' ? C.accent : e.type === 'wan' ? C.line : C.ink
+                return <path key={i} d={d} fill="none" opacity={edgeOn(e, layer) ? 1 : 0.15} stroke={color} strokeWidth={e.type === 'fibra' ? 2.4 : 1.4} strokeDasharray={e.type === 'inalambrico' ? '2 5' : e.type === 'wan' ? '6 4' : undefined} strokeLinecap="round" className={e.type === 'fibra' ? 'topo-fiber' : undefined} style={{ transition: 'opacity .35s' }} />
+              })}
+              {NODES.map((n) => {
+                const at = TALL[n.id]
+                const active = sel === n.id
+                const nt = T.nodes[n.id]
+                const dark = n.kind === 'net'
+                return (
+                  <g key={n.id} role="button" tabIndex={0} aria-label={`${nt.label}, ${nt.sub}`} aria-pressed={active} onClick={() => setSel(n.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSel(n.id) } }} style={{ cursor: 'pointer', transition: 'opacity .35s', outline: 'none' }} opacity={nodeOn(n, layer) ? 1 : 0.25} className="topo-node">
+                    <rect x={at.x - at.w / 2} y={at.y - 24} width={at.w} height="48" fill={dark ? C.ink : C.paper} stroke={active ? C.accent : dark ? C.ink : C.line} strokeWidth={active ? 2.5 : 1} />
+                    {n.kind === 'sec' && <rect x={at.x - at.w / 2} y={at.y - 24} width="4" height="48" fill={C.accent} />}
+                    <text x={at.x} y={at.y - 2} textAnchor="middle" fontFamily="'DM Sans', var(--cjk), Arial, sans-serif" fontSize="13" fontWeight="600" fill={dark ? '#fff' : C.ink}>{nt.label}</text>
+                    <text x={at.x} y={at.y + 14} textAnchor="middle" fontFamily={MONO} fontSize="10" fill={dark ? '#AEB6BC' : C.muted}>{nt.sub}</text>
+                  </g>
+                )
+              })}
+              <g transform="translate(10 498)" fontFamily={MONO} fontSize="10" fill={C.muted}>
+                <line x1="0" x2="22" y1="0" y2="0" stroke={C.accent} strokeWidth="2.4" /><text x="28" y="3">{T.fiber}</text>
+                <line x1="90" x2="112" y1="0" y2="0" stroke={C.ink} strokeWidth="1.4" /><text x="118" y="3">{T.copper}</text>
+                <line x1="0" x2="22" y1="18" y2="18" stroke={C.ink} strokeDasharray="2 5" strokeWidth="1.4" /><text x="28" y="21">{T.wireless}</text>
+                <line x1="170" x2="192" y1="18" y2="18" stroke={C.line} strokeDasharray="6 4" strokeWidth="1.4" /><text x="198" y="21">{T.wan}</text>
+              </g>
+            </svg>
+            <svg viewBox="0 0 960 520" className="block w-full min-w-[720px] max-md:hidden" role="group" aria-label={T.diagramLabel}>
               <rect width="960" height="520" fill={C.bg} />
               {/* site */}
               <rect x="290" y="50" width="170" height="410" fill="none" stroke={C.line} strokeDasharray="4 4" />
@@ -147,12 +200,12 @@ export function Topology() {
             <p className="mono-tag mt-1 text-muted">{text.sub}</p>
             <p className="mt-4 text-[0.92rem] leading-relaxed text-muted">{text.info}</p>
             {node.service && (
-              <Link to={`/soluciones/${node.service}`} className="mt-auto self-start pt-6 text-[0.9rem] font-medium text-corp"><span className="link-line">{T.related}</span></Link>
+              <Link to={`/soluciones/${node.service}`} className="mt-auto self-start pt-6 text-[0.9rem] font-medium text-corp max-md:inline-flex max-md:min-h-[44px] max-md:items-center max-md:pt-3"><span className="link-line">{T.related}</span></Link>
             )}
             <p className="mt-6 border-t border-line pt-4 font-mono text-[0.68rem] text-muted">{T.note}</p>
           </aside>
         </div>
-        <p className="mt-3 font-mono text-[0.7rem] text-muted lg:hidden">{T.swipe}</p>
+        <p className="mt-3 font-mono text-[0.7rem] text-muted max-md:hidden lg:hidden">{T.swipe}</p>
       </div>
     </section>
   )

@@ -1,10 +1,10 @@
 import { ArrowRight } from 'lucide-react'
-import { useEffect, type CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { SCENES } from '../../data/journey'
 import { IMG } from '../../data/media'
 import { useI18n } from '../../i18n'
 import { Link } from '../../i18n/Link'
-import { scrollToId, useHideFloating } from '../../lib/utils'
+import { scrollToId, useHideFloating, useReducedMotion } from '../../lib/utils'
 import { useExperience } from '../../motion/experience'
 import { Callout, CoverBox, SplitWords, useReveal } from '../../motion/primitives'
 import { CHAPTER_IDS } from './Hero'
@@ -25,6 +25,20 @@ export function Journey() {
   const stage = tier === 'full'
   // Durante el recorrido no se muestra el botón flotante de WhatsApp (taparía el índice); el header sigue con «Cotizar».
   const track = useHideFloating<HTMLDivElement>()
+  // Teléfono: los capítulos se deslizan; la barra de abajo indica en cuál se va y lleva a los demás.
+  const [chapter, setChapter] = useState(0)
+  const reduce = useReducedMotion()
+  const rail = () => root.current?.querySelector<HTMLElement>('.journey-sticky') ?? null
+  useEffect(() => {
+    const el = rail()
+    if (!el || !window.matchMedia('(max-width: 767.98px)').matches) return
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) if (e.isIntersecting) setChapter(Number((e.target as HTMLElement).dataset.index))
+    }, { root: el, threshold: 0.6 })
+    el.querySelectorAll('.jc').forEach((n) => io.observe(n))
+    return () => io.disconnect()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  const goTo = (i: number) => rail()?.querySelectorAll('.jc')[i]?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest', inline: 'start' })
 
   useEffect(() => {
     const el = root.current
@@ -48,11 +62,11 @@ export function Journey() {
 
   return (
     <section ref={root} id="recorrido" aria-labelledby="recorrido-title" className="journey relative bg-night text-white">
-      <header className="container pb-14 pt-24 md:pb-20 md:pt-32">
-        <p data-reveal="rise" className="flex items-center gap-3 font-mono text-[0.72rem] uppercase tracking-[0.12em] text-lumen">
+      <header className="container pb-9 pt-sec md:pb-20 md:pt-32">
+        <p data-reveal="rise" className="flex items-center gap-3 font-mono text-[0.72rem] uppercase tracking-[0.12em] text-lumen max-md:hidden">
           <span aria-hidden className="h-px w-8 bg-lumen" />{t.journey.eyebrow}
         </p>
-        <h2 id="recorrido-title" data-reveal="words" className="mt-6 max-w-[22ch] text-[clamp(2rem,1.1rem+3vw,4rem)] font-semibold leading-[1.02] tracking-[-0.03em] !text-white">
+        <h2 id="recorrido-title" data-reveal="words" className="max-w-[22ch] text-[clamp(2rem,1.1rem+3vw,4rem)] font-semibold max-md:text-h2 md:mt-6 leading-[1.02] tracking-[-0.03em] !text-white">
           <SplitWords text={t.journey.title} mode="view" />
         </h2>
       </header>
@@ -89,17 +103,18 @@ export function Journey() {
                 </ol>
                 <div className="jc-copy-wrap container">
                   <div className="jc-copy">
-                    <p className="font-mono text-[0.72rem] uppercase tracking-[0.12em] text-lumen">
-                      {t.journey.chapter} {String(i + 1).padStart(2, '0')} <span className="text-white/40">/ {String(SCENES.length).padStart(2, '0')}</span> · {ch.tag}
+                    <p className="font-mono text-[0.72rem] uppercase tracking-[0.12em] text-lumen max-md:text-[0.8rem] max-md:normal-case max-md:tracking-normal">
+                      <span className="max-md:hidden">{t.journey.chapter} {String(i + 1).padStart(2, '0')} <span className="text-white/40">/ {String(SCENES.length).padStart(2, '0')}</span> · </span>{ch.tag}
                     </p>
-                    <h3 id={`${CHAPTER_IDS[i]}-t`} className="mt-4 text-[clamp(1.9rem,1.2rem+2.2vw,3.4rem)] font-semibold leading-[1.04] tracking-[-0.028em] !text-white">{ch.title}</h3>
-                    <p className="mt-5 max-w-[34rem] text-white/75">{ch.text}</p>
-                    <ul className="mt-7 flex flex-wrap gap-2">
+                    <h3 id={`${CHAPTER_IDS[i]}-t`} className="mt-2 text-[clamp(1.9rem,1.2rem+2.2vw,3.4rem)] font-semibold leading-[1.04] tracking-[-0.028em] !text-white max-md:text-[1.6rem] max-md:leading-[1.1] md:mt-4">{ch.title}</h3>
+                    <p className="mt-3 max-w-[34rem] text-white/75 max-md:text-[1rem] max-md:leading-relaxed md:mt-5">{ch.text}</p>
+                    {/* Teléfono: los dos servicios principales del capítulo; el resto está en el menú. */}
+                    <ul className="mt-5 flex flex-wrap gap-2 max-md:[&>li:nth-child(n+3)]:hidden md:mt-7">
                       {sc.services.map((slug) => {
                         const s = c.serviceBySlug(slug)
                         return s && (
                           <li key={slug}>
-                            <Link to={`/soluciones/${slug}`} className="inline-flex items-center gap-1.5 rounded-[2px] border border-white/20 px-3 py-1.5 text-[0.85rem] text-white/85 transition-colors hover:border-lumen hover:text-white">
+                            <Link to={`/soluciones/${slug}`} className="inline-flex items-center gap-1.5 rounded-[2px] border border-white/20 px-3 py-1.5 text-[0.85rem] text-white/85 transition-colors hover:border-lumen hover:text-white max-md:min-h-[44px]">
                               {s.name}
                             </Link>
                           </li>
@@ -130,13 +145,20 @@ export function Journey() {
         </div>
       </div>
 
-      <div className="container pb-24 pt-20 md:pb-32 md:pt-28">
-        <div className="grid gap-10 border-t border-white/15 pt-12 lg:grid-cols-12 lg:items-end">
+      {/* Avance por capítulos (teléfono). */}
+      <nav aria-label={t.hero.indexLabel} className="jc-dots md:hidden">
+        {t.journey.chapters.map((ch, i) => (
+          <button key={ch.tag} type="button" aria-label={ch.tag} aria-current={i === chapter ? 'true' : undefined} onClick={() => goTo(i)} />
+        ))}
+      </nav>
+
+      <div className="container pb-sec pt-9 md:pb-32 md:pt-28">
+        <div className="grid gap-6 border-t border-white/15 pt-8 md:gap-10 md:pt-12 lg:grid-cols-12 lg:items-end">
           <p data-reveal="words" className="font-display text-[clamp(1.6rem,1.1rem+1.8vw,2.75rem)] font-medium leading-[1.12] tracking-[-0.022em] text-white lg:col-span-8">
             <SplitWords text={t.journey.closing} mode="view" />
           </p>
           <div data-reveal="rise" className="lg:col-span-4 lg:justify-self-end">
-            <Link to="/soluciones" className="group inline-flex items-center gap-3 font-medium text-white">
+            <Link to="/soluciones" className="group inline-flex items-center gap-3 font-medium text-white max-md:min-h-[44px]">
               <span className="link-line">{t.journey.cta}</span>
               <ArrowRight aria-hidden className="arrow-nudge h-5 w-5 text-lumen" strokeWidth={1.75} />
             </Link>

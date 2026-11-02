@@ -131,6 +131,9 @@ const messages: Messages = {
     listLabel: 'Rack components',
     related: 'Related services',
     inScene: 'In the scene',
+    touchHint: 'Swipe to rotate · tap a number',
+    prev: 'Previous component',
+    next: 'Next component',
     canvasLabel: 'Interactive 3D model of a telecommunications rack',
     parts: {
       tray: { name: 'Cable ladder and duct', text: 'Carry copper cabling and fiber above the racks, separated, organized and protected.', spec: 'Ladder rack with two copper bundles · fiber duct · drops into each manager' },

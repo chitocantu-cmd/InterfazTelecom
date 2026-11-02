@@ -52,8 +52,8 @@ export function LanguageSelector({ variant = 'header' }: { variant?: 'header' | 
   if (variant === 'menu') {
     return (
       <nav aria-label={t.lang.label}>
-        <p className="text-small text-muted">{t.lang.label}</p>
-        <ul className="mt-2 grid grid-cols-2 gap-2">
+        <p className="text-small text-white/55">{t.lang.label}</p>
+        <ul className="mt-2 grid grid-cols-2 gap-x-6">
           {LOCALES.map((l) => (
             <li key={l}>
               <a
@@ -62,10 +62,10 @@ export function LanguageSelector({ variant = 'header' }: { variant?: 'header' | 
                 lang={LOCALE_META[l].htmlLang}
                 aria-current={l === locale ? 'true' : undefined}
                 onClick={(e) => go(l, e)}
-                className={cn('flex min-h-[44px] items-center justify-between rounded-[2px] border px-3.5 text-[0.98rem] transition-colors', l === locale ? 'border-corp bg-corp text-white' : 'border-line text-ink hover:border-corp')}
+                className={cn('flex min-h-[44px] items-center justify-between text-[0.98rem] transition-colors', l === locale ? 'font-medium text-white' : 'text-white/70')}
               >
                 {LOCALE_META[l].label}
-                <span className={cn('mono-tag', l === locale ? 'text-white/70' : 'text-muted')}>{LOCALE_META[l].short}</span>
+                <span aria-hidden className={cn('h-1.5 w-1.5 rounded-full bg-lumen', l !== locale && 'invisible')} />
               </a>
             </li>
           ))}

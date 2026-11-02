@@ -22,9 +22,12 @@
 @layer base {
   :root {
     color-scheme: light;
-    --gutter: 1.25rem;
+    /* Margen lateral: de 20 a 24 px en teléfonos. */
+    --gutter: clamp(1.25rem, 5.6vw, 1.5rem);
+    /* Separación entre secciones en el teléfono: de 72 a 88 px. Desde md, cada sección define la suya. */
+    --sec: clamp(4.5rem, 20vw, 5.5rem);
     /* Alto del header en reposo (al desplazarse se compacta sin mover el contenido: ver Header.tsx). */
-    --hdr: 106px;
+    --hdr: 88px;
     /* Fuentes del sistema para escrituras que Archivo y DM Sans no cubren (se definen por idioma). */
     --cjk: Arial;
     /* Movimiento: duraciones y curvas del sitio (Motion las repite en src/lib/motion.ts). */
@@ -63,6 +66,7 @@
   /* En teléfonos muy angostos una palabra larga ("telecomunicaciones") no cabe en un titular */
   @media (max-width: 420px) { html:lang(es-MX) :is(h1, h2), html:lang(en) :is(h1, h2) { hyphens: auto; overflow-wrap: anywhere; } }
   ::selection { background: #0e4c92; color: #fff; }
+  :root { -webkit-tap-highlight-color: rgb(14 76 146 / 0.14); }
   :focus-visible { outline: 2px solid #176fb0; outline-offset: 3px; }
   input, textarea, select, button { font: inherit; }
 
@@ -102,8 +106,6 @@
 .topo-node:focus-visible { opacity: 1; }
 .topo-node:focus-visible rect:first-child { stroke: #176fb0; stroke-width: 3; }
 
-/* Teléfonos de 360 px o menos: el titular baja un punto para que "telecomunicaciones" quepa entera */
-@media (max-width: 360px) { .text-h1 { font-size: 1.875rem; } }
 
 /* ------------------------------------------------------------------------------------------------
    Movimiento. Todo lo que se anima aquí respeta «reducir movimiento» (bloque final) y no bloquea la
@@ -341,10 +343,140 @@ html[data-nav] .page-enter { animation: page-in 0.55s var(--ease-emph) both; }
 .rack-marker:hover, .rack-marker.is-hover { background: #fff; box-shadow: 0 0 0 5px rgb(255 255 255 / 0.2); }
 .rack-marker.is-active { background: #26a5dc; box-shadow: 0 0 0 5px rgb(38 165 220 / 0.3); }
 
+/* ------------------------------------------------------------------------------------------------
+   Experiencia móvil. Un sistema propio para pantallas chicas, no el escritorio reducido:
+   tipografía y márgenes fluidos (clamp), riel horizontal para series de imágenes, acordeones para listas
+   densas y una sola idea por pantalla. Lo que está dentro de max-width: 767.98px no existe en escritorio.
+   ------------------------------------------------------------------------------------------------ */
+
+/* Botón del menú: dos líneas que se cruzan. */
+.menu-bars { position: relative; display: block; width: 24px; height: 14px; }
+.menu-bars i { position: absolute; inset-inline: 0; height: 1.5px; background: currentColor; transition: top 0.3s var(--ease-emph), transform 0.3s var(--ease-emph); }
+.menu-bars i:first-child { top: 2px; }
+.menu-bars i:last-child { top: 10px; }
+.menu-bars.is-open i { top: 6px; }
+.menu-bars.is-open i:first-child { transform: rotate(45deg); }
+.menu-bars.is-open i:last-child { transform: rotate(-45deg); }
+
+/* Menú a pantalla completa: las filas entran una tras otra. */
+.m-nav-row { animation: rise 0.55s var(--ease-emph) both; animation-delay: calc(70ms + var(--i, 0) * 34ms); }
+
+/* Acordeón: abre con transición de alto real; al cerrar no se anima, para que la fila tocada no se mueva. */
+.m-acc { display: grid; grid-template-rows: 0fr; }
+.m-acc > * { min-height: 0; overflow: hidden; }
+.m-acc.is-open { grid-template-rows: 1fr; transition: grid-template-rows 0.5s var(--ease-emph); }
+.m-acc:not(.is-open) > * { visibility: hidden; }
+.m-acc-img { animation: reveal 0.9s var(--ease-emph) both; }
+.m-sign { position: relative; width: 16px; height: 16px; flex: none; color: #0e4c92; transition: transform 0.35s var(--ease-emph); }
+.m-sign::before, .m-sign::after { content: ''; position: absolute; left: 0; right: 0; top: 7.25px; height: 1.5px; background: currentColor; }
+.m-sign::after { transform: rotate(90deg); transition: transform 0.35s var(--ease-emph); }
+[aria-expanded='true'] > .m-sign, details[open] > summary .m-sign { transform: rotate(180deg); }
+[aria-expanded='true'] > .m-sign::after, details[open] > summary .m-sign::after { transform: rotate(0deg); }
+summary::-webkit-details-marker { display: none; }
+
+/* Giro del site con el dedo (RackTouch.tsx). `pan-y`: el desplazamiento vertical sigue siendo de la página. */
+.rt-stage { position: relative; overflow: hidden; background: #060d17; touch-action: pan-y pinch-zoom; -webkit-user-select: none; user-select: none; cursor: grab; }
+.rt-stage.is-dragging { cursor: grabbing; }
+.rt-layer { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.rt-close { opacity: 0; transform: scale(1.06); transition: opacity 0.45s var(--ease-out), transform 0.9s var(--ease-emph); pointer-events: none; }
+.rt-close.is-on { opacity: 1; transform: none; }
+.rt-scrim { position: absolute; inset: 0 0 0 auto; width: 5.25rem; background: linear-gradient(270deg, rgb(6 13 23 / 0.62), transparent); pointer-events: none; }
+.rt-rail { position: absolute; inset: 0.5rem 0.25rem 0.5rem auto; display: flex; flex-direction: column; justify-content: space-between; }
+.rt-pin { display: grid; place-items: center; width: 44px; height: 44px; flex: none; }
+.rt-pin span { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9999px; font: 500 0.78rem/1 'IBM Plex Mono', ui-monospace, monospace; color: #fff; background: rgb(6 13 23 / 0.72); box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.42); transition: background-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.3s var(--ease-emph); }
+.rt-pin[aria-pressed='true'] span { color: #04121f; background: #4cc3f0; box-shadow: 0 0 0 5px rgb(76 195 240 / 0.26); transform: scale(1.08); }
+.rt-hint { position: absolute; inset-inline: 0; bottom: 0.9rem; display: flex; justify-content: center; pointer-events: none; transition: opacity 0.4s var(--ease-out); }
+.rt-hint.is-off { opacity: 0; }
+@keyframes rt-nudge { 0%, 100% { transform: translateX(-6px); } 50% { transform: translateX(6px); } }
+.rt-hint svg { animation: rt-nudge 2.4s var(--ease-inout) infinite; }
+
+@media (max-width: 767.98px) {
+  /* Escala tipográfica propia: 36–44 px en la portada, sin saltos de línea absurdos. */
+  .text-mega { font-size: clamp(2.25rem, 10.4vw, 2.75rem); line-height: 1.02; letter-spacing: -0.032em; }
+  .text-h1 { font-size: clamp(1.875rem, 9.2vw, 2.5rem); line-height: 1.06; }
+  .text-h2 { font-size: clamp(1.75rem, 7.6vw, 2.25rem); line-height: 1.1; }
+  html:lang(ko) .text-mega, html:lang(zh-CN) .text-mega { font-size: clamp(2rem, 9vw, 2.4rem); line-height: 1.18; }
+  html:lang(ko) .text-h1, html:lang(zh-CN) .text-h1 { font-size: clamp(1.7rem, 8vw, 2.15rem); line-height: 1.24; }
+
+  /* En inglés, coreano y chino, el aviso fijo «Ver esta página en español» ocupa el pie: el segundo botón sube para no quedar debajo. */
+  html:not([lang^="es"]) .hero3-fore > div { padding-bottom: 4.75rem; }
+
+  /* Rendimiento: la portada del teléfono no maqueta ni descarga lo que todavía está lejos. Empieza en #soluciones porque
+     es el destino del botón del hero: con alturas estimadas arriba de un ancla, el desplazamiento aterrizaría mal. */
+  .page-enter > #soluciones, .page-enter > #soluciones ~ section { content-visibility: auto; contain-intrinsic-block-size: auto 1000px; }
+  /* El marco fija su alto con aspect-ratio, así que aplazar la foto no mueve nada. */
+  .m-cv { content-visibility: auto; }
+
+  /* Piso tipográfico: ningún texto técnico por debajo de 12 px en el teléfono. */
+  .mono-tag, .text-\[0\.66rem\], .text-\[0\.68rem\], .text-\[0\.7rem\], .text-\[0\.72rem\] { font-size: 0.75rem; }
+
+  /* Portada: la foto se pinta completa desde el primer cuadro (es lo más grande de la pantalla y marca el LCP); la
+     entrada la dan el acercamiento lento y el texto. */
+  .hero3-scene { animation: none; }
+  .hero3-sweep { display: none; }
+
+  /* Riel: serie de piezas que se desliza con el dedo; siempre asoma la siguiente. --card: ancho de cada pieza. */
+  .m-rail { display: flex; flex-wrap: nowrap; gap: var(--rail-gap, 0.75rem); overflow-x: auto; scroll-snap-type: x mandatory; margin-inline: calc(var(--gutter) * -1); padding-inline: var(--gutter); scroll-padding-inline: var(--gutter); overscroll-behavior-x: contain; scrollbar-width: none; }
+  .m-rail::-webkit-scrollbar { display: none; }
+  .m-rail > * { flex: 0 0 var(--card, 76%); min-width: 0; margin-top: 0; scroll-snap-align: start; }
+
+  /* Recorrido: de cuatro capítulos apilados (4 000 px) a una serie que se desliza. */
+  .journey .jc-track-m { position: relative; }
+  .journey .journey-sticky { display: flex; gap: 0.75rem; overflow-x: auto; scroll-snap-type: x mandatory; padding-inline: var(--gutter); scroll-padding-inline: var(--gutter); overscroll-behavior-x: contain; scrollbar-width: none; }
+  .journey .journey-sticky::-webkit-scrollbar { display: none; }
+  .journey .jc { display: flex; flex: 0 0 min(84vw, 24rem); flex-direction: column; padding-bottom: 0; background: #0a1626; scroll-snap-align: start; }
+  .journey .jc-scene { aspect-ratio: 5 / 4; width: 100%; }
+  .journey .jc-legend { display: flex; flex-wrap: wrap; gap: 0.2rem 0.85rem; margin: 0; padding: 0.9rem 1.25rem 0; font-size: 0.8125rem; line-height: 1.45; }
+  .journey .jc-copy-wrap { margin-top: 1rem; padding: 0 1.25rem 1.5rem; }
+  .jc-dots { display: flex; gap: 0.5rem; padding: 0.5rem var(--gutter) 0; }
+  .jc-dots button { display: flex; flex: 1; align-items: center; height: 44px; }
+  .jc-dots button::before { content: ''; display: block; width: 100%; height: 2px; background: rgb(255 255 255 / 0.22); transition: background-color 0.3s var(--ease-out); }
+  .jc-dots button[aria-current='true']::before { background: #26a5dc; }
+
+  /* Tablas técnicas: cada fila se lee como una ficha, sin deslizar la tabla de lado. */
+  .m-table { display: block; min-width: 0 !important; }
+  .m-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .m-table tbody, .m-table tr, .m-table th, .m-table td { display: block; }
+  .m-table tr { padding-block: 1.1rem; border-bottom: 1px solid #e1e6eb; }
+  .m-table tr th { padding: 0 0 0.4rem; }
+  .m-table tr td { padding: 0.25rem 0 0; }
+  .m-table td::before { content: attr(data-label) ': '; color: #616d7c; }
+
+  /* Filas de texto con buen blanco para el dedo. */
+  .m-tap { display: flex; align-items: center; min-height: 44px; }
+}
+
+/* Formularios por pasos: «Continuar» queda a la mano mientras se llena el paso, por encima de la barra del navegador. */
+@media (max-width: 639.98px) {
+  .q-nav { position: sticky; bottom: 0; z-index: 3; margin-inline: -1.25rem; padding: 0.75rem 1.25rem calc(0.75rem + env(safe-area-inset-bottom, 0px)); background: #fff; }
+}
+
+/* Tabletas (dedo, 768–1279 px): capítulos del recorrido a dos columnas, sin escenas a todo el ancho una tras otra. */
+@media (min-width: 768px) and (max-width: 1279.98px) and (hover: none) {
+  .journey:not(.journey-stage) .jc { display: grid; grid-template-columns: 1.15fr 1fr; align-items: center; gap: 0 2.5rem; padding-inline: var(--gutter); padding-bottom: 4rem; }
+  .journey:not(.journey-stage) .jc-scene { aspect-ratio: 4 / 3; width: 100%; grid-area: 1 / 1; }
+  .journey:not(.journey-stage) .jc-copy-wrap { grid-area: 1 / 2 / span 2; margin: 0; padding: 0; }
+  /* A esta escala las etiquetas se saldrían de la foto: números sobre ella y leyenda debajo. */
+  .journey:not(.journey-stage) .jc-legend { display: flex; flex-wrap: wrap; grid-area: 2 / 1; gap: 0.2rem 0.85rem; margin: 0; padding: 0.75rem 0 0; }
+  .journey:not(.journey-stage) .callout-line, .journey:not(.journey-stage) .callout-label, .journey:not(.journey-stage) .callout-dot { display: none; }
+  .journey:not(.journey-stage) .callout-num { display: grid; }
+}
+
+/* Teléfono en horizontal: la altura es lo escaso. Header bajo y una sola idea en el hero. */
+@media (max-height: 500px) and (min-width: 560px) {
+  :root { --hdr: 64px; }
+  header.enter-header { height: 64px !important; }
+  header.enter-header img { height: 50px !important; }
+  .hero-extra { display: none; }
+  .text-mega { font-size: 2.1rem; }
+  .hero3-fore { padding-block: 1.5rem; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .hero3-depth, .hero3-fore { transform: none; }
   .callout-dot::after, .scroll-cue::after { animation: none; display: none; }
+  .rt-hint svg { animation: none; }
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
   .flow-packet { display: none; }
 }

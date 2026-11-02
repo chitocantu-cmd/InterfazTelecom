@@ -7,6 +7,7 @@ import { cn } from '../../lib/utils'
 import { hasWebGL, useExperience } from '../../motion/experience'
 import { SplitWords, useReveal } from '../../motion/primitives'
 import type { Part, RackScene } from '../../three/rackScene'
+import { RackTouch } from './RackTouch'
 
 const PARTS: Part[] = ['tray', 'fiber', 'patch', 'organizer', 'switch', 'nvr', 'ups']
 /** Servicios de Interfaz que intervienen en cada componente (y en la vista general). */
@@ -22,10 +23,10 @@ const RELATED: Record<Part | 'overview', string[]> = {
 }
 
 /**
- * «Un site de telecomunicaciones, pieza por pieza». Escenario a todo el ancho con la lista de componentes y la ficha
- * como paneles sobre la escena (en el teléfono, debajo). La lista es el control accesible (teclado, lector de
- * pantalla, toque). En escritorio con WebGL, la escena 3D (three.js, descargada al acercarse) enfoca e inspecciona
- * cada pieza; sin WebGL, en el teléfono o con «reducir movimiento», la misma sección usa vistas fijas de la escena.
+ * «Un site de telecomunicaciones, pieza por pieza». Desde 1024 px: escenario a todo el ancho con la lista de componentes
+ * y la ficha como paneles sobre la escena; la lista es el control accesible (teclado, lector de pantalla). Con WebGL, la
+ * escena 3D (three.js, descargada al acercarse) enfoca e inspecciona cada pieza; sin WebGL o con «reducir movimiento»,
+ * vistas fijas de la escena. Teléfono y tableta: RackTouch, pensado para el dedo.
  */
 export function RackExplorer() {
   const { t, c } = useI18n()
@@ -82,9 +83,8 @@ export function RackExplorer() {
   const info = selected ? t.rack3d.parts[selected] : t.rack3d.overview
   const still = SITE3D_STILLS[selected ?? 'overview']
 
-  // En el teléfono, a dos columnas: la imagen sigue a la vista mientras se elige.
-  const list = (compact: boolean) => (
-    <ol aria-label={t.rack3d.listLabel} className={cn('grid gap-1', compact && 'grid-cols-2 md:grid-cols-1')}>
+  const list = (
+    <ol aria-label={t.rack3d.listLabel} className="grid gap-1">
       {PARTS.map((p, i) => {
         const on = selected === p
         return (
@@ -102,10 +102,10 @@ export function RackExplorer() {
   const card = (
     <div aria-live="polite">
       <div key={selected ?? 'overview'} className="sv-fade">
-        <p className="font-mono text-[0.68rem] uppercase tracking-[0.12em] text-lumen">{selected ? String(PARTS.indexOf(selected) + 1).padStart(2, '0') : '00'} · {info.name}</p>
-        <p className="mt-2.5 text-[0.98rem] leading-relaxed text-white/85">{info.text}</p>
+        <p className="font-mono text-[0.68rem] uppercase tracking-[0.12em] text-lumen max-lg:hidden">{selected ? String(PARTS.indexOf(selected) + 1).padStart(2, '0') : '00'} · {info.name}</p>
+        <p className="text-[0.98rem] leading-relaxed text-white/85 lg:mt-2.5">{info.text}</p>
         {/* Ficha de lo que se ve en el modelo (no una especificación de proyecto). */}
-        <p className="mt-4 border-t border-white/10 pt-3 font-mono text-[0.68rem] uppercase leading-relaxed tracking-[0.08em] text-white/60"><span className="text-white/35">{t.rack3d.inScene} ·</span> {info.spec}</p>
+        <p className="mt-4 border-t border-white/10 pt-3 font-mono text-[0.68rem] uppercase leading-relaxed tracking-[0.08em] text-white/60 max-lg:text-[0.75rem] max-lg:normal-case max-lg:tracking-normal max-lg:text-white/70"><span className="text-white/35 max-lg:text-white/55">{t.rack3d.inScene} ·</span> {info.spec}</p>
       </div>
       <p className="mt-5 text-label text-white/50">{t.rack3d.related}</p>
       <ul className="mt-2 flex flex-wrap gap-2">
@@ -113,7 +113,7 @@ export function RackExplorer() {
           const s = c.serviceBySlug(slug)
           return s && (
             <li key={slug}>
-              <Link to={`/soluciones/${slug}`} className="group inline-flex items-center gap-1.5 rounded-[2px] border border-white/20 px-3 py-1.5 text-[0.85rem] text-white transition-colors hover:border-lumen hover:bg-white/[0.04]">
+              <Link to={`/soluciones/${slug}`} className="group inline-flex items-center gap-1.5 rounded-[2px] border border-white/20 px-3 py-1.5 text-[0.85rem] text-white transition-colors hover:border-lumen hover:bg-white/[0.04] max-lg:min-h-[44px]">
                 {s.name}<ArrowRight aria-hidden className="arrow-nudge h-3.5 w-3.5 text-lumen" strokeWidth={1.75} />
               </Link>
             </li>
@@ -124,21 +124,21 @@ export function RackExplorer() {
   )
 
   return (
-    <section ref={root} aria-labelledby="instalacion-title" className="relative overflow-hidden bg-night py-20 text-white md:py-28">
+    <section ref={root} aria-labelledby="instalacion-title" className="relative overflow-hidden bg-night py-sec text-white md:py-28">
       <div className="container">
         <div className="grid gap-6 lg:grid-cols-12 lg:items-end">
           <div className="lg:col-span-7">
-            <p data-reveal="rise" className="flex items-center gap-3 font-mono text-[0.72rem] uppercase tracking-[0.12em] text-lumen">
+            <p data-reveal="rise" className="flex items-center gap-3 font-mono text-[0.72rem] uppercase tracking-[0.12em] text-lumen max-md:hidden">
               <span aria-hidden className="h-px w-8 bg-lumen" />{t.rack3d.eyebrow}
             </p>
-            <h2 id="instalacion-title" data-reveal="words" className="mt-5 max-w-[18ch] text-h1 !text-white"><SplitWords text={t.rack3d.title} mode="view" /></h2>
+            <h2 id="instalacion-title" data-reveal="words" className="max-w-[18ch] text-h1 !text-white md:mt-5"><SplitWords text={t.rack3d.title} mode="view" /></h2>
           </div>
           <p data-reveal="rise" className="max-w-[30rem] text-white/70 lg:col-span-5 lg:justify-self-end">{t.rack3d.lede}</p>
         </div>
       </div>
 
       {/* Escenario a todo el ancho (hasta 1600 px); los paneles se alinean con la retícula del contenido. */}
-      <div data-reveal="mask" className="rack-stage relative mx-auto mt-12 max-w-frame overflow-hidden border-y border-white/10 bg-[#060d17] md:mt-14">
+      <div data-reveal="mask" className="rack-stage relative mx-auto mt-12 max-w-frame max-lg:hidden overflow-hidden border-y border-white/10 bg-[#060d17] md:mt-14">
         <div className="relative aspect-[4/3] sm:aspect-[16/10] lg:aspect-auto lg:h-[min(86svh,54vw)] lg:min-h-[560px]">
           <div ref={host} className={cn('rack-host absolute inset-0', use3d ? 'cursor-grab' : 'hidden')} role={use3d ? 'img' : undefined} aria-label={use3d ? t.rack3d.canvasLabel : undefined} />
           <div ref={overlay} aria-hidden className={cn('pointer-events-none absolute inset-0 overflow-hidden', !use3d && 'hidden')} />
@@ -162,20 +162,14 @@ export function RackExplorer() {
           {/* Paneles sobre la escena (escritorio), dentro de la retícula del contenido */}
           <div className="container pointer-events-none absolute inset-0 hidden lg:block">
             <div className="relative h-full">
-              <div className="rack-panel pointer-events-auto absolute left-0 top-16 max-h-[calc(100%-6rem)] w-[16.5rem] overflow-y-auto p-3">{list(false)}</div>
+              <div className="rack-panel pointer-events-auto absolute left-0 top-16 max-h-[calc(100%-6rem)] w-[16.5rem] overflow-y-auto p-3">{list}</div>
               <div className="rack-panel pointer-events-auto absolute bottom-6 right-0 w-[24rem] p-5">{card}</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Teléfono y tableta: lista y ficha debajo del escenario */}
-      <div className="container">
-        <div className="mt-4 grid gap-4 md:mt-6 md:grid-cols-2 md:gap-6 lg:hidden">
-          <div className="rack-panel p-2 sm:p-3">{list(true)}</div>
-          <div className="rack-panel p-5">{card}</div>
-        </div>
-      </div>
+      <RackTouch parts={PARTS} selected={selected} onChoose={choose} card={card} />
     </section>
   )
 }

@@ -3,6 +3,8 @@
 // Azules de Interfaz como jerarquía, neutros claros como base.
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
+  // En pantallas táctiles el hover no se queda «pegado» después de tocar.
+  future: { hoverOnlyWhenSupported: true },
   theme: {
     // El margen lateral crece con la pantalla mediante --gutter (index.css). Tailwind ignora los
     // márgenes por breakpoint cuando el contenedor sólo define `2xl`, por eso no se usa aquí.
@@ -42,6 +44,8 @@ export default {
         small: ['0.9375rem', { lineHeight: '1.55' }],
         label: ['0.8125rem', { lineHeight: '1.4', letterSpacing: '0.01em' }],
       },
+      // sec: separación vertical entre secciones en el teléfono (--sec, index.css); desde md cada sección define la suya.
+      spacing: { sec: 'var(--sec)' },
       // frame: ancho máximo de las imágenes a sangre; evita estirarlas (y pixelarlas) en pantallas muy anchas.
       maxWidth: { prose: '62ch', measure: '38rem', frame: '1600px' },
     },

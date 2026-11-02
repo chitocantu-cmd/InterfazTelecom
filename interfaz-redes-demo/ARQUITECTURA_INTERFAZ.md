@@ -186,6 +186,33 @@ tipos e inmueble y envía el resumen **en español** (`summary`) aunque el clien
 Duraciones y curvas: variables en `:root` (`--ease-out`, `--ease-emph`, `--dur-*`). Motion se descarga aparte
 (`domAnimation`, ~18 KB) después del primer pintado. No se usa GSAP.
 
+## Experiencia móvil
+
+El teléfono no es el escritorio reducido: cuando la estructura cambia, el HTML lleva las dos versiones y una se oculta
+con `md:hidden` / `max-md:hidden` (React no sabe el ancho al prerenderizar, así que no se puede decidir en JS). Todo
+lo del teléfono va en variantes `max-md:` o en el bloque «Experiencia móvil» de `src/index.css`, que sólo aplica hasta
+767 px: **cambiar algo ahí no toca el escritorio**.
+
+| Pieza | Dónde | Qué hace |
+| --- | --- | --- |
+| Ritmo | `--gutter`, `--sec` y `py-sec` (`tailwind.config.js`) | Margen lateral 20–24 px y distancia entre secciones |
+| Riel deslizable | `.m-rail` (`--card`, `--rail-gap`) | Galerías y tarjetas en fila con snap, sin barra visible |
+| Acordeón | `.m-acc` + `.m-sign` | Abre con `grid-template-rows`, sin medir alturas en JS; lo cerrado queda fuera del foco |
+| Tablas técnicas | `.m-table` + `td[data-label]` | Cada fila se vuelve tarjeta; no hay desplazamiento lateral |
+| Formularios | `.q-nav` y `enterTo()` en `QuoteWizard` | «Continuar» fijo abajo; la tecla del teclado pasa al campo siguiente |
+| Site 3D táctil | `RackTouch.tsx`, `src/data/site3d-touch.ts`, `src/assets/site3d-touch/` | Cuadros de la escena real, sin WebGL ni three.js |
+| Rendimiento | `content-visibility` (`.m-cv` y secciones tras `#soluciones`) | Lo lejano no se maqueta ni se descarga |
+
+**Site 3D en el teléfono.** Son 25 cuadros del giro y 8 acercamientos capturados de la escena de three.js
+(`npx vite --port 5199`, luego `node tools/site3d-orbit.mjs http://localhost:5199/`), que también genera
+`src/data/site3d-orbit.ts` con la posición de cada pieza por cuadro. Si cambia la escena hay que regenerarlos. El lienzo mezcla dos cuadros vecinos y
+dibuja las líneas hacia los números; `touch-action: pan-y pinch-zoom` deja el arrastre vertical a la página.
+
+**`content-visibility` y anclas.** Una sección aplazada mide una estimación hasta que se acerca, así que un ancla
+*debajo* de ella aterrizaría mal. Por eso sólo se aplica en la portada y de `#soluciones` hacia abajo (es el destino
+del botón del hero), y `.m-cv` sólo en marcos con `aspect-ratio`, cuyo alto no depende del contenido. Las páginas con
+anclas internas (`#cotizar`, `#asesoria`, frentes de `/soluciones`) no lo usan en secciones.
+
 ## Medición (eventos)
 
 `src/lib/analytics.ts`. Sin `VITE_GA_ID` los eventos quedan en `window.dataLayer` (listo para Tag Manager); con él,

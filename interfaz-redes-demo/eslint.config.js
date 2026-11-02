@@ -7,7 +7,7 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['dist', 'dist-ssr', 'dist-preview', 'node_modules', 'test-results', 'playwright-report', 'tools'] },
+  { ignores: ['dist', 'dist-ssr', 'dist-preview', 'node_modules', 'test-results', 'playwright-report', 'tools', 'seo-monterrey', 'auditoria-mobile'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

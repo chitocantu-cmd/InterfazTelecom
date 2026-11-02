@@ -9,7 +9,7 @@ export function Breadcrumbs({ items, dark }: { items: { to?: string; label: stri
   const t = useT()
   return (
     <nav aria-label={t.common.breadcrumbs}>
-      <ol className={cn('flex flex-wrap items-center gap-2 text-label', dark ? 'text-white/60' : 'text-muted')}>
+      <ol className={cn('flex flex-wrap items-center gap-2 text-label max-md:-my-2 max-md:[&_a]:inline-flex max-md:[&_a]:min-h-[44px] max-md:[&_a]:items-center', dark ? 'text-white/60' : 'text-muted')}>
         <li><Link to="/" className={dark ? 'hover:text-white' : 'hover:text-ink'}>{t.common.home}</Link></li>
         {items.map((it, i) => (
           <li key={i} className="flex items-center gap-2">
@@ -34,9 +34,9 @@ export function PageHero({ crumbs, title, lede, img, pos, children, aside }: {
 }) {
   return (
     <section className="bg-white">
-      <div className="container pb-14 pt-10 md:pb-16 md:pt-12">
+      <div className="container pb-10 pt-5 md:pb-16 md:pt-12">
         <Breadcrumbs items={crumbs} />
-        <div className="mt-12 grid gap-8 md:mt-16 lg:grid-cols-12 lg:items-start lg:gap-10">
+        <div className="mt-6 grid gap-5 md:mt-16 md:gap-8 lg:grid-cols-12 lg:items-start lg:gap-10">
           <h1 className="text-h1 lg:col-span-7">{typeof title === 'string' ? <SplitWords text={title} delay={60} /> : title}</h1>
           {(lede || aside) && (
             <div className="lg:col-span-4 lg:col-start-9 lg:pt-2">

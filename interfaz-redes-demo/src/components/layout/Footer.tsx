@@ -1,4 +1,4 @@
-import { Check, Copy } from 'lucide-react'
+import { Check, Copy, Globe, Mail, MapPin, MessageCircle, Phone } from 'lucide-react'
 import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { publishedResources } from '../../content/recursos'
@@ -6,21 +6,21 @@ import { COMPANY } from '../../data/company'
 import { useI18n } from '../../i18n'
 import { LOCALE_META, LOCALES, localize, splitLocale } from '../../i18n/config'
 import { Link } from '../../i18n/Link'
-import { copyText } from '../../lib/utils'
+import { copyText, waLink } from '../../lib/utils'
 import { Logo } from './Logo'
 
 export function CopyValue({ value, label, dark, href }: { value: string; label: string; dark?: boolean; href?: string }) {
   const { t } = useI18n()
   const [ok, setOk] = useState(false)
   return (
-    <span className="inline-flex items-center gap-2">
+    <span className="inline-flex items-center gap-2 max-md:max-w-full">
       {/* Blancos táctiles de al menos 24 × 24 px (WCAG 2.2, 2.5.8): enlace y botón quedan uno junto al otro. */}
-      {href ? <a href={href} className={`inline-flex min-h-[24px] items-center ${dark ? 'hover:text-white' : 'hover:text-corp'}`}>{value}</a> : <span className="select-all">{value}</span>}
+      {href ? <a href={href} className={`inline-flex min-h-[24px] items-center ${dark ? 'hover:text-white' : 'hover:text-corp'}`}>{value}</a> : <span className="select-all max-md:min-w-0 max-md:break-all">{value}</span>}
       <button
         type="button"
         aria-label={t.common.copy(label)}
         onClick={async () => { if (await copyText(value)) { setOk(true); window.setTimeout(() => setOk(false), 1600) } }}
-        className={`-my-1 grid h-6 w-6 shrink-0 place-items-center ${dark ? 'text-white/40 hover:text-white' : 'text-faint hover:text-corp'}`}
+        className={`-my-1 grid h-6 w-6 shrink-0 place-items-center max-md:-my-2.5 max-md:-ml-2.5 max-md:h-11 max-md:w-11 ${dark ? 'text-white/40 hover:text-white' : 'text-faint hover:text-corp'}`}
       >
         {ok ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
       </button>
@@ -34,8 +34,33 @@ export function Footer() {
   const { path } = splitLocale(useLocation().pathname)
   return (
     <footer className="border-t border-line bg-white">
-      <div className="container pb-24 pt-16 md:pt-20">
-        <div className="grid gap-12 lg:grid-cols-12">
+      <div className="container pb-9 pt-14 md:pb-24 md:pt-20">
+        {/* Teléfono: jerarquía propia. Identidad, acciones directas, servicios plegados por frente y enlaces. */}
+        <div className="md:hidden">
+          <div className="flex items-center gap-3">
+            <Logo size="sm" className="!h-[60px]" />
+            <p className="font-display text-[1.05rem] font-semibold leading-tight text-ink">{COMPANY.name}</p>
+          </div>
+          <p className="mt-4 text-small text-body">{t.footer.tagline}</p>
+          <ul className="mt-7 divide-y divide-line border-y border-line text-[0.98rem] text-ink">
+            <li><a href={waLink(t.wa.general)} target="_blank" rel="noopener noreferrer" className="flex min-h-[54px] items-center gap-3 font-medium"><MessageCircle aria-hidden className="h-[18px] w-[18px] text-corp" strokeWidth={1.75} />WhatsApp<span className="ml-auto font-normal text-muted">{COMPANY.whatsappDisplay}</span></a></li>
+            <li><a href={`tel:${COMPANY.phoneAlt.intl}`} className="flex min-h-[54px] items-center gap-3 font-medium"><Phone aria-hidden className="h-[18px] w-[18px] text-corp" strokeWidth={1.75} />{t.contact.call}<span className="ml-auto font-normal text-muted">{COMPANY.phoneAlt.display}</span></a></li>
+            <li><a href={`mailto:${COMPANY.email}`} className="flex min-h-[54px] items-center gap-3 font-medium"><Mail aria-hidden className="h-[18px] w-[18px] shrink-0 text-corp" strokeWidth={1.75} /><span className="min-w-0 break-all font-normal text-ink">{COMPANY.email}</span></a></li>
+            <li><Link to="/" className="flex min-h-[54px] items-center gap-3 font-normal"><Globe aria-hidden className="h-[18px] w-[18px] text-corp" strokeWidth={1.75} />{new URL(COMPANY.site).hostname}</Link></li>
+            <li className="flex gap-3 py-3.5 text-small text-body"><MapPin aria-hidden className="mt-0.5 h-[18px] w-[18px] shrink-0 text-corp" strokeWidth={1.75} /><span>{COMPANY.address}<span className="mt-0.5 block text-muted">{t.company.hours}</span></span></li>
+          </ul>
+          <nav aria-label={t.footer.solutionsNav} className="mt-8">
+            {c.categories.map((cat) => (
+              <details key={cat.id} name="footer" className="border-b border-line">
+                <summary className="flex min-h-[54px] cursor-pointer list-none items-center justify-between gap-4 font-display text-[1.02rem] font-semibold text-ink">{cat.name}<span aria-hidden className="m-sign" /></summary>
+                <ul className="pb-3">
+                  {c.servicesOf(cat.id).map((s) => <li key={s.slug}><Link to={`/soluciones/${s.slug}`} className="m-tap text-[0.98rem] text-body">{s.name}</Link></li>)}
+                </ul>
+              </details>
+            ))}
+          </nav>
+        </div>
+        <div className="grid gap-12 max-md:hidden lg:grid-cols-12">
           <div className="lg:col-span-3">
             <Logo size="lg" />
             <p className="mt-4 font-display text-[1.05rem] font-semibold text-ink">{COMPANY.name}</p>
@@ -57,8 +82,8 @@ export function Footer() {
             ))}
           </nav>
         </div>
-        <div className="mt-16 grid gap-6 border-t border-line pt-6 text-label text-muted md:grid-cols-[1fr_auto] md:items-center">
-          <nav aria-label={t.footer.companyNav} className="flex flex-wrap gap-x-6 gap-y-2">
+        <div className="mt-7 grid gap-5 text-label text-muted md:mt-16 md:grid-cols-[1fr_auto] md:items-center md:gap-6 md:border-t md:border-line md:pt-6">
+          <nav aria-label={t.footer.companyNav} className="grid grid-cols-2 gap-x-6 max-md:text-[0.95rem] max-md:[&>a]:flex max-md:[&>a]:min-h-[44px] max-md:[&>a]:items-center md:flex md:flex-wrap md:gap-y-2">
             <Link to="/industrias" className="hover:text-ink">{t.nav.industries}</Link>
             <Link to="/proyectos" className="hover:text-ink">{t.nav.projects}</Link>
             <Link to="/explorador" className="hover:text-ink">{t.nav.explorer}</Link>
@@ -68,7 +93,7 @@ export function Footer() {
             <Link to="/aviso-de-privacidad" className="hover:text-ink">{t.footer.privacy}</Link>
           </nav>
           <nav aria-label={t.footer.languages}>
-            <ul className="flex flex-wrap gap-x-5 gap-y-2">
+            <ul className="flex flex-wrap gap-x-5 gap-y-2 max-md:justify-between max-md:gap-x-3 max-md:border-y max-md:border-line max-md:text-[0.95rem] max-md:[&_a]:flex max-md:[&_a]:min-h-[48px] max-md:[&_a]:items-center">
               {LOCALES.map((l) => (
                 <li key={l}>
                   <a href={localize(path, l)} hrefLang={LOCALE_META[l].htmlLang} lang={LOCALE_META[l].htmlLang} aria-current={l === locale ? 'true' : undefined} className={l === locale ? 'font-medium text-ink' : 'hover:text-ink'}>{LOCALE_META[l].label}</a>
@@ -77,7 +102,7 @@ export function Footer() {
             </ul>
           </nav>
         </div>
-        <p className="mt-6 text-label text-muted">{t.footer.rights(new Date().getFullYear(), COMPANY.name)}</p>
+        <p className="mt-5 text-label text-muted md:mt-6">{t.footer.rights(new Date().getFullYear(), COMPANY.name)}</p>
         {!meta.reviewed && <p className="mt-2 text-label text-muted">{t.common.translationReview}</p>}
       </div>
     </footer>

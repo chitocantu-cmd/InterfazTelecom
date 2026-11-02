@@ -86,12 +86,12 @@ export default function Explorer() {
   return (
     <>
       <section className="bg-white">
-        <div className="container pb-12 pt-10 md:pt-12">
+        <div className="container pb-9 pt-5 md:pb-12 md:pt-12">
           <Breadcrumbs items={[{ label: t.nav.explorer }]} />
-          <div className="mt-12 grid gap-8 md:mt-16 lg:grid-cols-12 lg:items-end">
+          <div className="mt-6 grid gap-5 md:mt-16 md:gap-8 lg:grid-cols-12 lg:items-end">
             <div className="lg:col-span-7">
-              <Tag className="!text-corp">{t.nav.explorer}</Tag>
-              <h1 className="mt-3 text-h1">{T.title}</h1>
+              <Tag className="!text-corp max-md:hidden">{t.nav.explorer}</Tag>
+              <h1 className="text-h1 md:mt-3">{T.title}</h1>
             </div>
             <div className="lg:col-span-4 lg:col-start-9">
               <p className="max-w-measure text-lead text-body">{T.lede}</p>
@@ -100,10 +100,10 @@ export default function Explorer() {
         </div>
       </section>
 
-      <section ref={area} className="bg-mist py-12 md:py-20">
-        <div className="container grid gap-10 lg:grid-cols-12">
+      <section ref={area} className="bg-mist pb-12 sm:pt-12 md:py-20">
+        <div className="container grid gap-8 max-sm:px-0 md:gap-10 lg:grid-cols-12">
           <div className="lg:col-span-8" ref={top}>
-            <div className="border border-line bg-white">
+            <div className="border-line bg-white sm:border">
               {/* progreso */}
               <ol className="grid grid-cols-6 border-b border-line" aria-label={T.progress}>
                 {T.steps.map((s, i) => (
@@ -232,11 +232,11 @@ export default function Explorer() {
                 </AnimatePresence>
 
                 {step < RESULT && (
-                  <div className="mt-8 flex items-center justify-between gap-4 border-t border-line pt-5">
+                  <div className="q-nav mt-8 flex items-center justify-between gap-4 border-t border-line pt-5">
                     {step > 0 ? (
-                      <button type="button" onClick={() => goTo(step - 1)} className="inline-flex items-center gap-2 text-[0.92rem] text-muted hover:text-ink"><ArrowLeft aria-hidden className="h-4 w-4" />{T.back}</button>
+                      <button type="button" onClick={() => goTo(step - 1)} className="inline-flex min-h-[44px] items-center gap-2 text-[0.92rem] text-muted hover:text-ink"><ArrowLeft aria-hidden className="h-4 w-4" />{T.back}</button>
                     ) : <span className="font-mono text-[0.72rem] text-muted">{T.stepOf(1, RESULT)}</span>}
-                    <button type="button" onClick={next} className="inline-flex items-center gap-2.5 rounded-[2px] bg-corp px-6 py-3 text-[0.95rem] font-medium text-white transition-[background-color,transform] hover:bg-navy active:scale-[0.98]">
+                    <button type="button" onClick={next} className="inline-flex min-h-[48px] items-center justify-center gap-2.5 rounded-[2px] bg-corp px-6 py-3 text-[0.95rem] font-medium text-white transition-[background-color,transform] hover:bg-navy active:scale-[0.98] max-sm:flex-1">
                       {step === RESULT - 1 ? T.seeResult : T.next}
                     </button>
                   </div>
@@ -247,7 +247,7 @@ export default function Explorer() {
           </div>
 
           {/* Resumen lateral de lo elegido */}
-          <aside className="lg:col-span-4">
+          <aside className={cn('max-sm:px-[var(--gutter)] lg:col-span-4', !state.scenario && 'max-lg:hidden')}>
             <div className="lg:sticky lg:top-36">
               <div className="bg-navy p-6 text-white">
                 <p className="mono-tag uppercase text-white/50">{T.summary}</p>

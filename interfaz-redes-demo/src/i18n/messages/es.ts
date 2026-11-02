@@ -129,6 +129,9 @@ const es = {
     listLabel: 'Componentes del rack',
     related: 'Servicios relacionados',
     inScene: 'En la escena',
+    touchHint: 'Desliza para girar · toca un número',
+    prev: 'Pieza anterior',
+    next: 'Pieza siguiente',
     canvasLabel: 'Modelo 3D interactivo de un rack de telecomunicaciones',
     parts: {
       tray: { name: 'Escalerilla y canaleta', text: 'Llevan el cableado de cobre y la fibra por encima de los racks, separados, ordenados y protegidos.', spec: 'Escalerilla con dos haces de cobre · canaleta de fibra · bajadas por organizador' },

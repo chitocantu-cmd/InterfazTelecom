@@ -48,12 +48,12 @@ export default function Contact() {
   const rows = [
     {
       icon: MessageCircle, k: T.phone,
-      v: <><CopyValue dark value={COMPANY.whatsappDisplay} label={T.phone} /><span className="mt-1 block text-small text-white/60">{T.also} <a href={`tel:${COMPANY.phoneAlt.intl}`} className="hover:text-white">{COMPANY.phoneAlt.display}</a></span></>,
+      v: <><CopyValue dark value={COMPANY.whatsappDisplay} label={T.phone} /><span className="mt-1 block text-small text-white/60">{T.also} <a href={`tel:${COMPANY.phoneAlt.intl}`} className="hover:text-white max-md:inline-flex max-md:min-h-[44px] max-md:items-center">{COMPANY.phoneAlt.display}</a></span></>,
       links: [{ href: waLink(t.wa.quote), label: T.openWhatsapp }, { href: `tel:${COMPANY.phoneIntl}`, label: T.call }],
     },
     {
       icon: Mail, k: T.email,
-      v: <><CopyValue dark value={COMPANY.email} label={T.email} /><span className="mt-1 block text-small text-white/60">{T.also} <a href={`mailto:${COMPANY.emailAlt}`} className="break-all hover:text-white">{COMPANY.emailAlt}</a></span></>,
+      v: <><CopyValue dark value={COMPANY.email} label={T.email} /><span className="mt-1 block text-small text-white/60">{T.also} <a href={`mailto:${COMPANY.emailAlt}`} className="break-all hover:text-white max-md:inline-flex max-md:min-h-[44px] max-md:items-center">{COMPANY.emailAlt}</a></span></>,
       links: [{ href: `mailto:${COMPANY.email}`, label: T.writeEmail }],
     },
     { icon: MapPin, k: T.office, v: COMPANY.address, links: [{ href: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(COMPANY.address)}`, label: T.map }] },
@@ -64,9 +64,9 @@ export default function Contact() {
   return (
     <>
       <PageHero crumbs={[{ label: t.nav.contact }]} title={T.title} lede={T.lede} />
-      <section className="bg-mist py-16 md:py-24">
-        <div className="container grid gap-10 lg:grid-cols-12">
-          <div className="lg:col-span-8">
+      <section className="bg-mist pb-14 sm:pt-14 md:py-24">
+        <div className="container grid gap-8 max-sm:px-0 md:gap-10 lg:grid-cols-12">
+          <div className="min-w-0 lg:col-span-8">
             {/* Entre el título de la página y los pasos del cotizador (h3) no se salta un nivel. */}
             <h2 className="sr-only">{T.formHeading}</h2>
             <QuoteWizard
@@ -81,7 +81,7 @@ export default function Contact() {
               service={service?.slug}
             />
           </div>
-          <aside className="lg:col-span-4">
+          <aside className="min-w-0 max-sm:px-[var(--gutter)] lg:col-span-4">
             <div className="bg-navy text-white">
               <div className="flex items-center gap-4 border-b border-white/10 p-6">
                 <Logo variant="tile" size="sm" className="!h-14" />
@@ -98,10 +98,10 @@ export default function Contact() {
                       <p className="text-small text-white/55">{k}</p>
                       <p className="mt-1 break-words text-white/90">{v}</p>
                       {links.length > 0 && (
-                        <p className="mt-2 flex flex-wrap gap-x-5 gap-y-1">
+                        <p className="mt-2 flex flex-wrap gap-x-5 gap-y-1 max-md:gap-y-2">
                           {links.map((l) => {
                             const ext = l.href.startsWith('http')
-                            return <a key={l.label} href={l.href} target={ext ? '_blank' : undefined} rel={ext ? 'noopener noreferrer' : undefined} className="inline-flex items-center gap-1 text-small font-medium text-white link-line">{l.label}</a>
+                            return <a key={l.label} href={l.href} target={ext ? '_blank' : undefined} rel={ext ? 'noopener noreferrer' : undefined} className="inline-flex items-center gap-1 text-small font-medium text-white link-line max-md:min-h-[36px]">{l.label}</a>
                           })}
                         </p>
                       )}

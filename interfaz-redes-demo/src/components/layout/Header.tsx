@@ -1,6 +1,6 @@
 import { AnimatePresence, m } from 'motion/react'
-import { ArrowRight, ChevronDown, Compass, Menu, X } from 'lucide-react'
-import { useDeferredValue, useEffect, useRef, useState, type FocusEvent, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent } from 'react'
+import { ArrowRight, ChevronDown, Compass, Mail, Phone } from 'lucide-react'
+import { useDeferredValue, useEffect, useRef, useState, type CSSProperties, type FocusEvent, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent } from 'react'
 import { useLocation } from 'react-router-dom'
 import { publishedResources } from '../../content/recursos'
 import { IMG } from '../../data/media'
@@ -137,7 +137,7 @@ export function Header() {
       <div aria-hidden className="h-[var(--hdr)]" />
       <header
         ref={headerRef}
-        className={cn('enter-header fixed inset-x-0 z-50 bg-white transition-[height,box-shadow] duration-300 ease-out', compact ? 'h-[72px] md:h-[84px]' : 'h-[var(--hdr)]', scrolled || mega || mobile ? 'shadow-[0_1px_0_#E1E6EB]' : '')}
+        className={cn('enter-header fixed inset-x-0 z-50 bg-white transition-[height,box-shadow] duration-300 ease-out', compact ? 'h-[64px] md:h-[84px]' : 'h-[var(--hdr)]', scrolled || mega || mobile ? 'shadow-[0_1px_0_#E1E6EB]' : '')}
         style={{ top: 'env(safe-area-inset-top, 0px)' }}
       >
         <div className="container flex h-full items-center justify-between gap-4 xl:gap-6">
@@ -171,10 +171,10 @@ export function Header() {
             </ul>
           </nav>
 
-          <div className="flex items-center gap-1.5 sm:gap-3">
+          <div className="flex items-center gap-1 sm:gap-3">
             <div className="hidden lg:block"><LanguageSelector /></div>
             <Button to="/contacto" track="header" className="hidden !px-5 !py-[0.7rem] xl:inline-flex">{t.common.quoteProject}</Button>
-            <Button to="/contacto" track="header-movil" className="!px-4 !py-2.5 !text-[0.9rem] xl:hidden">{t.common.quoteShort}</Button>
+            <Button to="/contacto" track="header-movil" className="!min-h-[44px] !px-3.5 !py-2 !text-[0.9rem] sm:!px-4 xl:hidden">{t.common.quoteShort}</Button>
             <button
               ref={mobileBtn}
               type="button"
@@ -184,7 +184,7 @@ export function Header() {
               aria-controls="menu-movil"
               onClick={() => setMobile((v) => !v)}
             >
-              {mobile ? <X className="h-6 w-6" strokeWidth={1.5} /> : <Menu className="h-6 w-6" strokeWidth={1.5} />}
+              <span aria-hidden className={cn('menu-bars', mobile && 'is-open')}><i /><i /></span>
             </button>
           </div>
         </div>
@@ -260,49 +260,57 @@ function MobileNav({ onClose, reduce, nav }: { onClose: () => void; reduce: bool
   const { t, c } = useI18n()
   const [open, setOpen] = useState<string | null>(null)
   const solActive = splitLocale(useLocation().pathname).path.startsWith('/soluciones')
+  const row = 'flex min-h-[64px] w-full items-center justify-between gap-4 font-display text-[1.65rem] font-medium leading-tight tracking-[-0.02em] text-white'
+  const active = ({ isActive }: { isActive: boolean }) => cn(row, isActive && 'text-lumen')
   return (
     <m.div
       id="menu-movil"
-      initial={reduce ? false : { opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.18 }}
-      className="absolute inset-x-0 top-full z-40 h-[calc(100dvh-var(--hdr))] overflow-y-auto border-t border-line bg-white lg:hidden"
+      initial={reduce ? false : { clipPath: 'inset(0 0 100% 0)' }}
+      animate={{ clipPath: 'inset(0 0 0% 0)' }}
+      exit={reduce ? { opacity: 0 } : { clipPath: 'inset(0 0 100% 0)' }}
+      transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
+      className="absolute inset-x-0 top-full z-40 h-[calc(100dvh-var(--hdr)-env(safe-area-inset-top,0px))] overflow-y-auto overscroll-contain bg-night text-white lg:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
-      <nav aria-label={t.nav.mobile} className="container flex min-h-full flex-col pb-6 pt-2">
+      <nav aria-label={t.nav.mobile} className="container flex min-h-full flex-col pb-8 pt-3">
         <ul>
-          <li className="border-b border-line"><NavLink onClick={onClose} to="/" end className="flex min-h-[60px] items-center font-display text-[1.35rem] font-medium text-ink">{t.common.home}</NavLink></li>
-          <li className="border-b border-line">
-            <button type="button" aria-expanded={open === 'sol'} onClick={() => setOpen(open === 'sol' ? null : 'sol')} className="flex min-h-[60px] w-full items-center justify-between font-display text-[1.35rem] font-medium text-ink">
+          <li className="m-nav-row border-b border-white/10" style={{ '--i': 0 } as CSSProperties}><NavLink onClick={onClose} to="/" end className={active}>{t.common.home}</NavLink></li>
+          <li className="m-nav-row border-b border-white/10" style={{ '--i': 1 } as CSSProperties}>
+            <button type="button" aria-expanded={open === 'sol'} onClick={() => setOpen(open === 'sol' ? null : 'sol')} className={cn(row, solActive && 'text-lumen')}>
               <span>{t.nav.solutions}{solActive && <span className="sr-only">{t.common.currentSection}</span>}</span>
-              <ChevronDown aria-hidden className={cn('h-5 w-5 text-muted transition-transform', open === 'sol' && 'rotate-180')} strokeWidth={1.75} />
+              <span aria-hidden className="m-sign !text-lumen" />
             </button>
-            {open === 'sol' && (
-              <div className="space-y-6 pb-6 pt-1">
-                {c.categories.map((cat) => (
-                  <div key={cat.id}>
-                    <p className="text-small font-medium text-corp">{cat.name}</p>
-                    <ul className="mt-1">
-                      {c.servicesOf(cat.id).map((s) => (
-                        <li key={s.slug}><Link onClick={onClose} to={`/soluciones/${s.slug}`} className="flex min-h-[44px] items-center text-[1.02rem] text-body">{s.name}</Link></li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-                <Link onClick={onClose} to="/soluciones" className="inline-block font-medium text-corp link-line">{t.mega.seeIndex}</Link>
+            <div className={cn('m-acc', open === 'sol' && 'is-open')}>
+              <div {...(open === 'sol' ? {} : { inert: '' })}>
+                <div className="space-y-6 pb-7 pt-1">
+                  {c.categories.map((cat) => (
+                    <div key={cat.id}>
+                      <Link onClick={onClose} to={`/soluciones#${cat.id}`} className="m-tap text-small font-medium text-lumen">{cat.name}</Link>
+                      <ul>
+                        {c.servicesOf(cat.id).map((s) => (
+                          <li key={s.slug}><Link onClick={onClose} to={`/soluciones/${s.slug}`} className="flex min-h-[44px] items-center text-[1.02rem] leading-snug text-white/85">{s.name}</Link></li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                  <Link onClick={onClose} to="/soluciones" className="inline-flex min-h-[44px] items-center gap-2 font-medium text-white"><span className="link-line">{t.mega.seeIndex}</span><ArrowRight aria-hidden className="h-4 w-4 text-lumen" strokeWidth={1.75} /></Link>
+                </div>
               </div>
-            )}
+            </div>
           </li>
-          {nav.map((n) => (
-            <li key={n.to} className="border-b border-line"><NavLink onClick={onClose} to={n.to} className="flex min-h-[60px] items-center font-display text-[1.35rem] font-medium text-ink">{n.label}</NavLink></li>
+          {nav.map((n, i) => (
+            <li key={n.to} className="m-nav-row border-b border-white/10" style={{ '--i': i + 2 } as CSSProperties}><NavLink onClick={onClose} to={n.to} className={active}>{n.label}</NavLink></li>
           ))}
         </ul>
-        <div className="mt-8"><LanguageSelector variant="menu" /></div>
-        <div className="mt-auto space-y-3 pt-10">
-          <Button to="/contacto" track="menu-movil" className="w-full">{t.common.quoteProject}</Button>
-          <Button href={waLink(t.wa.general)} variant="secondary" className="w-full">WhatsApp {COMPANY.whatsappDisplay}</Button>
+        <div className="m-nav-row mt-auto space-y-3 pt-10" style={{ '--i': nav.length + 3 } as CSSProperties}>
+          <Button to="/contacto" track="menu-movil" variant="light" arrow className="w-full">{t.common.quoteProject}</Button>
+          <Button href={waLink(t.wa.general)} variant="outlineLight" className="w-full">WhatsApp {COMPANY.whatsappDisplay}</Button>
+          <p className="flex flex-wrap items-center justify-between gap-x-6 pt-1 text-small text-white/70">
+            <a href={`tel:${COMPANY.phoneIntl}`} className="inline-flex min-h-[44px] items-center gap-2"><Phone aria-hidden className="h-4 w-4 text-lumen" strokeWidth={1.75} />{COMPANY.whatsappDisplay}</a>
+            <a href={`mailto:${COMPANY.email}`} className="inline-flex min-h-[44px] items-center gap-2 break-all"><Mail aria-hidden className="h-4 w-4 shrink-0 text-lumen" strokeWidth={1.75} />{COMPANY.email}</a>
+          </p>
         </div>
+        <div className="m-nav-row mt-5 border-t border-white/10 pt-5" style={{ '--i': nav.length + 4 } as CSSProperties}><LanguageSelector variant="menu" /></div>
       </nav>
     </m.div>
   )

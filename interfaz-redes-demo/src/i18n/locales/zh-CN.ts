@@ -130,6 +130,9 @@ const messages: Messages = {
     listLabel: '机柜组件',
     related: '相关服务',
     inScene: '场景中',
+    touchHint: '滑动旋转 · 点按数字',
+    prev: '上一个组件',
+    next: '下一个组件',
     canvasLabel: '电信机柜交互式 3D 模型',
     parts: {
       tray: { name: '走线架与线槽', text: '在机柜上方分隔、整理并保护铜缆和光纤。', spec: '走线架承载两束铜缆 · 光纤槽 · 引入各理线器' },

@@ -868,9 +868,10 @@ test.describe('correcciones P2 (recepción)', () => {
 
 // Correcciones P3 de la auditoría: SEO sin cambios visuales.
 test.describe('correcciones P3 (SEO)', () => {
-  test('las categorías enlazan con #ancla y los enlaces anteriores (?s=) siguen funcionando', async ({ page }) => {
-    await page.goto('/')
-    await page.locator('footer').getByRole('link', { name: 'Fibra óptica', exact: true }).first().click()
+  test('las categorías enlazan con #ancla y los enlaces anteriores (?s=) siguen funcionando', async ({ page, isMobile }) => {
+    // En el teléfono el footer pliega los servicios: los frentes se eligen desde el índice de Soluciones.
+    await page.goto(isMobile ? '/soluciones' : '/')
+    await (isMobile ? page.locator('main nav a[href="/soluciones#fibra"]') : page.locator('footer').getByRole('link', { name: 'Fibra óptica', exact: true }).first()).click()
     await expect(page).toHaveURL('/soluciones#fibra')
     await expect(page.locator('#fibra')).toBeInViewport()
     await expect(page.locator('#fibra')).toBeFocused()
@@ -909,14 +910,19 @@ test.describe('Interfaz 3.0', () => {
     expect(errors).toEqual([])
   })
 
-  test('recorrido: escenario fijo en escritorio, capítulos apilados en el teléfono', async ({ page, isMobile }) => {
+  test('recorrido: escenario fijo en escritorio, serie deslizable en el teléfono', async ({ page, isMobile }) => {
     await page.goto('/')
     const journey = page.locator('#recorrido')
     await expect(journey.locator('article.jc')).toHaveCount(4)
     if (isMobile) {
       await expect(journey).not.toHaveClass(/journey-stage/)
-      await page.locator('#capitulo-2').scrollIntoViewIfNeeded()
-      await expect(page.locator('#capitulo-2-t')).toBeInViewport()
+      // La barra de avance lleva a cada capítulo y marca en cuál se va.
+      const dots = journey.locator('.jc-dots button')
+      await expect(dots).toHaveCount(4)
+      await dots.nth(0).scrollIntoViewIfNeeded()
+      await dots.nth(2).click()
+      await expect(page.locator('#capitulo-3-t')).toBeInViewport()
+      await expect(dots.nth(2)).toHaveAttribute('aria-current', 'true')
       return
     }
     await expect(journey).toHaveClass(/journey-ready/)
@@ -939,7 +945,25 @@ test.describe('Interfaz 3.0', () => {
     await ctx.close()
   })
 
-  test('explorador de soluciones: pestañas con teclado y cotización del servicio elegido', async ({ page }) => {
+  test('soluciones en el teléfono: los ocho a la vista y un toque abre foto, texto y cotización', async ({ page, isMobile }) => {
+    test.skip(!isMobile, 'sólo móvil')
+    await page.goto('/')
+    const sec = page.locator('#soluciones')
+    await expect(sec.getByRole('tablist')).toHaveCount(0)
+    const fibra = sec.getByRole('button', { name: 'Fibra óptica' })
+    await fibra.scrollIntoViewIfNeeded()
+    const y = (await fibra.boundingBox())!.y
+    await fibra.click()
+    await expect(fibra).toHaveAttribute('aria-expanded', 'true')
+    await expect(sec.getByRole('button', { name: 'Cableado estructurado' })).toHaveAttribute('aria-expanded', 'false')
+    // Lo que se cierra arriba no mueve la fila que se tocó.
+    expect(Math.abs((await fibra.boundingBox())!.y - y)).toBeLessThan(4)
+    await expect(sec.getByRole('link', { name: 'Cotizar fibra óptica' })).toHaveAttribute('href', '/contacto?servicio=fibra-optica')
+    await expect(sec.getByRole('link', { name: 'Cotizar cableado estructurado' })).toBeHidden()
+  })
+
+  test('explorador de soluciones: pestañas con teclado y cotización del servicio elegido', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'en el teléfono es un índice plegable')
     await page.goto('/')
     const tabs = page.getByRole('tablist', { name: 'Frentes técnicos' })
     const panel = page.locator('#sv-panel')
@@ -954,7 +978,7 @@ test.describe('Interfaz 3.0', () => {
     await expect(page).toHaveURL('/contacto?servicio=redes-empresariales')
   })
 
-  test('explora una instalación: la lista explica cada componente, con o sin 3D', async ({ page }) => {
+  test('explora una instalación: la lista explica cada componente, con o sin 3D', async ({ page, isMobile }) => {
     for (const url of ['/', '/?experiencia=lite']) {
       await page.goto(url)
       const sec = page.locator('section[aria-labelledby="instalacion-title"]')
@@ -967,8 +991,11 @@ test.describe('Interfaz 3.0', () => {
       await expect(sec.getByRole('button', { name: 'UPS' })).toHaveAttribute('aria-pressed', 'true')
       await expect(sec.getByText('Mantiene encendido el equipo crítico').filter({ visible: true })).toBeVisible()
       await expect(sec.getByRole('link', { name: /Energía y respaldo/ })).toHaveAttribute('href', '/soluciones/calidad-de-energia')
-      if (url.includes('lite')) {
-        await expect(sec.locator('canvas')).toHaveCount(0)
+      if (isMobile) {
+        // Teléfono: entra el acercamiento vertical de la pieza, sobre el giro.
+        await expect(sec.locator('.rt-close.is-on')).toHaveAttribute('src', /ups/)
+      } else if (url.includes('lite')) {
+        await expect(sec.locator('.rack-stage canvas')).toHaveCount(0)
         // Sin 3D, la vista fija de la misma escena cambia con la pieza elegida.
         await expect(sec.locator('img.rack-still')).toHaveAttribute('src', /ups/)
       }
@@ -987,7 +1014,17 @@ test.describe('Interfaz 3.0', () => {
     }
   })
 
-  test('industrias: los paneles se expanden y llevan a la página del sector', async ({ page }) => {
+  test('industrias: bandas fotográficas en el teléfono, cada una lleva a su sector', async ({ page, isMobile }) => {
+    test.skip(!isMobile, 'sólo móvil')
+    await page.goto('/')
+    const sec = page.locator('section[aria-labelledby="industrias-title"]')
+    await expect(page.locator('.ind-panels')).toBeHidden()
+    await sec.getByRole('link', { name: /Centros de distribución/ }).first().click()
+    await expect(page).toHaveURL('/industrias/cedis')
+  })
+
+  test('industrias: los paneles se expanden y llevan a la página del sector', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'en el teléfono son bandas')
     await page.goto('/')
     const panels = page.locator('.ind-panels')
     await panels.scrollIntoViewIfNeeded()
@@ -1097,5 +1134,127 @@ test.describe('medición y SEO local', () => {
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex')
     await expect(page.locator('link[rel="canonical"]')).toHaveCount(0)
     await expect(page.locator('#cotizar').getByRole('button', { name: 'Continuar' })).toBeVisible()
+  })
+})
+
+// Experiencia móvil: lo que hace que el teléfono no sea el escritorio reducido.
+test.describe('experiencia móvil', () => {
+  test.skip(({ isMobile }) => !isMobile, 'sólo móvil')
+
+  test('portada en una pantalla: titular, una idea y la acción principal, con la foto limpia arriba', async ({ page }) => {
+    await page.goto('/')
+    const h1 = page.getByRole('heading', { level: 1 })
+    await expect(h1).toBeVisible()
+    const size = await h1.evaluate((el) => parseFloat(getComputedStyle(el).fontSize))
+    expect(size).toBeGreaterThanOrEqual(36)
+    expect(size).toBeLessThanOrEqual(44)
+    const cta = page.locator('main').getByRole('link', { name: 'Solicitar cotización' }).first()
+    await expect(cta).toBeInViewport()
+    expect((await cta.boundingBox())!.width).toBeGreaterThan(300)
+    // El titular queda en la mitad inferior: la mitad superior es la fotografía.
+    expect((await h1.boundingBox())!.y).toBeGreaterThan(page.viewportSize()!.height * 0.34)
+    // El resto de la descripción sigue en el HTML, sólo no se muestra aquí.
+    await expect(page.locator('section[aria-labelledby="hero-title"]').getByText('Diseño, instalación y mantenimiento')).toBeHidden()
+  })
+
+  test('menú a pantalla completa: cubre la página, bloquea el fondo y se cierra con la tecla Escape', async ({ page }) => {
+    await page.goto('/nosotros')
+    await page.getByRole('button', { name: 'Abrir menú' }).click()
+    const menu = page.locator('#menu-movil')
+    await expect(menu).toBeVisible()
+    const box = (await menu.boundingBox())!
+    const { width, height } = page.viewportSize()!
+    expect(box.width).toBe(width)
+    expect(box.y + box.height).toBeGreaterThanOrEqual(height - 1)
+    await expect.poll(() => page.evaluate(() => document.body.style.overflow)).toBe('hidden')
+    await expect(menu.getByRole('link', { name: 'WhatsApp' })).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(menu).toBeHidden()
+    await expect.poll(() => page.evaluate(() => document.body.style.overflow)).not.toBe('hidden')
+  })
+
+  test('site 3D: números de 44 px con la pieza, anterior y siguiente, sin WebGL', async ({ page }) => {
+    await page.goto('/')
+    const sec = page.locator('section[aria-labelledby="instalacion-title"]')
+    const stage = sec.locator('.rt-stage')
+    await stage.scrollIntoViewIfNeeded()
+    const pins = stage.locator('.rt-pin')
+    await expect(pins).toHaveCount(7)
+    for (const box of await Promise.all((await pins.all()).map((b) => b.boundingBox()))) {
+      expect(box!.width).toBeGreaterThanOrEqual(44)
+      expect(box!.height).toBeGreaterThanOrEqual(44)
+    }
+    await expect(sec.getByText('Vista general', { exact: true })).toBeVisible()
+    await sec.getByRole('button', { name: 'Pieza siguiente' }).click()
+    await expect(pins.first()).toHaveAttribute('aria-pressed', 'true')
+    await sec.getByRole('button', { name: 'Pieza anterior' }).click()
+    await expect(pins.first()).toHaveAttribute('aria-pressed', 'false')
+    // En el teléfono no se descarga three.js.
+    const scripts = await page.evaluate(() => performance.getEntriesByType('resource').map((r) => r.name))
+    expect(scripts.some((u) => /rackScene/.test(u))).toBe(false)
+    // Se reserva el arrastre horizontal: el desplazamiento vertical sigue siendo de la página.
+    expect(await stage.evaluate((el) => getComputedStyle(el).touchAction)).toContain('pan-y')
+  })
+
+  test('tablas técnicas: se leen sin deslizar de lado', async ({ page }) => {
+    await page.goto('/soluciones/fibra-optica')
+    const table = page.locator('table.m-table')
+    await table.scrollIntoViewIfNeeded()
+    const width = page.viewportSize()!.width
+    expect((await table.boundingBox())!.width).toBeLessThanOrEqual(width)
+    await expect(table.getByText('Multimodo (OM3 / OM4)', { exact: false }).first()).toBeVisible()
+  })
+
+  test('el cotizador deja «Continuar» a la mano y avanza con la tecla del teclado', async ({ page }) => {
+    await page.goto('/contacto?servicio=fibra-optica')
+    const form = page.locator('main')
+    const next = form.getByRole('button', { name: 'Continuar' })
+    await expect(form.getByRole('checkbox', { name: /Fibra óptica/ })).toBeChecked()
+    await next.click()
+    const place = form.getByRole('textbox', { name: 'Ciudad o ubicación general' })
+    await place.fill('Apodaca, N.L.')
+    await place.press('Enter')
+    await expect(form.getByRole('textbox', { name: 'Describa la necesidad' })).toBeFocused()
+    await form.getByRole('textbox', { name: 'Describa la necesidad' }).fill('Enlace de fibra entre dos naves a 180 m.')
+    await next.click()
+    const fields: [string, string][] = [['Nombre', 'Ana López'], ['Empresa', 'Empresa de Prueba']]
+    for (const [name, value] of fields) {
+      const f = form.getByRole('textbox', { name })
+      await f.fill(value)
+      await f.press('Enter')
+    }
+    await expect(form.getByRole('textbox', { name: /^Cargo/ })).toBeFocused()
+    await form.getByRole('textbox', { name: /^Cargo/ }).press('Enter')
+    await expect(form.getByRole('textbox', { name: 'Correo corporativo' })).toBeFocused()
+    await expect(form.getByRole('textbox', { name: 'Correo corporativo' })).toHaveAttribute('inputmode', 'email')
+    await form.getByRole('textbox', { name: 'Correo corporativo' }).fill('ana@empresa.mx')
+    await form.getByRole('textbox', { name: 'Correo corporativo' }).press('Enter')
+    const tel = form.getByRole('textbox', { name: 'WhatsApp' })
+    await expect(tel).toHaveAttribute('inputmode', 'tel')
+    await tel.fill('81 1234 5678')
+    await tel.press('Enter')
+    await expect(form.getByRole('button', { name: 'Editar contacto' })).toBeVisible()
+  })
+
+  test('footer: acciones directas y servicios plegados por frente', async ({ page }) => {
+    await page.goto('/nosotros')
+    const footer = page.locator('footer')
+    await footer.scrollIntoViewIfNeeded()
+    await expect(footer.getByRole('link', { name: /WhatsApp/ }).first()).toBeVisible()
+    const group = footer.locator('details').first()
+    await expect(group.getByRole('link').first()).toBeHidden()
+    await group.locator('summary').click()
+    await expect(group.getByRole('link').first()).toBeVisible()
+  })
+
+  test('los enlaces y botones de la portada tienen blanco táctil suficiente', async ({ page }) => {
+    await page.goto('/')
+    const small = await page.evaluate(() => [...document.querySelectorAll('main a[href], main button, footer a[href], footer summary')].flatMap((el) => {
+      const s = getComputedStyle(el)
+      const b = el.getBoundingClientRect()
+      if (s.display === 'none' || s.visibility === 'hidden' || !b.width) return []
+      return b.height < 36 ? [`${el.textContent?.trim().slice(0, 30)} ${Math.round(b.height)}`] : []
+    }))
+    expect(small).toEqual([])
   })
 })

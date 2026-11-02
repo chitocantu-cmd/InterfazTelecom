@@ -14,11 +14,11 @@ export default function About() {
     <>
       <PageHero crumbs={[{ label: t.nav.about }]} title={T.title} lede={T.lede} img="oficina" />
 
-      <section className="py-24 md:py-32">
-        <div className="container grid gap-16 lg:grid-cols-12">
+      <section className="py-sec md:py-32">
+        <div className="container grid gap-10 md:gap-16 lg:grid-cols-12">
           <div className="lg:col-span-6">
             <h2 className="font-display text-[clamp(1.6rem,1.2rem+1.6vw,2.4rem)] font-medium leading-[1.2] tracking-[-0.02em] text-ink">{T.mission}</h2>
-            <div className="mt-8 max-w-measure space-y-5 text-body">
+            <div className="mt-6 max-w-measure space-y-5 text-body md:mt-8">
               {T.paragraphs.map((p) => <p key={p}>{p}</p>)}
               {/* El grupo (interfaz.com.mx) es el sitio general; éste, el especializado en redes. */}
               <p>
@@ -26,9 +26,9 @@ export default function About() {
                 <a href={COMPANY.parent.url} target="_blank" rel="noopener noreferrer" className="font-medium text-corp link-line">{T.divisionLink}</a>
               </p>
             </div>
-            <dl className="mt-14 grid gap-8 border-t border-ink/80 pt-8 sm:grid-cols-3">
+            <dl className="mt-10 grid border-t border-ink/80 sm:mt-14 sm:grid-cols-3 sm:gap-8 sm:pt-8">
               {T.stats.map((s) => (
-                <div key={s.value}><dt className="font-display text-[2.2rem] font-medium leading-none tracking-[-0.03em] text-corp">{s.value}</dt><dd className="mt-3 text-small text-body">{s.label}</dd></div>
+                <div key={s.value} className="grid grid-cols-[7.5rem_minmax(0,1fr)] items-baseline gap-4 border-b border-line py-4 sm:block sm:border-0 sm:py-0"><dt className="font-display text-[1.55rem] font-medium leading-none tracking-[-0.03em] text-corp sm:text-[2.2rem]">{s.value}</dt><dd className="text-small text-body sm:mt-3">{s.label}</dd></div>
               ))}
             </dl>
           </div>
@@ -38,7 +38,7 @@ export default function About() {
 
       <FieldGallery lede={t.field.aboutLede} items={['site', 'escalera', 'rackOrden', 'plafon']} />
 
-      <section className="bg-mist py-24 md:py-28">
+      <section className="bg-mist py-sec md:py-28">
         <div className="container grid gap-14 lg:grid-cols-12">
           <h2 className="text-h2 lg:col-span-4">{T.principlesTitle}</h2>
           <dl className="grid gap-x-12 gap-y-10 sm:grid-cols-2 lg:col-span-7 lg:col-start-6">
@@ -52,7 +52,7 @@ export default function About() {
         </div>
       </section>
 
-      <section className="py-24 md:py-28">
+      <section className="py-sec md:py-28">
         <div className="container grid gap-12 lg:grid-cols-12">
           <div className="lg:col-span-4">
             <h2 className="text-h2">{T.brandsTitle}</h2>
@@ -70,7 +70,7 @@ export default function About() {
       </section>
 
       {/* Dónde trabajamos: la misma dirección, horario y cobertura que en Contacto y en los datos estructurados. */}
-      <section className="border-t border-line py-24 md:py-28" aria-labelledby="donde-trabajamos">
+      <section className="border-t border-line py-sec md:py-28" aria-labelledby="donde-trabajamos">
         <div className="container grid gap-12 lg:grid-cols-12">
           <div className="lg:col-span-4">
             <h2 id="donde-trabajamos" className="text-h2">{T.whereTitle}</h2>

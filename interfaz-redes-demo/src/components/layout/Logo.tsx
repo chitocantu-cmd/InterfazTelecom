@@ -8,7 +8,7 @@ import { cn } from '../../lib/utils'
  */
 export function Logo({ className, size = 'md', variant = 'color' }: { className?: string; size?: 'sm' | 'md' | 'lg'; variant?: 'color' | 'tile' }) {
   const asset = variant === 'tile' ? LOGO_TILE : LOGO
-  const h = { sm: 'h-11', md: 'h-[84px] min-[375px]:h-[92px] md:h-[110px]', lg: 'h-28' }[size]
+  const h = { sm: 'h-11', md: 'h-[64px] min-[375px]:h-[68px] md:h-[110px]', lg: 'h-28' }[size]
   return (
     <img
       src={asset.src}
@@ -26,16 +26,16 @@ export function Logo({ className, size = 'md', variant = 'color' }: { className?
  *  `compact`: header compacto al desplazarse (el emblema se reduce con una transición). */
 export function LogoLockup({ compact = false }: { compact?: boolean }) {
   return (
-    <span className="flex items-center gap-3.5">
+    <span className="flex items-center gap-2 min-[520px]:gap-3.5">
       <Logo className={cn('origin-left transition-[height] duration-300 ease-out', compact && '!h-[52px] md:!h-[60px]')} />
-      {/* Entre 520 y 1023 px y desde 1440 px hay espacio para el nombre; en teléfonos lo ocupa el botón «Cotizar» y
-          entre 1024 y 1439 px, el menú completo con el selector de idioma. */}
+      {/* El emblema es detallado: el nombre al lado lo hace reconocible a tamaño de teléfono. Desde 360 px cabe junto al
+          botón «Cotizar»; entre 1024 y 1439 px lo ocupa el menú completo con el selector de idioma. */}
       <span aria-hidden className="hidden h-9 w-px bg-line min-[520px]:block lg:hidden min-[1440px]:block" />
-      <span aria-hidden className="hidden flex-col leading-[1.15] min-[520px]:flex lg:hidden min-[1440px]:flex">
-        <span className="font-display text-[1.02rem] font-semibold tracking-[-0.01em] text-ink">Interfaz Redes</span>
+      <span aria-hidden className="hidden flex-col leading-[1.15] min-[360px]:flex lg:hidden min-[1440px]:flex">
+        <span className="font-display text-[0.95rem] font-semibold tracking-[-0.01em] text-ink min-[520px]:text-[1.02rem]">Interfaz Redes</span>
         {/* El espacio no se ve (flex), pero hace que el texto se lea "Interfaz Redes y Telecomunicaciones". */}
         {' '}
-        <span className="text-[0.82rem] text-muted">y Telecomunicaciones</span>
+        <span className="text-[0.72rem] text-muted min-[520px]:text-[0.82rem]">y Telecomunicaciones</span>
       </span>
     </span>
   )

@@ -31,15 +31,15 @@ export default function IndustryDetail() {
     <>
       <section className="relative mx-auto flex max-w-frame flex-col overflow-hidden bg-white lg:block">
         <div className="container relative order-1">
-          <div className="flex flex-col pb-14 pt-10 lg:min-h-[600px] lg:w-[46%] lg:pb-20">
+          <div className="flex flex-col pb-9 pt-5 md:pb-14 md:pt-10 lg:min-h-[600px] lg:w-[46%] lg:pb-20">
             <Breadcrumbs items={[{ to: '/industrias', label: t.nav.industries }, { label: ind.name }]} />
-            <div className="mt-14 lg:my-auto lg:pt-10">
-              <p className="mb-3 text-small font-medium text-corp">{t.nav.industries}</p>
+            <div className="mt-6 md:mt-14 lg:my-auto lg:pt-10">
+              <p className="mb-3 text-small font-medium text-corp max-md:hidden">{t.nav.industries}</p>
               <h1 className="text-h1"><SplitWords text={ind.name} delay={60} /></h1>
-              <p className="mt-6 max-w-measure text-lead text-body">{ind.intro}</p>
-              <div className="mt-9 flex flex-wrap gap-3">
-                <Button onClick={() => scrollToId('asesoria')} track={`industria-${ind.id}`}>{T.advice}</Button>
-                <Button href={waLink(t.wa.industry(ind.name))} variant="secondary">{t.common.writeWhatsapp}</Button>
+              <p className="mt-4 max-w-measure text-body md:mt-6 md:text-lead">{ind.intro}</p>
+              <div className="mt-7 flex flex-wrap gap-2 sm:gap-3 md:mt-9">
+                <Button onClick={() => scrollToId('asesoria')} track={`industria-${ind.id}`} className="max-sm:w-full">{T.advice}</Button>
+                <Button href={waLink(t.wa.industry(ind.name))} variant="secondary" className="max-sm:w-full">{t.common.writeWhatsapp}</Button>
               </div>
             </div>
           </div>
@@ -54,7 +54,7 @@ export default function IndustryDetail() {
       </section>
 
       {/* necesidades habituales */}
-      <section className="border-t border-line py-24 md:py-28" aria-labelledby="necesidades">
+      <section className="border-t border-line py-sec md:py-28" aria-labelledby="necesidades">
         <div className="container grid gap-12 lg:grid-cols-12">
           <div className="lg:col-span-4">
             <h2 id="necesidades" className="text-h2">{T.needs}</h2>
@@ -77,18 +77,18 @@ export default function IndustryDetail() {
       </section>
 
       {/* soluciones aplicables */}
-      <section className="bg-mist py-24 md:py-28" aria-labelledby="soluciones-sector">
+      <section className="bg-mist py-sec md:py-28" aria-labelledby="soluciones-sector">
         <div className="container">
           <div className="grid gap-6 lg:grid-cols-12">
             <h2 id="soluciones-sector" className="text-h2 lg:col-span-6">{T.solutions}</h2>
             <p className="max-w-measure text-body lg:col-span-5 lg:col-start-8 lg:self-end">{T.solutionsLede}</p>
           </div>
-          <ul className="mt-12 grid gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="mt-8 grid gap-px border border-line bg-line sm:grid-cols-2 md:mt-12 lg:grid-cols-3">
             {services.map((s) => (
               <li key={s.slug} className="bg-white">
-                <Link to={`/soluciones/${s.slug}`} className="group flex h-full flex-col p-6">
-                  <Tag>{s.code}</Tag>
-                  <span className="mt-2 flex items-start justify-between gap-4 font-display text-[1.2rem] font-medium leading-snug text-ink transition-colors group-hover:text-corp">
+                <Link to={`/soluciones/${s.slug}`} className="group flex h-full flex-col p-5 md:p-6">
+                  <Tag className="max-md:hidden">{s.code}</Tag>
+                  <span className="flex items-start md:mt-2 justify-between gap-4 font-display text-[1.2rem] font-medium leading-snug text-ink transition-colors group-hover:text-corp">
                     {s.name}
                     <ArrowRight aria-hidden className="arrow-nudge mt-1 h-4 w-4 shrink-0 text-faint group-hover:text-corp" strokeWidth={1.75} />
                   </span>
@@ -101,7 +101,7 @@ export default function IndustryDetail() {
       </section>
 
       {/* consideraciones técnicas */}
-      <section className="bg-navy py-24 text-white md:py-28" aria-labelledby="consideraciones">
+      <section className="bg-navy py-sec text-white md:py-28" aria-labelledby="consideraciones">
         <div className="container grid gap-12 lg:grid-cols-12">
           <h2 id="consideraciones" className="text-h2 !text-white lg:col-span-4">{T.considerations}</h2>
           <ol className="grid gap-x-12 gap-y-10 sm:grid-cols-2 lg:col-span-8">
@@ -117,14 +117,14 @@ export default function IndustryDetail() {
       </section>
 
       {/* cómo implementamos */}
-      <section className="py-24 md:py-28">
+      <section className="py-sec md:py-28">
         <div className="container">
           <h2 className="text-h2">{T.process}</h2>
-          <ol className="mt-14 grid gap-x-10 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
+          <ol className="mt-7 grid gap-x-10 sm:grid-cols-2 sm:gap-y-12 md:mt-14 lg:grid-cols-4">
             {ind.process.map((p, i) => (
-              <Reveal as="li" key={p.title} delay={i * 0.05} className="border-t border-ink/80 pt-6">
-                <span className="font-display font-medium text-corp tabular">{String(i + 1).padStart(2, '0')}</span>
-                <h3 className="mt-3 text-h4">{p.title}</h3>
+              <Reveal as="li" key={p.title} delay={i * 0.05} className="border-t border-ink/80 pt-6 max-sm:grid max-sm:grid-cols-[2.5rem_minmax(0,1fr)] max-sm:border-ink/15 max-sm:py-4">
+                <span className="row-span-2 font-display font-medium text-corp tabular">{String(i + 1).padStart(2, '0')}</span>
+                <h3 className="text-h4 sm:mt-3">{p.title}</h3>
                 <p className="mt-2 text-small text-body">{p.text}</p>
               </Reveal>
             ))}
@@ -133,13 +133,13 @@ export default function IndustryDetail() {
       </section>
 
       {/* preguntas frecuentes */}
-      <section className="border-t border-line py-24 md:py-28">
-        <div className="container grid gap-12 lg:grid-cols-12">
+      <section className="border-t border-line py-sec md:py-28">
+        <div className="container grid gap-6 md:gap-12 lg:grid-cols-12">
           <h2 className="text-h2 lg:col-span-4">{T.faq}</h2>
           <div className="border-t border-ink/80 lg:col-span-7 lg:col-start-6">
             {ind.faq.map((f) => (
               <details key={f.q} className="group border-b border-line">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-6 font-display text-[1.15rem] font-medium text-ink hover:text-corp [&::-webkit-details-marker]:hidden">
+                <summary className="flex min-h-[60px] cursor-pointer list-none items-center justify-between gap-6 py-4 font-display text-[1.1rem] font-medium md:py-6 md:text-[1.15rem] text-ink hover:text-corp [&::-webkit-details-marker]:hidden">
                   {f.q}
                   <Plus aria-hidden className="h-5 w-5 shrink-0 text-corp group-open:hidden" strokeWidth={1.5} />
                   <Minus aria-hidden className="hidden h-5 w-5 shrink-0 text-corp group-open:block" strokeWidth={1.5} />
@@ -152,7 +152,7 @@ export default function IndustryDetail() {
       </section>
 
       {/* asesoría */}
-      <section id="asesoria" className="bg-mist py-24 md:py-28">
+      <section id="asesoria" className="bg-mist py-sec md:py-28">
         <div className="container grid gap-12 lg:grid-cols-12">
           <div className="lg:col-span-4">
             <h2 className="text-h2">{T.adviceTitle(ind.name)}</h2>
@@ -167,7 +167,7 @@ export default function IndustryDetail() {
       </section>
 
       {/* otros sectores */}
-      <nav aria-label={T.others} className="py-20">
+      <nav aria-label={T.others} className="py-sec md:py-20">
         <div className="container">
           <h2 className="text-h3">{T.others}</h2>
           <ul className="mt-8 grid gap-x-8 gap-y-6 border-t border-line pt-8 sm:grid-cols-2 lg:grid-cols-4">

@@ -16,9 +16,10 @@ export default function Solutions() {
   return (
     <>
       <PageHero crumbs={[{ label: t.nav.solutions }]} title={t.solutions.title} lede={t.solutions.lede(c.services.length)} img="aisleWide" pos="50% 40%">
-        <nav aria-label={t.solutions.nav} className="mt-14 flex flex-wrap gap-x-8 gap-y-3 border-t border-line pt-6">
+        {/* Teléfono: los cinco frentes se deslizan, sin ocupar media pantalla. */}
+        <nav aria-label={t.solutions.nav} className="m-rail mt-8 flex flex-wrap gap-x-8 gap-y-3 [--card:auto] [--rail-gap:0.5rem] md:mt-14 md:border-t md:border-line md:pt-6">
           {c.categories.map((cat) => (
-            <Link key={cat.id} to={`/soluciones#${cat.id}`} className="text-[0.98rem] text-body transition-colors hover:text-corp">{cat.name}</Link>
+            <Link key={cat.id} to={`/soluciones#${cat.id}`} className="text-[0.98rem] text-body transition-colors hover:text-corp max-md:inline-flex max-md:min-h-[44px] max-md:items-center max-md:whitespace-nowrap max-md:rounded-[2px] max-md:border max-md:border-line max-md:px-4">{cat.name}</Link>
           ))}
         </nav>
       </PageHero>
@@ -26,27 +27,27 @@ export default function Solutions() {
       {/* Cada frente es destino de /soluciones#<id>: recibe el foco del teclado sin contorno (preparado desde el HTML,
           para no modificar la sección mientras React toma el HTML prerenderizado). */}
       {c.categories.map((cat, i) => (
-        <section key={cat.id} id={cat.id} tabIndex={-1} className={cn('py-24 outline-none md:py-28', i % 2 === 1 && 'bg-mist')} aria-labelledby={`h-${cat.id}`}>
-          <div className="container grid gap-12 lg:grid-cols-12 lg:gap-16">
+        <section key={cat.id} id={cat.id} tabIndex={-1} className={cn('py-sec outline-none md:py-28', i % 2 === 1 && 'bg-mist')} aria-labelledby={`h-${cat.id}`}>
+          <div className="container grid gap-8 md:gap-12 lg:grid-cols-12 lg:gap-16">
             <div className={cn('lg:col-span-5', i % 2 === 1 && 'lg:order-2 lg:col-start-8')}>
               <div className="lg:sticky lg:top-36">
-                <Tag>{cat.code}</Tag>
-                <h2 id={`h-${cat.id}`} className="mt-2 text-h2">{cat.name}</h2>
-                <p className="mt-5 max-w-measure text-body">{cat.technical}</p>
-                <Media img={cat.img} plate={cat.plate} className="mt-10" ratio="aspect-[4/3]" />
-                <Link to={`/contacto?tipo=${QUOTE_FOR[cat.id]}`} data-track-cta={`soluciones-${cat.id}`} className="group mt-6 inline-flex items-center gap-2 text-small font-medium text-corp"><span className="link-line">{cat.cta}</span><ArrowRight aria-hidden className="arrow-nudge h-4 w-4" strokeWidth={1.75} /></Link>
+                <Tag className="max-md:hidden">{cat.code}</Tag>
+                <h2 id={`h-${cat.id}`} className="text-h2 md:mt-2">{cat.name}</h2>
+                <p className="mt-4 max-w-measure text-body md:mt-5">{cat.technical}</p>
+                <Media img={cat.img} plate={cat.plate} className="mt-6 md:mt-10" ratio="aspect-[4/3]" />
+                <Link to={`/contacto?tipo=${QUOTE_FOR[cat.id]}`} data-track-cta={`soluciones-${cat.id}`} className="group mt-5 inline-flex items-center gap-2 text-small font-medium text-corp max-md:min-h-[44px] md:mt-6"><span className="link-line">{cat.cta}</span><ArrowRight aria-hidden className="arrow-nudge h-4 w-4" strokeWidth={1.75} /></Link>
               </div>
             </div>
             <ul className={cn('border-t border-ink/80 lg:col-span-6', i % 2 === 1 ? 'lg:order-1' : 'lg:col-start-7')}>
               {c.servicesOf(cat.id).map((s, j) => (
                 <Reveal as="li" key={s.slug} delay={j * 0.04} className="border-b border-line">
-                  <Link to={`/soluciones/${s.slug}`} className="group block py-8">
+                  <Link to={`/soluciones/${s.slug}`} className="group block py-5 md:py-8">
                     <div className="flex items-start justify-between gap-6">
                       <h3 className="text-h3 transition-colors group-hover:text-corp">{s.name}</h3>
                       <ArrowRight aria-hidden className="arrow-nudge mt-1.5 h-5 w-5 shrink-0 text-faint group-hover:text-corp" strokeWidth={1.5} />
                     </div>
                     <p className="mt-2 max-w-measure text-body">{s.short}</p>
-                    <p className="mt-4 text-small text-muted">{s.keySpecs.map((k) => `${k.label}: ${k.value}`).join('   ·   ')}</p>
+                    <p className="mt-4 text-small text-muted max-md:hidden">{s.keySpecs.map((k) => `${k.label}: ${k.value}`).join('   ·   ')}</p>
                   </Link>
                 </Reveal>
               ))}

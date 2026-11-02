@@ -1,6 +1,6 @@
 import { AnimatePresence, m } from 'motion/react'
 import { ArrowLeft, Cable, Cctv, Check, Compass, Copy, DoorClosed, FileText, Mail, MessageCircle, Paperclip, Pencil, Plus, RotateCcw, Send, Server, Spline, X } from 'lucide-react'
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
 import { COMPANY } from '../../data/company'
 import { municipioDe } from '../../data/municipios'
 import { quoteTypesFor, type QuoteType } from '../../data/quote-types'
@@ -232,6 +232,14 @@ export function QuoteWizard({ initialTypes, context, contextValue, initialDescri
     go(step + 1)
   }
 
+  /** Tecla «siguiente» del teclado del teléfono: pasa al campo que sigue; en el último, avanza de paso. */
+  const enterTo = (nextId: string | null) => (e: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter') return
+    e.preventDefault()
+    if (nextId) document.getElementById(nextId)?.focus()
+    else next()
+  }
+
   const typeLabels = d.types.map((tp) => types.find((q) => q.id === tp)!.label)
   const fileNames = files.map((f) => f.name)
   // Mismo formato que el aviso que recibe ventas por WhatsApp (src/lib/cotizacion.ts); va en español.
@@ -333,15 +341,15 @@ export function QuoteWizard({ initialTypes, context, contextValue, initialDescri
   const discardDraft = () => { writeDraft(null); setD(empty); setStep(0); setTried({}); setRestored(false) }
 
   return (
-    <div ref={root} className="border border-line bg-white shadow-[0_1px_0_rgba(18,21,24,0.04)]">
+    <div ref={root} className="border-line bg-white shadow-[0_1px_0_rgba(18,21,24,0.04)] sm:border">
       {/* progreso */}
-      <ol className="flex border-b border-line" aria-label={T.progress}>
+      <ol className="flex overflow-hidden border-b border-line" aria-label={T.progress}>
         {T.steps.map((s, i) => (
-          <li key={s} className={cn('relative flex-1 px-3 py-3.5 sm:px-5', i > 0 && 'border-l border-line')} aria-current={i === step ? 'step' : undefined}>
-            <span className={cn('font-mono text-[0.68rem] tracking-[0.1em]', i === step ? 'text-tech' : i < step ? 'text-ink' : 'text-muted')}>
+          <li key={s} className={cn('relative min-w-0 whitespace-nowrap px-2.5 py-3.5 sm:flex-1 sm:px-5', i === step ? 'flex-[3]' : 'flex-1', i > 0 && 'border-l border-line')} aria-current={i === step ? 'step' : undefined}>
+            <span className={cn('font-mono text-[0.75rem] tracking-[0.06em] sm:text-[0.68rem] sm:tracking-[0.1em]', i === step ? 'text-tech' : i < step ? 'text-ink' : 'text-muted')}>
               {i < step ? <Check aria-hidden className="mb-0.5 inline h-3 w-3" /> : `0${i + 1}`}
             </span>
-            <span className={cn('ml-2 hidden text-[0.86rem] sm:inline', i === step ? 'font-medium text-ink' : 'text-muted')}>{s}</span>
+            <span className={cn('ml-2 text-[0.86rem] sm:inline', i === step ? 'font-medium text-ink' : 'hidden text-muted')}>{s}</span>
             <span aria-hidden className={cn('absolute inset-x-0 bottom-0 h-[2px] transition-colors duration-300', i <= step ? 'bg-tech' : 'bg-transparent')} />
           </li>
         ))}
@@ -407,14 +415,14 @@ export function QuoteWizard({ initialTypes, context, contextValue, initialDescri
                     <legend className="mb-2 text-[0.88rem] font-medium text-ink">{T.site} <span className="font-normal text-muted">{T.optional}</span></legend>
                     <div className="flex flex-wrap gap-2">
                       {SITES.map((s) => (
-                        <button key={s} type="button" aria-pressed={d.site === s} onClick={() => set('site', d.site === s ? '' : s)} className={cn('rounded-[2px] border px-3.5 py-2 text-[0.9rem] transition-colors', d.site === s ? 'border-corp bg-corp text-white' : 'border-line hover:border-tech')}>
+                        <button key={s} type="button" aria-pressed={d.site === s} onClick={() => set('site', d.site === s ? '' : s)} className={cn('min-h-[44px] rounded-[2px] border px-3.5 py-2 text-[0.9rem] transition-colors', d.site === s ? 'border-corp bg-corp text-white' : 'border-line hover:border-tech')}>
                           {siteLabel(s, locale)}
                         </button>
                       ))}
                     </div>
                   </fieldset>
                   <Field id={`${uid}-loc`} label={T.location} error={err('location', 1)}>
-                    <input id={`${uid}-loc`} className="field" maxLength={MAX_LENGTH.location} value={d.location} onChange={(e) => set('location', e.target.value)} placeholder={T.locationPlaceholder} aria-invalid={!!err('location', 1)} aria-describedby={err('location', 1) ? `${uid}-loc-e` : undefined} autoComplete="address-level2" />
+                    <input id={`${uid}-loc`} className="field" maxLength={MAX_LENGTH.location} value={d.location} onChange={(e) => set('location', e.target.value)} enterKeyHint="next" onKeyDown={enterTo(`${uid}-desc`)} autoCapitalize="words" placeholder={T.locationPlaceholder} aria-invalid={!!err('location', 1)} aria-describedby={err('location', 1) ? `${uid}-loc-e` : undefined} autoComplete="address-level2" />
                   </Field>
                   <Field id={`${uid}-desc`} label={T.description} error={err('description', 1)} hint={T.descriptionHint}>
                     <textarea id={`${uid}-desc`} rows={4} className="field resize-y" maxLength={MAX_LENGTH.description} value={d.description} onChange={(e) => set('description', e.target.value)} placeholder={T.descriptionPlaceholder} aria-invalid={!!err('description', 1)} aria-describedby={err('description', 1) ? `${uid}-desc-e` : `${uid}-desc-h`} />
@@ -444,7 +452,7 @@ export function QuoteWizard({ initialTypes, context, contextValue, initialDescri
                             <span className="flex min-w-0 items-center gap-2"><FileText aria-hidden className="h-4 w-4 shrink-0 text-faint" /><span className="truncate">{f.name}</span></span>
                             <span className="flex shrink-0 items-center gap-3 font-mono text-[0.75rem] text-muted">
                               {fmtSize(f.size)}
-                              <button type="button" aria-label={T.removeFile(f.name)} onClick={() => { setFiles(files.filter((x) => fileId(x) !== fileId(f))); setFileError(undefined) }} className="text-faint hover:text-tech"><X className="h-4 w-4" /></button>
+                              <button type="button" aria-label={T.removeFile(f.name)} onClick={() => { setFiles(files.filter((x) => fileId(x) !== fileId(f))); setFileError(undefined) }} className="-my-2 -mr-3 grid h-11 w-11 place-items-center text-faint hover:text-tech"><X className="h-4 w-4" /></button>
                             </span>
                           </li>
                         ))}
@@ -463,19 +471,19 @@ export function QuoteWizard({ initialTypes, context, contextValue, initialDescri
                 <p className="mt-1.5 text-[0.9rem] text-muted">{T.contactHint}</p>
                 <div className="mt-6 grid gap-5 sm:grid-cols-2">
                   <Field id={`${uid}-name`} label={T.name} error={err('name', 2)}>
-                    <input id={`${uid}-name`} className="field" maxLength={MAX_LENGTH.name} value={d.name} onChange={(e) => set('name', e.target.value)} autoComplete="name" aria-invalid={!!err('name', 2)} aria-describedby={err('name', 2) ? `${uid}-name-e` : undefined} />
+                    <input id={`${uid}-name`} className="field" maxLength={MAX_LENGTH.name} value={d.name} onChange={(e) => set('name', e.target.value)} enterKeyHint="next" onKeyDown={enterTo(`${uid}-co`)} autoCapitalize="words" autoComplete="name" aria-invalid={!!err('name', 2)} aria-describedby={err('name', 2) ? `${uid}-name-e` : undefined} />
                   </Field>
                   <Field id={`${uid}-co`} label={T.company} error={err('company', 2)}>
-                    <input id={`${uid}-co`} className="field" maxLength={MAX_LENGTH.company} value={d.company} onChange={(e) => set('company', e.target.value)} autoComplete="organization" aria-invalid={!!err('company', 2)} aria-describedby={err('company', 2) ? `${uid}-co-e` : undefined} />
+                    <input id={`${uid}-co`} className="field" maxLength={MAX_LENGTH.company} value={d.company} onChange={(e) => set('company', e.target.value)} enterKeyHint="next" onKeyDown={enterTo(`${uid}-role`)} autoCapitalize="words" autoComplete="organization" aria-invalid={!!err('company', 2)} aria-describedby={err('company', 2) ? `${uid}-co-e` : undefined} />
                   </Field>
                   <Field id={`${uid}-role`} label={T.role} optional={T.optional} error={err('role', 2)}>
-                    <input id={`${uid}-role`} className="field" maxLength={MAX_LENGTH.role} value={d.role} onChange={(e) => set('role', e.target.value)} autoComplete="organization-title" aria-invalid={!!err('role', 2)} aria-describedby={err('role', 2) ? `${uid}-role-e` : undefined} />
+                    <input id={`${uid}-role`} className="field" maxLength={MAX_LENGTH.role} value={d.role} onChange={(e) => set('role', e.target.value)} enterKeyHint="next" onKeyDown={enterTo(`${uid}-mail`)} autoCapitalize="sentences" autoComplete="organization-title" aria-invalid={!!err('role', 2)} aria-describedby={err('role', 2) ? `${uid}-role-e` : undefined} />
                   </Field>
                   <Field id={`${uid}-mail`} label={T.email} error={err('email', 2)} hint={!err('email', 2) && FREE_MAIL.test(d.email) ? T.emailHint : undefined}>
-                    <input id={`${uid}-mail`} type="email" inputMode="email" className="field" maxLength={MAX_LENGTH.email} value={d.email} onChange={(e) => set('email', e.target.value)} autoComplete="email" placeholder={T.emailPlaceholder} aria-invalid={!!err('email', 2)} aria-describedby={err('email', 2) ? `${uid}-mail-e` : FREE_MAIL.test(d.email) ? `${uid}-mail-h` : undefined} />
+                    <input id={`${uid}-mail`} type="email" inputMode="email" className="field" maxLength={MAX_LENGTH.email} value={d.email} onChange={(e) => set('email', e.target.value)} enterKeyHint="next" onKeyDown={enterTo(`${uid}-tel`)} autoCapitalize="none" autoCorrect="off" spellCheck={false} autoComplete="email" placeholder={T.emailPlaceholder} aria-invalid={!!err('email', 2)} aria-describedby={err('email', 2) ? `${uid}-mail-e` : FREE_MAIL.test(d.email) ? `${uid}-mail-h` : undefined} />
                   </Field>
                   <Field id={`${uid}-tel`} label={T.phone} error={err('phone', 2)}>
-                    <input id={`${uid}-tel`} type="tel" inputMode="tel" className="field" maxLength={MAX_LENGTH.phone} value={d.phone} onChange={(e) => set('phone', e.target.value)} autoComplete="tel" placeholder={T.phonePlaceholder} aria-invalid={!!err('phone', 2)} aria-describedby={err('phone', 2) ? `${uid}-tel-e` : undefined} />
+                    <input id={`${uid}-tel`} type="tel" inputMode="tel" className="field" maxLength={MAX_LENGTH.phone} value={d.phone} onChange={(e) => set('phone', e.target.value)} enterKeyHint="done" onKeyDown={enterTo(null)} autoComplete="tel" placeholder={T.phonePlaceholder} aria-invalid={!!err('phone', 2)} aria-describedby={err('phone', 2) ? `${uid}-tel-e` : undefined} />
                   </Field>
                 </div>
                 {/* Campo trampa contra bots: invisible y fuera del orden de tabulación. */}
@@ -607,16 +615,16 @@ export function QuoteWizard({ initialTypes, context, contextValue, initialDescri
 
         {/* navegación */}
         {send.state !== 'done' && (
-        <div className="mt-8 flex items-center justify-between gap-4 border-t border-line pt-5">
+        <div className="q-nav mt-8 flex items-center justify-between gap-4 border-t border-line pt-5">
           {step > 0 ? (
-            <button type="button" onClick={() => go(step - 1)} disabled={sending} className="inline-flex items-center gap-2 text-[0.92rem] text-muted hover:text-ink">
+            <button type="button" onClick={() => go(step - 1)} disabled={sending} className="inline-flex min-h-[44px] items-center gap-2 text-[0.92rem] text-muted hover:text-ink">
               <ArrowLeft aria-hidden className="h-4 w-4" /> {T.back}
             </button>
           ) : (
             <span className="font-mono text-[0.72rem] text-muted">{T.stepCounter(1, 4)}</span>
           )}
           {step < 3 && (
-            <button type="button" onClick={next} className="group inline-flex items-center gap-2.5 rounded-[2px] bg-corp px-6 py-3 text-[0.95rem] font-medium text-white transition-[background-color,transform] hover:bg-navy active:scale-[0.98]">
+            <button type="button" onClick={next} className="group inline-flex min-h-[48px] items-center justify-center gap-2.5 rounded-[2px] bg-corp px-6 py-3 text-[0.95rem] font-medium text-white transition-[background-color,transform] hover:bg-navy active:scale-[0.98] max-sm:flex-1">
               {step === 2 ? T.toReview : T.next}
             </button>
           )}
@@ -659,11 +667,11 @@ function Info({ label, children }: { label: string; children: ReactNode }) {
 
 function Row({ label, children, onEdit, disabled, edit, editLabel }: { label: string; children: ReactNode; onEdit: () => void; disabled?: boolean; edit: string; editLabel: string }) {
   return (
-    <div className="grid grid-cols-[6.5rem_minmax(0,1fr)_auto] gap-3 py-3.5 sm:grid-cols-[8rem_minmax(0,1fr)_auto]">
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 py-3.5 sm:grid-cols-[8rem_minmax(0,1fr)_auto]">
       <dt className="pt-0.5 text-small text-muted">{label}</dt>
-      <dd className="min-w-0 break-words text-ink">{children}</dd>
-      <dd>
-        <button type="button" onClick={onEdit} disabled={disabled} className="inline-flex items-center gap-1 text-[0.82rem] text-muted hover:text-tech disabled:cursor-not-allowed disabled:opacity-50" aria-label={editLabel}>
+      <dd className="col-span-2 row-start-2 min-w-0 break-words text-ink sm:col-span-1 sm:col-start-2 sm:row-start-1">{children}</dd>
+      <dd className="col-start-2 row-start-1 sm:col-start-3">
+        <button type="button" onClick={onEdit} disabled={disabled} className="-my-2.5 inline-flex min-h-[44px] items-center gap-1 text-[0.82rem] text-muted hover:text-tech disabled:cursor-not-allowed disabled:opacity-50" aria-label={editLabel}>
           <Pencil aria-hidden className="h-3.5 w-3.5" /> {edit}
         </button>
       </dd>

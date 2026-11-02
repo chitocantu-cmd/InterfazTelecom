@@ -24,7 +24,8 @@ const browser = await chromium.launch({ channel: 'chrome', args: ['--enable-gpu'
 const page = await browser.newPage({ viewport: { width: 939, height: 900 }, deviceScaleFactor: 1.5 })
 await page.goto(url, { waitUntil: 'networkidle' })
 // Esquinas un poco más gruesas: la imagen se ve reducida en el teléfono.
-await page.addStyleTag({ content: `.rack-marker, .rack-focus-label, .rack-toolbar { display: none !important; }
+await page.addStyleTag({ content: `.rack-stage { display: block !important; }
+  .rack-marker, .rack-focus-label, .rack-toolbar { display: none !important; }
   .rack-focus i { width: 26px; height: 26px; }
   .rack-focus i:nth-child(1) { border-width: 3px 0 0 3px; } .rack-focus i:nth-child(2) { border-width: 3px 3px 0 0; }
   .rack-focus i:nth-child(3) { border-width: 0 0 3px 3px; } .rack-focus i:nth-child(4) { border-width: 0 3px 3px 0; }` })

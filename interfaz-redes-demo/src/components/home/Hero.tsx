@@ -25,6 +25,12 @@ export const CHAPTER_IDS = ['capitulo-1', 'capitulo-2', 'capitulo-3', 'capitulo-
 
 const d = (ms: number) => ({ '--d': `${ms}ms` }) as CSSProperties
 
+/** Primera oración y el resto: en el teléfono el texto se queda en una idea (el resto sigue en el HTML). */
+const firstSentence = (text: string) => {
+  const m = text.match(/^.*?[.。](?=\s|$)/)
+  return m ? [m[0], text.slice(m[0].length).trim()] : [text, '']
+}
+
 /**
  * Hero cinematográfico. Coreografía (todo en CSS, corre con el HTML prerenderizado y nunca bloquea):
  * 1. identidad: el header y el logotipo entran primero (Header, .enter-header);
@@ -41,10 +47,13 @@ export function Hero() {
   useCursorParallax(ref, tier === 'full')
   const magnetic = useMagnetic<HTMLSpanElement>()
   const [mobile, desktop] = HERO_IMAGE.sources
+  const [lede, ledeMore] = firstSentence(t.hero.lede)
 
   return (
     <section ref={ref} aria-labelledby="hero-title" className="relative isolate overflow-hidden bg-night text-white">
       <div className="relative mx-auto max-w-frame">
+        {/* Teléfono: cartel vertical a pantalla completa. La foto queda limpia arriba y el texto se apoya abajo, sobre el
+            fundido a negro. Desde 768 px: la composición de escritorio, con el texto a la izquierda. */}
         <div className="relative min-h-[calc(100svh-var(--hdr))] md:min-h-[min(880px,calc(100svh-var(--hdr)))]">
           {/* Escena */}
           <div className="hero3-scene absolute inset-0">
@@ -64,32 +73,35 @@ export function Hero() {
             <div aria-hidden className="hero3-sweep pointer-events-none absolute inset-0" />
           </div>
           {/* Sombra para leer el texto sobre la foto, sin oscurecer la escena completa. */}
-          <div aria-hidden className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgb(5_13_24/0.45)_0%,rgb(5_13_24/0.72)_32%,rgb(5_13_24/0.94)_68%)] md:bg-[linear-gradient(90deg,rgb(5_13_24/0.94)_0%,rgb(5_13_24/0.78)_34%,rgb(5_13_24/0.12)_68%,transparent_100%),linear-gradient(0deg,rgb(5_13_24/0.85)_0%,transparent_32%)]" />
+          <div aria-hidden className="pointer-events-none absolute inset-0 max-md:hidden md:bg-[linear-gradient(90deg,rgb(5_13_24/0.94)_0%,rgb(5_13_24/0.78)_34%,rgb(5_13_24/0.12)_68%,transparent_100%),linear-gradient(0deg,rgb(5_13_24/0.85)_0%,transparent_32%)] md:max-lg:bg-[linear-gradient(90deg,rgb(5_13_24/0.95)_0%,rgb(5_13_24/0.88)_62%,rgb(5_13_24/0.2)_100%),linear-gradient(0deg,rgb(5_13_24/0.85)_0%,transparent_32%)]" />
 
           {/* Texto */}
-          <div className="hero3-fore container relative z-10 flex min-h-[inherit] flex-col justify-end pb-16 pt-12 md:justify-center md:pb-28 md:pt-10">
-            <p className="enter-rise flex items-start gap-3 font-mono text-[0.72rem] uppercase tracking-[0.12em] text-lumen" style={d(200)}>
+          <div className="hero3-fore container relative z-10 flex min-h-[inherit] flex-col justify-end max-md:!px-0 md:justify-center md:pb-28 md:pt-10">
+            {/* Teléfono: el fundido a negro acompaña al texto, así el titular nunca queda sobre la parte clara de la foto. */}
+            <div className="max-md:bg-[linear-gradient(180deg,transparent_0,rgb(5_13_24/0.74)_5rem,rgb(5_13_24/0.95)_7.5rem,#050d18_100%)] max-md:px-[var(--gutter)] max-md:pb-8 max-md:pt-[6.25rem] md:contents">
+            <p className="hero-extra enter-rise flex items-start gap-3 font-mono text-[0.72rem] uppercase tracking-[0.12em] text-lumen max-md:hidden" style={d(200)}>
               <span aria-hidden className="mt-[0.55em] h-px w-8 shrink-0 bg-lumen" />
               {t.hero.eyebrow}
             </p>
-            <h1 id="hero-title" className="hero-title mt-5 max-w-[17ch] text-mega !font-semibold !text-white lg:max-w-[50rem]">
+            <h1 id="hero-title" className="hero-title max-w-[17ch] text-mega md:mt-5 !font-semibold !text-white lg:max-w-[50rem]">
               <SplitWords text={t.hero.title} delay={280} />
             </h1>
-            <p className="enter-rise mt-6 max-w-[34rem] text-lead text-white/75" style={d(620)}>{t.hero.lede}</p>
-            <div className="enter-rise mt-8 flex flex-wrap gap-3" style={d(720)}>
-              <span ref={magnetic} className="inline-block">
-                <Button to="/contacto" track="hero" arrow variant="light">{t.hero.primary}</Button>
+            <p className="enter-rise mt-4 max-w-[34rem] text-white/80 md:mt-6 md:text-lead md:text-white/75" style={d(620)}>{lede}{ledeMore && <span className="hero-extra max-md:hidden"> {ledeMore}</span>}</p>
+            <div className="enter-rise mt-6 flex flex-wrap gap-x-3 gap-y-1 md:mt-8 md:gap-y-3" style={d(720)}>
+              <span ref={magnetic} className="inline-block max-md:w-full">
+                <Button to="/contacto" track="hero" arrow variant="light" className="max-md:w-full">{t.hero.primary}</Button>
               </span>
-              <Button onClick={() => scrollToId('soluciones')} variant="outlineLight">{t.hero.secondary}</Button>
+              <Button onClick={() => scrollToId('soluciones')} variant="outlineLight" className="max-md:w-full max-md:!border-transparent">{t.hero.secondary}</Button>
             </div>
-            <p className="enter-rise mt-5 text-small text-white/65" style={d(820)}>
+            <p className="hero-extra enter-rise mt-5 text-small text-white/65 max-md:hidden" style={d(820)}>
               {t.hero.helper}{' '}
               <Link to="/explorador" className="font-medium text-white link-line">{t.hero.helperLink}</Link>
             </p>
+            </div>
           </div>
 
           {/* Índice de capítulos y señal de desplazamiento */}
-          <nav aria-label={t.hero.indexLabel} className="enter-rise absolute inset-x-0 bottom-0 z-10 hidden md:block" style={d(1150)}>
+          <nav aria-label={t.hero.indexLabel} className="hero-extra enter-rise absolute inset-x-0 bottom-0 z-10 hidden md:block" style={d(1150)}>
             <div className="container flex items-end justify-between gap-8 border-t border-white/15 py-5">
               <ol className="flex gap-x-10 gap-y-2">
                 {t.journey.chapters.map((ch, i) => (

@@ -44,14 +44,14 @@ export default function ZoneDetail() {
         </div>
       </section>
 
-      <section className="border-t border-line py-20 md:py-24">
+      <section className="border-t border-line py-sec md:py-24">
         <div className="container grid gap-12 lg:grid-cols-12">
           <h2 className="text-h2 lg:col-span-4">{T.context}</h2>
           <div className="max-w-measure space-y-5 text-body lg:col-span-7 lg:col-start-6">{z.context.map((p) => <p key={p}>{p}</p>)}</div>
         </div>
       </section>
 
-      <section className="bg-mist py-20 md:py-24">
+      <section className="bg-mist py-sec md:py-24">
         <div className="container">
           <h2 className="text-h2">{T.needs}</h2>
           <ul className="mt-12 grid gap-x-10 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
@@ -65,7 +65,7 @@ export default function ZoneDetail() {
         </div>
       </section>
 
-      <section className="py-20 md:py-24">
+      <section className="py-sec md:py-24">
         <div className="container grid gap-12 lg:grid-cols-12">
           <div className="lg:col-span-4">
             <h2 className="text-h2">{T.services}</h2>
@@ -92,7 +92,7 @@ export default function ZoneDetail() {
         </div>
       </section>
 
-      <section className="border-t border-line py-20 md:py-24">
+      <section className="border-t border-line py-sec md:py-24">
         <div className="container grid gap-12 lg:grid-cols-12">
           <h2 className="text-h2 lg:col-span-4">{T.faq}</h2>
           <div className="border-t border-ink/80 lg:col-span-7 lg:col-start-6">
@@ -110,7 +110,7 @@ export default function ZoneDetail() {
         </div>
       </section>
 
-      <section id="cotizar" className="bg-mist py-20 md:py-24">
+      <section id="cotizar" className="bg-mist py-sec md:py-24">
         <div className="container grid gap-12 lg:grid-cols-12">
           <div className="lg:col-span-4">
             <h2 className="text-h2">{T.quote}</h2>

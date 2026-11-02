@@ -23,19 +23,19 @@ export default function Industries() {
     <>
       <PageHero crumbs={[{ label: t.nav.industries }]} title={t.industries.title} lede={t.industries.lede} />
 
-      <section className="pb-24 md:pb-28">
+      <section className="pb-sec md:pb-28">
         <div className="container">
           <ul className="border-t border-ink/80">
             {c.industries.map((ind, i) => (
               <Reveal as="li" key={ind.id} className="border-b border-line">
-                <Link to={`/industrias/${ind.id}`} className="group grid gap-6 py-10 md:grid-cols-12 md:items-center md:gap-10">
-                  <span className="font-mono text-[0.75rem] text-muted md:col-span-1">{String(i + 1).padStart(2, '0')}</span>
+                <Link to={`/industrias/${ind.id}`} className="group grid gap-4 py-7 md:grid-cols-12 md:items-center md:gap-10 md:py-10">
+                  <span className="font-mono text-[0.75rem] text-muted max-md:hidden md:col-span-1">{String(i + 1).padStart(2, '0')}</span>
                   <div className="overflow-hidden md:col-span-4"><Media img={ind.img} plate={ind.plate} ratio="aspect-[16/10]" zoom sizes="(min-width: 768px) 33vw, 100vw" /></div>
                   <div className="md:col-span-6 md:col-start-7">
                     <h2 className="font-display text-[clamp(1.5rem,1.2rem+1vw,2.1rem)] font-semibold leading-[1.12] tracking-[-0.02em] text-ink transition-colors group-hover:text-corp">{ind.name}</h2>
                     <p className="mt-3 max-w-measure text-body">{ind.lede}</p>
                     <p className="mt-4 text-small text-muted">{ind.areas.join(' · ')}</p>
-                    <span className="mt-6 inline-flex items-center gap-2 text-small font-medium text-corp"><span className="link-line">{t.industries.seeSector}</span><ArrowRight aria-hidden className="arrow-nudge h-4 w-4" strokeWidth={1.75} /></span>
+                    <span className="mt-4 inline-flex items-center gap-2 text-small font-medium text-corp max-md:min-h-[44px] md:mt-6"><span className="link-line">{t.industries.seeSector}</span><ArrowRight aria-hidden className="arrow-nudge h-4 w-4" strokeWidth={1.75} /></span>
                   </div>
                 </Link>
               </Reveal>
@@ -44,10 +44,19 @@ export default function Industries() {
         </div>
       </section>
 
-      <section className="bg-mist py-24 md:py-28">
+      <section className="bg-mist py-sec md:py-28">
         <div className="container">
           <h2 className="max-w-2xl text-h2">{t.industries.matrixTitle}</h2>
-          <div className="mt-12 overflow-x-auto bg-white" tabIndex={0} role="region" aria-label={t.industries.matrixTitle}>
+          {/* Teléfono: la misma información por sector, sin una tabla de siete columnas que deslizar de lado. */}
+          <ul className="mt-7 divide-y divide-line border-y border-line md:hidden">
+            {c.industries.map((it) => (
+              <li key={it.id} className="py-3">
+                <Link to={`/industrias/${it.id}`} className="m-tap font-display text-[1.1rem] font-semibold text-ink">{it.name}</Link>
+                <p className="text-small text-body">{MATRIX.filter((slug) => it.services.includes(slug)).map((slug) => c.serviceBySlug(slug)!.name).join(' · ')}</p>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-12 overflow-x-auto bg-white max-md:hidden" tabIndex={0} role="region" aria-label={t.industries.matrixTitle}>
             <table className="w-full min-w-[820px] border-collapse text-[0.9rem]">
               <thead>
                 <tr className="border-b border-ink/80">
@@ -77,7 +86,7 @@ export default function Industries() {
               </tbody>
             </table>
           </div>
-          <p className="mt-4 text-label text-muted">{t.industries.matrixLegend}</p>
+          <p className="mt-4 text-label text-muted max-md:hidden">{t.industries.matrixLegend}</p>
         </div>
       </section>
       <FinalCTA />

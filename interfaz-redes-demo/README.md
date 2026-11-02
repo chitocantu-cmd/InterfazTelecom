@@ -116,7 +116,9 @@ leyendas sobre las imágenes (ver `MEJORAS_SITE_3D_Y_AUDITORIA.md`); los renders
 
 Las vistas fijas de la escena 3D (`src/assets/img/site3d/`) se generan desde la escena real:
 `npx vite build && npx vite preview --port 4173`, luego `node tools/site3d-stills.mjs http://localhost:4173/` y
-`python tools/variantes.py`.
+`python tools/variantes.py`. Los cuadros del giro táctil del teléfono (`src/assets/site3d-touch/`) salen de la misma
+escena: `npx vite --port 5199`, luego `node tools/site3d-orbit.mjs http://localhost:5199/` (ver «Experiencia móvil» en
+`ARQUITECTURA_INTERFAZ.md`).
 
 El cotizador envía la solicitud a `/api/cotizacion` cuando la recepción automática está configurada (ver
 "Recepción de cotizaciones"); si no, la abre en WhatsApp o en el correo del usuario con el mensaje escrito.

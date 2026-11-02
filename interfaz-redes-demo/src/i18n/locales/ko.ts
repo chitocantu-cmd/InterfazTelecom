@@ -130,6 +130,9 @@ const messages: Messages = {
     listLabel: '랙 구성 요소',
     related: '관련 서비스',
     inScene: '장면 속 구성',
+    touchHint: '밀어서 회전 · 번호를 누르세요',
+    prev: '이전 구성 요소',
+    next: '다음 구성 요소',
     canvasLabel: '통신 랙의 인터랙티브 3D 모델',
     parts: {
       tray: { name: '케이블 래더와 덕트', text: '구리 케이블과 광섬유를 랙 위로 분리·정리·보호하며 운반합니다.', spec: '구리 케이블 두 묶음의 케이블 래더 · 광 덕트 · 정리대별 인입' },
